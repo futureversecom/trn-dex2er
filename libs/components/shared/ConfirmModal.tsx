@@ -3,7 +3,7 @@ import type { PropsWithChildren } from "react";
 
 import type { ContextTag } from "@/libs/types";
 
-import { Button, Loader, Modal, Text } from "./";
+import { Button, Hyperlink, Loader, Modal, Text } from "./";
 
 interface ConfirmModalProps extends PropsWithChildren {
 	tag?: ContextTag;
@@ -88,9 +88,9 @@ function Submitted({ explorerUrl }: { explorerUrl: string }) {
 			</Text>
 			<Text variant="body" size="md">
 				View on{" "}
-				<a href={explorerUrl} target="_blank" rel="noopener noreferrer" className="underline">
+				<Hyperlink href={explorerUrl} target="_blank" className="underline">
 					Explorer
-				</a>
+				</Hyperlink>
 			</Text>
 		</>
 	);

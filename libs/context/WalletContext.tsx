@@ -168,7 +168,7 @@ function WalletOption({ name, href }: { name: ProviderName; href?: string }) {
 					<Text className="!text-neutral-500" size="xs">
 						Browser extension{" "}
 						{href && (
-							<Hyperlink className="text-primary-700 underline" href={href}>
+							<Hyperlink className="text-primary-700 underline" href={href} target="_blank">
 								Download
 							</Hyperlink>
 						)}

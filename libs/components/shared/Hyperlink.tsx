@@ -3,14 +3,9 @@ import type { AnchorHTMLAttributes } from "react";
 
 interface HyperlinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {}
 
-export function Hyperlink({ className, children, target = "_blank", ...props }: HyperlinkProps) {
+export function Hyperlink({ className, children, ...props }: HyperlinkProps) {
 	return (
-		<a
-			{...props}
-			target={target}
-			rel="noopener noreferrer"
-			className={classNames(className, "cursor-pointer")}
-		>
+		<a {...props} rel="noopener noreferrer" className={classNames(className, "cursor-pointer")}>
 			{children}
 		</a>
 	);
