@@ -1,6 +1,5 @@
 import * as sdk from "@futureverse/experience-sdk";
 import { useAuthenticationMethod, useTrnApi } from "@futureverse/react";
-import BigNumber from "bignumber.js";
 import {
 	createContext,
 	type PropsWithChildren,
