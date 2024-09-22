@@ -10,7 +10,6 @@ import { useUsdPrices } from "./UsdPriceContext";
 export type TrnTokenContextType = {
 	tokens: TrnTokens;
 	pools: LiquidityPools;
-	refetchPools: () => void;
 	isFetching: boolean;
 	tokenBalances: Record<number, Balance<TrnToken>>;
 	refetchTokenBalances: () => Promise<VoidFn | undefined>;
@@ -56,16 +55,11 @@ export function TrnTokenProvider({ tokens, children }: TrnTokenProviderProps) {
 		[tokenBalances]
 	);
 
-	const {
-		data: pools,
-		refetch: refetchPools,
-		isFetching: isFetchingPools,
-	} = useFetchTrnPools(tokens);
+	const { data: pools, isFetching: isFetchingPools } = useFetchTrnPools(tokensWithPrices);
 
 	return (
 		<TrnTokenContext.Provider
 			value={{
-				refetchPools,
 				tokenBalances,
 				getTokenBalance,
 				refetchTokenBalances,
