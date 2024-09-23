@@ -14,7 +14,13 @@ import { Amount, convertStringToHex, decodeAccountID, Payment, xrpToDrops } from
 import type { ContextTag, Token, TrnToken, XamanData, XrplCurrency } from "@/libs/types";
 
 import { DEFAULT_GAS_TOKEN, ROOT_NETWORK, XRPL_BRIDGE_ADDRESS, XRPL_NETWORK } from "../constants";
-import { type TrnTokenInputState, useAmountInput, useExtrinsic } from "../hooks";
+import {
+	BridgeTokenInput,
+	type TrnTokenInputState,
+	useAmountInput,
+	useBridgeTokenInput,
+	useExtrinsic,
+} from "../hooks";
 import {
 	Balance,
 	formatRootscanId,
@@ -26,16 +32,19 @@ import { useWallets } from "./WalletContext";
 
 export type BridgeContextType = {
 	resetState: () => void;
-	setToken: (token: Token) => void;
 	signTransaction: () => void;
 	setTag: (tag?: ContextTag) => void;
 	xamanData?: XamanData;
 	setGasToken: (gasToken: TrnToken) => void;
 	estimatedFee?: string;
-	bridgeAmount?: string;
-	setBridgeAmount: (amount: string) => void;
+	bridgeAmount: string;
+	amount?: string;
+	setAmount: (amount: string) => void;
+	token?: Token;
+	setToken: (token: Token) => void;
 	isDisabled: boolean;
-} & BridgeState;
+} & BridgeState &
+	BridgeTokenInput;
 
 const BridgeContext = createContext<BridgeContextType>({} as BridgeContextType);
 
@@ -249,31 +258,32 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		}
 	}, [authenticationMethod?.method, xamanData?.progress, setTag]);
 
-	const isDisabled = useMemo(() => {
-		if (state.tag === "sign") return true;
+	const { isDisabled: isTokenDisabled, ...bridgeTokenInput } = useBridgeTokenInput();
 
-		return !!state.error || !!bridgeTokenError;
-	}, [state, bridgeTokenError]);
+	const isDisabled = useMemo(
+		() => !!state.error || isTokenDisabled,
+		[state.error, isTokenDisabled]
+	);
 
 	return (
 		<BridgeContext.Provider
 			value={{
 				resetState,
-				setToken,
 				setTag,
 				setGasToken,
 
 				xamanData,
 				signTransaction,
 
-				isDisabled,
-
 				estimatedFee,
 
-				bridgeAmount,
-				setBridgeAmount,
+				bridgeAmount: bridgeAmount ?? "",
+
+				isDisabled,
 
 				...state,
+
+				...bridgeTokenInput,
 			}}
 		>
 			{children}

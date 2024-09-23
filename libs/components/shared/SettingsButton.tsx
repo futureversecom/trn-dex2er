@@ -8,8 +8,8 @@ import { fetchPairStatus, isXrplCurrency } from "@/libs/utils";
 import { Button, Dropdown, Modal, Tooltip } from "./";
 
 type SettingsButtonProps = {
-	slippage: string;
-	setSlippage: (slippage: string) => void;
+	slippage?: string;
+	setSlippage?: (slippage: string) => void;
 	gasToken?: TrnToken;
 	setGasToken?: (token: TrnToken) => void;
 	xToken?: Token;
@@ -48,27 +48,29 @@ export function SettingsButton({
 			</Button>
 
 			<Modal heading="Settings" open={open} onClose={() => setOpen(false)} className="!w-[25em]">
-				<div>
-					<div className="flex items-center gap-2 pb-2">
-						<label htmlFor="slippage" className="font-semibold">
-							Slippage
-						</label>
-						<Tooltip
-							id="slippage-info"
-							tip="Your transaction will revert if the price changes unfavorably by more than this percentage."
-						/>
-					</div>
+				{setSlippage && (
+					<div>
+						<div className="flex items-center gap-2 pb-2">
+							<label htmlFor="slippage" className="font-semibold">
+								Slippage
+							</label>
+							<Tooltip
+								id="slippage-info"
+								tip="Your transaction will revert if the price changes unfavorably by more than this percentage."
+							/>
+						</div>
 
-					<div className="w-full rounded-lg bg-neutral-200 py-4">
-						<input
-							id="slippage"
-							value={slippage}
-							className="bg-transparent pl-4 outline-none"
-							onChange={(e) => setSlippage(e.target.value)}
-						/>
-						%
+						<div className="w-full rounded-lg bg-neutral-200 py-4">
+							<input
+								id="slippage"
+								value={slippage}
+								className="bg-transparent pl-4 outline-none"
+								onChange={(e) => setSlippage(e.target.value)}
+							/>
+							%
+						</div>
 					</div>
-				</div>
+				)}
 
 				{gasToken && setGasToken && (
 					<div>

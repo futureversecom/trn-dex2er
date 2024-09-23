@@ -45,6 +45,41 @@ const mainnet: XrplCurrencies = {
 			currency: "XRP",
 			decimals: 6,
 		},
+		{
+			ticker: "ROOT",
+			currency: "524F4F5400000000000000000000000000000000",
+			issuer: "r9MrRER8UKSAumcqvbwCAsyWbUKomz68i3",
+			decimals: 6,
+		},
+		{
+			currency: "ZRP",
+			issuer: "rZapJ1PZ297QAEXRGu3SZkAiwXbA7BNoe",
+			decimals: 8,
+		},
+		{
+			ticker: "SYLO",
+			currency: "53594C4F00000000000000000000000000000000",
+			issuer: "rNhK8hNWEjsXvfGE4Lzso517ms6odD7dnn",
+			decimals: 18,
+		},
+		{
+			ticker: "ASTO",
+			currency: "4153544F00000000000000000000000000000000",
+			issuer: "rpFEEHBkoFwK3J9Mzi426PvTzGEMZizEh1",
+			decimals: 18,
+		},
+		{
+			ticker: "USDC",
+			currency: "5553444300000000000000000000000000000000",
+			issuer: "rcEGREd8NmkKRE8GE424sksyt1tJVFZwu",
+			decimals: 6,
+		},
+		{
+			ticker: "USDT",
+			currency: "5553445400000000000000000000000000000000",
+			issuer: "rcvxE9PS9YBwxtGg1qNeewV6ZB3wGubZq",
+			decimals: 6,
+		},
 	],
 };
 
@@ -69,6 +104,41 @@ const devnet: XrplCurrencies = {
 		{
 			currency: "XRP",
 			decimals: 6,
+		},
+		{
+			decimals: 6,
+			ticker: "ROOT",
+			currency: "524F4F5400000000000000000000000000000000",
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
+		{
+			decimals: 18,
+			currency: "ZRP",
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
+		{
+			decimals: 6,
+			ticker: "USDC",
+			currency: "5553444300000000000000000000000000000000",
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
+		{
+			decimals: 6,
+			ticker: "USDT",
+			currency: "5553445400000000000000000000000000000000",
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
+		{
+			decimals: 18,
+			ticker: "ASTO",
+			currency: "4153544f00000000000000000000000000000000",
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
+		{
+			decimals: 18,
+			ticker: "SYLO",
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+			currency: "53594c4f00000000000000000000000000000000",
 		},
 	],
 };

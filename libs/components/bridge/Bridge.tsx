@@ -1,31 +1,46 @@
+import { useMemo } from "react";
+
 import {
 	ActionButton,
-	AmountInputs,
+	AmountInput,
 	Box,
 	ConfirmModal,
 	InfoItem,
 	QrModal,
-	Ratio,
 	SettingsButton,
-	SwitchButton,
 	Text,
 	TokenImage,
 	TokenSelect,
 } from "@/libs/components/shared";
-import { type TrnBridgeContextType, useTrnBridge } from "@/libs/context";
+import { type BridgeContextType, useBridge } from "@/libs/context";
+import type { TrnToken, XrplCurrency } from "@/libs/types";
+import { isXrplCurrency } from "@/libs/utils";
 
-export function TrnBridge() {
-	const props = useTrnBridge();
+export function Bridge() {
+	const props = useBridge();
 
 	const infoItems = getInfoItems(props);
+
+	const bridgeTokenSymbol = useMemo(() => {
+		const bridgeToken = props.bridgeToken;
+		if (!bridgeToken) return "";
+
+		if (isXrplCurrency(bridgeToken)) return bridgeToken.ticker || bridgeToken.currency;
+
+		return bridgeToken.symbol;
+	}, [props.bridgeToken]);
 
 	return (
 		<>
 			<TokenSelect
-				open={props.isOpen !== false}
-				onTokenClick={props.onTokenClick}
+				open={props.isOpen}
+				onTokenClick={props.setToken}
 				onClose={() => props.setIsOpen(false)}
-				tokens={Object.values(props.filteredTokens)}
+				tokens={
+					Array.isArray(props.filteredTokens)
+						? (props.filteredTokens as XrplCurrency[])
+						: (Object.values(props.filteredTokens) as Array<TrnToken>)
+				}
 			/>
 
 			<QrModal
@@ -34,7 +49,7 @@ export function TrnBridge() {
 				open={!!props.xamanData && props.tag === "sign"}
 			/>
 
-			{props.xToken && props.yToken && (
+			{props.bridgeToken && (
 				<ConfirmModal
 					tag={props.tag}
 					onClose={() => props.setTag(undefined)}
@@ -48,33 +63,13 @@ export function TrnBridge() {
 					<InfoItem
 						heading={
 							<span className="flex items-center gap-2">
-								<TokenImage symbol={props.xToken.symbol} />
+								<TokenImage symbol={bridgeTokenSymbol} />
 								<Text size="md" className="!text-neutral-600">
-									{props.xToken.symbol} to spend
+									{bridgeTokenSymbol} to bridge
 								</Text>
 							</span>
 						}
-						value={
-							props.xTokenUSD
-								? `${props.xAmount} ($${props.xTokenUSD.toLocaleString("en-US")})`
-								: props.xAmount
-						}
-					/>
-
-					<InfoItem
-						heading={
-							<span className="flex items-center gap-2">
-								<TokenImage symbol={props.yToken.symbol} />
-								<Text size="md" className="!text-neutral-600">
-									{props.yToken.symbol} to receive
-								</Text>
-							</span>
-						}
-						value={
-							props.yTokenUSD
-								? `${props.yAmount} ($${props.yTokenUSD.toLocaleString("en-US")})`
-								: props.yAmount
-						}
+						value={props.bridgeAmount ?? ""}
 					/>
 
 					<div className="py-2">
@@ -86,19 +81,7 @@ export function TrnBridge() {
 			)}
 
 			<Box heading="BRIDGE" className="relative">
-				<div className="absolute right-0 top-20 flex w-full justify-center">
-					<SwitchButton onClick={props.switchTokens} />
-				</div>
-
-				<AmountInputs
-					{...{
-						xToken: props.xToken,
-						yToken: props.yToken,
-						labels: ["From", "To"],
-						...props,
-						yTokenError: undefined,
-					}}
-				/>
+				<AmountInput {...props} />
 
 				{props.error && (
 					<Text className="text-red-300" size="md">
@@ -106,16 +89,9 @@ export function TrnBridge() {
 					</Text>
 				)}
 
-				{props.xToken && props.yToken && props.ratio && (
+				{bridgeTokenSymbol && (
 					<>
 						<div className="flex items-center justify-between px-2">
-							<Ratio
-								xToken={props.xToken}
-								yToken={props.yToken}
-								ratio={props.ratio}
-								priceDifference={props.priceDifference}
-							/>
-
 							<SettingsButton {...props} />
 						</div>
 
@@ -133,7 +109,7 @@ export function TrnBridge() {
 	);
 }
 
-const getInfoItems = ({ gasToken, estimatedFee }: TrnBridgeContextType) => {
+const getInfoItems = ({ gasToken, estimatedFee }: BridgeContextType) => {
 	if (!estimatedFee) return null;
 
 	return (
