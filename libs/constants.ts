@@ -18,7 +18,7 @@ export const ROOT_NETWORK = {
 			InWebSocket: "wss://porcini.au.rootnet.app/ws",
 		},
 		LinkedEthChain: "sepolia",
-		LinkedXrpChain: "devnet",
+		LinkedXrpChain: "testnet",
 		ExplorerUrl: "https://porcini.rootscan.io",
 		Environment: sdk.ENVIRONMENTS["staging"],
 		Stage: "staging" as sdk.Stage,
@@ -43,18 +43,11 @@ export const ROOT_NETWORK = {
 }[process.env.NEXT_PUBLIC_ROOT_NETWORK ?? "porcini"] as TrnNetworkDetails;
 
 export const XRPL_NETWORK: XrplNetworkDetails = {
-	devnet: {
-		ApiUrl: {
-			InWebSocket: "wss://s.devnet.rippletest.net/",
-		},
-		ExplorerUrl: "https://devnet.xrpl.org",
-	},
-
 	testnet: {
 		ApiUrl: {
 			InWebSocket: "wss://s.altnet.rippletest.net/",
 		},
-		ExplorerUrl: "https://testnet.xrpl.org",
+		ExplorerUrl: { Bridge: "https://testnet.xrpl.org", Swap: "https://devnet.xrpl.org" },
 	},
 
 	livenet: {

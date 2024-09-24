@@ -69,7 +69,7 @@ export function Bridge() {
 								</Text>
 							</span>
 						}
-						value={props.bridgeAmount ?? ""}
+						value={props.amount ?? ""}
 					/>
 
 					<div className="py-2">

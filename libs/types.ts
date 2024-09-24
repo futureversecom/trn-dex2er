@@ -36,7 +36,7 @@ export interface XrplNetworkDetails {
 	ApiUrl: {
 		InWebSocket: string;
 	};
-	ExplorerUrl: string;
+	ExplorerUrl: string | { Bridge: string; Swap: string };
 }
 
 export type LiquidityPoolKey = `${string}-${string}`;

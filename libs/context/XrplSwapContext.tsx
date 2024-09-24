@@ -11,12 +11,13 @@ import type { Transaction, TrustSet } from "xrpl";
 
 import type { ContextTag, TokenSource, XrplCurrency } from "@/libs/types";
 
-import { DEFAULT_GAS_TOKEN, XRPL_NETWORK } from "../constants";
+import { DEFAULT_GAS_TOKEN } from "../constants";
 import { useXrplTokenInputs, type XrplTokenInputs, type XrplTokenInputState } from "../hooks";
 import {
 	buildTx,
 	getCurrency,
 	getRatioAndAmounts,
+	getXrplExplorerUrl,
 	type InteractiveTransactionResponse,
 	parseSlippage,
 	toFixed,
@@ -221,7 +222,7 @@ export function XrplSwapProvider({ children }: PropsWithChildren) {
 				} else if (response.status === "success") {
 					refetchBalances().then(() => setTag("submitted"));
 					updateState({
-						explorerUrl: `${XRPL_NETWORK.ExplorerUrl}/transactions/${response.hash}`,
+						explorerUrl: `${getXrplExplorerUrl("Swap")}/transactions/${response.hash}`,
 					});
 				} else {
 					setTag("failed");
