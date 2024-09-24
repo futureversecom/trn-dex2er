@@ -14,7 +14,7 @@ import {
 	TokenImage,
 	TokenSelect,
 } from "@/libs/components/shared";
-import { type BridgeContextType, useBridge } from "@/libs/context";
+import { type BridgeContextType, useBridge, useWallets } from "@/libs/context";
 import type { TrnToken, XrplCurrency } from "@/libs/types";
 import { Balance, isXrplCurrency } from "@/libs/utils";
 
@@ -56,10 +56,10 @@ export function Bridge() {
 					tag={props.tag}
 					onClose={() => props.setTag(undefined)}
 					onConfirm={props.signTransaction}
-					description="Once you confirm swap, you’ll be asked to sign a message with
+					description="Once you confirm bridge, you’ll be asked to sign a message with
 					a hash on your wallet."
 					explorerUrl={props.explorerUrl}
-					title="Confirm swap"
+					title="Confirm bridge"
 					error={props.error}
 				>
 					<InfoItem
@@ -83,7 +83,7 @@ export function Bridge() {
 			)}
 
 			<Box heading="BRIDGE" className="relative">
-				<AmountInput {...props} label="From">
+				<AmountInput {...props} label="Token">
 					<Button
 						variant="secondary"
 						size="sm"
@@ -112,6 +112,8 @@ export function Bridge() {
 					</Button>
 				</AmountInput>
 
+				<AddressInput {...props} />
+
 				{props.error && (
 					<Text className="text-red-300" size="md">
 						{props.error}
@@ -121,7 +123,7 @@ export function Bridge() {
 				{tokenSymbol && (
 					<>
 						<div className="flex items-center justify-between px-2">
-							<SettingsButton {...props} />
+							<SettingsButton {...props} xToken={props.token} />
 						</div>
 
 						<div className="space-y-2 rounded-lg bg-neutral-400 p-6">{infoItems}</div>
@@ -153,3 +155,34 @@ const getInfoItems = ({ gasToken, estimatedFee }: BridgeContextType) => {
 		</>
 	);
 };
+
+function AddressInput({ destination, setDestination, destinationError: error }: BridgeContextType) {
+	const { network } = useWallets();
+
+	return (
+		<div className="flex space-x-4">
+			<div className="flex h-28 w-full min-w-[50em] flex-col justify-center space-y-2 bg-neutral-400 px-6">
+				<span className="flex items-center justify-between text-sm">
+					<label htmlFor="address-input" className="cursor-pointer text-neutral-700">
+						Destination Address
+					</label>
+				</span>
+
+				<span className="relative flex w-full items-center justify-between">
+					<input
+						type="text"
+						value={destination}
+						placeholder={`Enter ${network === "root" ? "XRPL" : "Root"} Network address`}
+						id="address-input"
+						onChange={(e) => setDestination(e.target.value)}
+						className="w-full bg-transparent text-xl font-semibold focus:outline-none"
+					/>
+				</span>
+
+				<Text className={classNames(error && "text-red-300")}>
+					{error ? error : "This is auto-filled with the wallet you're connected to."}
+				</Text>
+			</div>
+		</div>
+	);
+}

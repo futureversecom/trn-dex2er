@@ -17,6 +17,7 @@ import { DEFAULT_GAS_TOKEN, ROOT_NETWORK, XRPL_BRIDGE_ADDRESS } from "../constan
 import {
 	type BridgeTokenInput,
 	type TrnTokenInputState,
+	useBridgeDestinationInput,
 	useBridgeTokenInput,
 	useExtrinsic,
 } from "../hooks";
@@ -39,6 +40,9 @@ export type BridgeContextType = {
 	token?: Token;
 	setToken: (token: Token) => void;
 	isDisabled: boolean;
+	destination: string;
+	setDestination: (destination: string) => void;
+	destinationError?: string;
 } & BridgeState &
 	BridgeTokenInput;
 
@@ -76,6 +80,8 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	const setTag = useCallback((tag?: ContextTag) => updateState({ tag }), []);
 
 	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken }), []);
+
+	const { error: destinationError, destination, setDestination } = useBridgeDestinationInput();
 
 	const { network, xrplProvider } = useWallets();
 
@@ -240,8 +246,8 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	}, [authenticationMethod?.method, xamanData?.progress, setTag]);
 
 	const isDisabled = useMemo(
-		() => !!state.error || isTokenDisabled,
-		[state.error, isTokenDisabled]
+		() => !!state.error || isTokenDisabled || !!destinationError || !!state.feeError,
+		[state.error, isTokenDisabled, destinationError, state.feeError]
 	);
 
 	return (
@@ -261,6 +267,10 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 				...state,
 
 				...bridgeTokenInput,
+
+				destination,
+				setDestination,
+				destinationError,
 			}}
 		>
 			{children}

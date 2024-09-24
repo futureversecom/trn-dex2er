@@ -62,7 +62,7 @@ export function useBridgeTokenInput(): BridgeTokenInput {
 	const tokenBalance = useMemo(() => {
 		if (isXrplCurrency(token)) return getBalance(token)?.value;
 
-		return getTokenBalance(token);
+		return getTokenBalance(token)?.toUnit();
 	}, [token, getBalance, getTokenBalance]);
 
 	const tokenUSD = useMemo(() => {
