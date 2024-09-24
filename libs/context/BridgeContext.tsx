@@ -55,7 +55,6 @@ interface BridgeState extends TrnTokenInputState {
 	error?: string;
 	feeError?: string;
 	priceDifference?: number;
-	bridgeToken?: Token;
 	toAddress?: string;
 	qr?: string;
 }

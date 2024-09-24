@@ -1,9 +1,11 @@
+import classNames from "@sindresorhus/class-names";
 import { useMemo } from "react";
 
 import {
 	ActionButton,
 	AmountInput,
 	Box,
+	Button,
 	ConfirmModal,
 	InfoItem,
 	QrModal,
@@ -14,21 +16,21 @@ import {
 } from "@/libs/components/shared";
 import { type BridgeContextType, useBridge } from "@/libs/context";
 import type { TrnToken, XrplCurrency } from "@/libs/types";
-import { isXrplCurrency } from "@/libs/utils";
+import { Balance, isXrplCurrency } from "@/libs/utils";
 
 export function Bridge() {
 	const props = useBridge();
 
 	const infoItems = getInfoItems(props);
 
-	const bridgeTokenSymbol = useMemo(() => {
-		const bridgeToken = props.bridgeToken;
-		if (!bridgeToken) return "";
+	const tokenSymbol = useMemo(() => {
+		const token = props.token;
+		if (!token) return "";
 
-		if (isXrplCurrency(bridgeToken)) return bridgeToken.ticker || bridgeToken.currency;
+		if (isXrplCurrency(token)) return token.ticker || token.currency;
 
-		return bridgeToken.symbol;
-	}, [props.bridgeToken]);
+		return token.symbol;
+	}, [props.token]);
 
 	return (
 		<>
@@ -49,7 +51,7 @@ export function Bridge() {
 				open={!!props.xamanData && props.tag === "sign"}
 			/>
 
-			{props.bridgeToken && (
+			{props.token && (
 				<ConfirmModal
 					tag={props.tag}
 					onClose={() => props.setTag(undefined)}
@@ -63,9 +65,9 @@ export function Bridge() {
 					<InfoItem
 						heading={
 							<span className="flex items-center gap-2">
-								<TokenImage symbol={bridgeTokenSymbol} />
+								<TokenImage symbol={tokenSymbol} />
 								<Text size="md" className="!text-neutral-600">
-									{bridgeTokenSymbol} to bridge
+									{tokenSymbol} to bridge
 								</Text>
 							</span>
 						}
@@ -81,7 +83,34 @@ export function Bridge() {
 			)}
 
 			<Box heading="BRIDGE" className="relative">
-				<AmountInput {...props} />
+				<AmountInput {...props} label="From">
+					<Button
+						variant="secondary"
+						size="sm"
+						className="text-neutral-700"
+						onClick={() => {
+							if (!props.tokenBalance) return props.setAmount("");
+
+							props.setAmount(
+								props.tokenBalance instanceof Balance
+									? props.tokenBalance.toUnit().toString()
+									: props.tokenBalance
+							);
+						}}
+					>
+						max
+					</Button>
+					<Button
+						chevron
+						size="sm"
+						onClick={() => props.setIsOpen(true)}
+						variant={props.token ? "secondary" : "primary"}
+						className={classNames(props.token && "text-neutral-700")}
+						icon={tokenSymbol ? <TokenImage symbol={tokenSymbol} /> : undefined}
+					>
+						{tokenSymbol ? tokenSymbol : "select token"}
+					</Button>
+				</AmountInput>
 
 				{props.error && (
 					<Text className="text-red-300" size="md">
@@ -89,7 +118,7 @@ export function Bridge() {
 					</Text>
 				)}
 
-				{bridgeTokenSymbol && (
+				{tokenSymbol && (
 					<>
 						<div className="flex items-center justify-between px-2">
 							<SettingsButton {...props} />
