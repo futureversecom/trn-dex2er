@@ -1,5 +1,11 @@
+import { convertStringToHex } from "xrpl";
+
 import { ROOT_NETWORK } from "../constants";
 import { XrplCurrency } from "../types";
+
+function getCurrencyCode(ticker: string) {
+	return convertStringToHex(ticker).padEnd(40, "0");
+}
 
 type XrplCurrencies = Record<"swap" | "bridge", XrplCurrency[]>;
 
@@ -8,6 +14,29 @@ const mainnet: XrplCurrencies = {
 		{
 			currency: "XRP",
 			decimals: 6,
+		},
+		{
+			ticker: "ROOT",
+			currency: getCurrencyCode("ROOT"),
+			issuer: "r9MrRER8UKSAumcqvbwCAsyWbUKomz68i3",
+			decimals: 6,
+		},
+		{
+			ticker: "SYLO",
+			currency: getCurrencyCode("SYLO"),
+			issuer: "rNhK8hNWEjsXvfGE4Lzso517ms6odD7dnn",
+			decimals: 18,
+		},
+		{
+			ticker: "ASTO",
+			currency: getCurrencyCode("ASTO"),
+			issuer: "rpFEEHBkoFwK3J9Mzi426PvTzGEMZizEh1",
+			decimals: 18,
+		},
+		{
+			currency: "ZRP",
+			issuer: "rZapJ1PZ297QAEXRGu3SZkAiwXbA7BNoe",
+			decimals: 8,
 		},
 		{
 			currency: "BTC",
@@ -20,7 +49,8 @@ const mainnet: XrplCurrencies = {
 			decimals: 6,
 		},
 		{
-			currency: "CRYPTO",
+			ticker: "CRYPTO",
+			currency: getCurrencyCode("CRYPTO"),
 			issuer: "rRbiKwcueo6MchUpMFDce9XpDwHhRLPFo",
 		},
 		{
@@ -47,38 +77,26 @@ const mainnet: XrplCurrencies = {
 		},
 		{
 			ticker: "ROOT",
-			currency: "524F4F5400000000000000000000000000000000",
+			currency: getCurrencyCode("ROOT"),
 			issuer: "r9MrRER8UKSAumcqvbwCAsyWbUKomz68i3",
 			decimals: 6,
 		},
 		{
-			currency: "ZRP",
-			issuer: "rZapJ1PZ297QAEXRGu3SZkAiwXbA7BNoe",
-			decimals: 8,
-		},
-		{
 			ticker: "SYLO",
-			currency: "53594C4F00000000000000000000000000000000",
+			currency: getCurrencyCode("SYLO"),
 			issuer: "rNhK8hNWEjsXvfGE4Lzso517ms6odD7dnn",
 			decimals: 18,
 		},
 		{
 			ticker: "ASTO",
-			currency: "4153544F00000000000000000000000000000000",
+			currency: getCurrencyCode("ASTO"),
 			issuer: "rpFEEHBkoFwK3J9Mzi426PvTzGEMZizEh1",
 			decimals: 18,
 		},
 		{
-			ticker: "USDC",
-			currency: "5553444300000000000000000000000000000000",
-			issuer: "rcEGREd8NmkKRE8GE424sksyt1tJVFZwu",
-			decimals: 6,
-		},
-		{
-			ticker: "USDT",
-			currency: "5553445400000000000000000000000000000000",
-			issuer: "rcvxE9PS9YBwxtGg1qNeewV6ZB3wGubZq",
-			decimals: 6,
+			currency: "ZRP",
+			issuer: "rZapJ1PZ297QAEXRGu3SZkAiwXbA7BNoe",
+			decimals: 8,
 		},
 	],
 };
@@ -108,7 +126,7 @@ const devnet: XrplCurrencies = {
 		{
 			decimals: 6,
 			ticker: "ROOT",
-			currency: "524F4F5400000000000000000000000000000000",
+			currency: getCurrencyCode("ROOT"),
 			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
 		},
 		{
@@ -119,26 +137,26 @@ const devnet: XrplCurrencies = {
 		{
 			decimals: 6,
 			ticker: "USDC",
-			currency: "5553444300000000000000000000000000000000",
+			currency: getCurrencyCode("USDC"),
 			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
 		},
 		{
 			decimals: 6,
 			ticker: "USDT",
-			currency: "5553445400000000000000000000000000000000",
+			currency: getCurrencyCode("USDT"),
 			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
 		},
 		{
 			decimals: 18,
 			ticker: "ASTO",
-			currency: "4153544f00000000000000000000000000000000",
+			currency: getCurrencyCode("ASTO"),
 			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
 		},
 		{
 			decimals: 18,
 			ticker: "SYLO",
+			currency: getCurrencyCode("SYLO"),
 			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
-			currency: "53594c4f00000000000000000000000000000000",
 		},
 	],
 };
