@@ -19,6 +19,8 @@ import type { TrnToken, XrplCurrency } from "@/libs/types";
 import { Balance, isXrplCurrency } from "@/libs/utils";
 
 export function Bridge() {
+	const { network } = useWallets();
+
 	const props = useBridge();
 
 	const infoItems = getInfoItems(props);
@@ -78,7 +80,7 @@ export function Bridge() {
 						<hr className="border-neutral-600" />
 					</div>
 
-					{infoItems}
+					{network === "root" && infoItems}
 				</ConfirmModal>
 			)}
 
@@ -120,13 +122,15 @@ export function Bridge() {
 					</Text>
 				)}
 
-				{tokenSymbol && (
+				{tokenSymbol && network === "root" && (
 					<>
-						<div className="flex items-center justify-between px-2">
+						<div className="flex items-center justify-end px-2">
 							<SettingsButton {...props} xToken={props.token} />
 						</div>
 
-						<div className="space-y-2 rounded-lg bg-neutral-400 p-6">{infoItems}</div>
+						{props.estimatedFee && (
+							<div className="space-y-2 rounded-lg bg-neutral-400 p-6">{infoItems}</div>
+						)}
 					</>
 				)}
 

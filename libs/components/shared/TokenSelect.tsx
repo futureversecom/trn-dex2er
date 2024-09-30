@@ -43,8 +43,9 @@ export function TokenSelect<T extends Token>({
 		(token: T) => {
 			onTokenClick(token);
 			setFilter("");
+			onClose?.();
 		},
-		[onTokenClick]
+		[onTokenClick, onClose]
 	);
 
 	return (

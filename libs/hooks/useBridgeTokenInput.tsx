@@ -13,8 +13,8 @@ export type BridgeTokenInput = {
 	tokenBalance?: Balance<TrnToken> | string;
 	tokenUSD?: number;
 
-	token: Token | undefined;
-	setToken: (token: Token) => void;
+	token?: Token;
+	setToken: (token?: Token) => void;
 
 	isOpen: boolean;
 	setIsOpen: (isOpen: boolean) => void;
