@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { ROOT_NETWORK, XRPL_BRIDGE_TOKENS } from "../constants";
-import { useTrnTokens, useXrplCurrencies } from "../context";
+import { useTrnTokens, useWallets, useXrplCurrencies } from "../context";
 import { Token, TrnToken, TrnTokens, XrplCurrency } from "../types";
 import { Balance, isXrplCurrency } from "../utils";
 import { useAmountInput } from "./useAmountInput";
@@ -24,6 +24,7 @@ export type BridgeTokenInput = {
 };
 
 export function useBridgeTokenInput(): BridgeTokenInput {
+	const { network } = useWallets();
 	const { tokens, getTokenBalance } = useTrnTokens();
 	const { currencies, getBalance } = useXrplCurrencies();
 
@@ -33,21 +34,23 @@ export function useBridgeTokenInput(): BridgeTokenInput {
 	const { amount, setAmount, error: tokenError } = useAmountInput(token);
 
 	const filteredTokens = useMemo(() => {
-		if (isXrplCurrency(token))
+		if (network === "xrpl")
 			return currencies.filter(
-				(c) => XRPL_BRIDGE_TOKENS.includes(c.ticker || c.currency) && c.currency !== token?.currency
+				(c) =>
+					XRPL_BRIDGE_TOKENS.includes(c.ticker || c.currency) &&
+					c.currency !== (token as XrplCurrency)?.currency
 			);
 
 		return Object.values(tokens).reduce<TrnTokens>((acc, t: TrnToken) => {
 			if (ROOT_NETWORK.NetworkName !== "root" && t.assetId === 203876) return acc; // Duplicate ZRP token
 
-			if (XRPL_BRIDGE_TOKENS.includes(t.symbol) && t.symbol !== token?.symbol) {
+			if (XRPL_BRIDGE_TOKENS.includes(t.symbol) && t.symbol !== (token as TrnToken)?.symbol) {
 				acc[t.assetId] = t;
 			}
 
 			return acc;
 		}, {});
-	}, [token, tokens, currencies]);
+	}, [token, tokens, currencies, network]);
 
 	const isDisabled = useMemo(() => {
 		if (!token) return true;
