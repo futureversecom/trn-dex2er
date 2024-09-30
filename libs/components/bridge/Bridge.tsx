@@ -1,5 +1,5 @@
 import classNames from "@sindresorhus/class-names";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 import {
 	ActionButton,
@@ -19,7 +19,7 @@ import type { TrnToken, XrplCurrency } from "@/libs/types";
 import { Balance, isXrplCurrency } from "@/libs/utils";
 
 export function Bridge() {
-	const { network } = useWallets();
+	const { network, rAddress, futurepass, setIsXrplWalletSelectOpen, trnLogin } = useWallets();
 
 	const props = useBridge();
 
@@ -33,6 +33,20 @@ export function Bridge() {
 
 		return token.symbol;
 	}, [props.token]);
+
+	const buttonText = useMemo(() => {
+		if (rAddress && futurepass) return "Bridge";
+
+		return `Connect ${rAddress ? "Root" : "XRPL"} Wallet`;
+	}, [network, rAddress, futurepass]);
+
+	const onButtonClick = useCallback(() => {
+		if (!rAddress) return setIsXrplWalletSelectOpen(true);
+
+		if (!futurepass) return trnLogin();
+
+		props.setTag("review");
+	}, [rAddress, futurepass]);
 
 	return (
 		<>
@@ -134,11 +148,7 @@ export function Bridge() {
 					</>
 				)}
 
-				<ActionButton
-					text="bridge"
-					disabled={props.isDisabled}
-					onClick={() => props.setTag("review")}
-				/>
+				<ActionButton text={buttonText} disabled={props.isDisabled} onClick={onButtonClick} />
 			</Box>
 		</>
 	);
