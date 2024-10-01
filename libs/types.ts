@@ -36,7 +36,7 @@ export interface XrplNetworkDetails {
 	ApiUrl: {
 		InWebSocket: string;
 	};
-	ExplorerUrl: string;
+	ExplorerUrl: string | { Bridge: string; Swap: string };
 }
 
 export type LiquidityPoolKey = `${string}-${string}`;
@@ -61,6 +61,7 @@ export type TokenSource = "x" | "y";
 export type ContextTag = "review" | "sign" | "submit" | "submitted" | "failed";
 
 export const XrplCurrency = Type.Object({
+	ticker: Type.Optional(Type.String()),
 	currency: Type.String(),
 	issuer: Type.Optional(Type.String()),
 	decimals: Type.Optional(Type.Number()),

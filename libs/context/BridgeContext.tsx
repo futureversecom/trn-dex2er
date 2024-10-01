@@ -9,33 +9,45 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { Amount, convertStringToHex, decodeAccountID, Payment, xrpToDrops } from "xrpl";
+import { type Amount, convertStringToHex, decodeAccountID, type Payment, xrpToDrops } from "xrpl";
 
-import type { ContextTag, Token, TrnToken, XamanData, XrplCurrency } from "@/libs/types";
+import { ContextTag, Token, TrnToken, XamanData, XrplCurrency } from "@/libs/types";
 
-import { DEFAULT_GAS_TOKEN, ROOT_NETWORK, XRPL_BRIDGE_ADDRESS, XRPL_NETWORK } from "../constants";
-import { type TrnTokenInputState, useAmountInput, useExtrinsic } from "../hooks";
+import { DEFAULT_GAS_TOKEN, ROOT_NETWORK, XRPL_BRIDGE_ADDRESS } from "../constants";
+import {
+	type BridgeTokenInput,
+	type TrnTokenInputState,
+	useBridgeDestinationInput,
+	useBridgeTokenInput,
+	useExtrinsic,
+} from "../hooks";
 import {
 	Balance,
 	formatRootscanId,
-	InteractiveTransactionResponse,
-	IXrplWalletProvider,
+	getXrplExplorerUrl,
+	type InteractiveTransactionResponse,
+	isXrplCurrency,
+	type IXrplWalletProvider,
 } from "../utils";
 import { useTrnTokens } from "./TrnTokenContext";
 import { useWallets } from "./WalletContext";
+import { useXrplCurrencies } from "./XrplCurrencyContext";
 
 export type BridgeContextType = {
 	resetState: () => void;
-	setToken: (token: Token) => void;
 	signTransaction: () => void;
 	setTag: (tag?: ContextTag) => void;
 	xamanData?: XamanData;
 	setGasToken: (gasToken: TrnToken) => void;
 	estimatedFee?: string;
-	bridgeAmount?: string;
-	setBridgeAmount: (amount: string) => void;
+	token?: Token;
+	setToken: (token: Token) => void;
 	isDisabled: boolean;
-} & BridgeState;
+	destination: string;
+	setDestination: (destination: string) => void;
+	destinationError?: string;
+} & BridgeState &
+	BridgeTokenInput;
 
 const BridgeContext = createContext<BridgeContextType>({} as BridgeContextType);
 
@@ -43,22 +55,15 @@ interface BridgeState extends TrnTokenInputState {
 	tx?: sdk.Extrinsic | Payment;
 	gasToken: TrnToken;
 	slippage: string;
-	yAmountMin?: string;
-	ratio?: string;
 	tag?: ContextTag;
 	explorerUrl?: string;
 	error?: string;
 	feeError?: string;
-	priceDifference?: number;
-	bridgeToken?: Token;
-	toAddress?: string;
 	qr?: string;
 }
 
 const initialState = {
 	slippage: "5",
-	xAmount: "",
-	yAmount: "",
 	gasToken: DEFAULT_GAS_TOKEN,
 } as BridgeState;
 
@@ -75,27 +80,22 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken }), []);
 
+	const { tokens } = useTrnTokens();
+	const { currencies } = useXrplCurrencies();
 	const { network, xrplProvider } = useWallets();
 
-	const setToken = useCallback(
-		(token: Token) => {
-			return updateState({
-				bridgeToken: token,
-				...(network === "root" && { gasToken: token as TrnToken }),
-			});
-		},
-		[network]
-	);
+	const { isDisabled: isTokenDisabled, ...bridgeTokenInput } = useBridgeTokenInput();
+	const { error: destinationError, destination, setDestination } = useBridgeDestinationInput();
 
-	const {
-		amount: bridgeAmount,
-		setAmount: setBridgeAmount,
-		error: bridgeTokenError,
-	} = useAmountInput(state.bridgeToken);
+	// Default to paying fee with the token selected to bridge
+	useEffect(() => {
+		if (network !== "root" || !bridgeTokenInput.token) return;
+
+		setGasToken(bridgeTokenInput.token as TrnToken);
+	}, [bridgeTokenInput.token, network, setGasToken]);
 
 	const { trnApi } = useTrnApi();
 	const { userSession } = useWallets();
-	const { getTokenBalance } = useTrnTokens();
 	const authenticationMethod = useAuthenticationMethod();
 
 	const futurepass = userSession?.futurepass as string | undefined;
@@ -110,7 +110,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	});
 
 	useEffect(() => {
-		if (!state.tx) return;
+		if (network !== "root" || !state.tx) return;
 
 		estimateFee()
 			.then((gasFee) => setEstimatedFee(new Balance(gasFee, state.gasToken).toHuman()))
@@ -121,72 +121,66 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 					gasToken: DEFAULT_GAS_TOKEN,
 				});
 			});
-	}, [state.tx, state.gasToken, estimateFee]);
+	}, [state.tx, state.gasToken, estimateFee, network]);
 
-	const buildTransaction = useCallback(() => {
-		if (!bridgeAmount || !state.bridgeToken || !state.toAddress) return;
+	const buildTransaction = useCallback(
+		({ token, amount, toAddress }: { token?: Token; amount?: string; toAddress?: string }) => {
+			if (!token || !amount || !toAddress) return updateState({ tx: undefined });
 
-		if (network === "root") {
-			if (!trnApi) return;
+			if (network === "root") {
+				if (!trnApi) return;
 
-			const bridgeToken = state.bridgeToken as TrnToken;
+				const bridgeToken = token as TrnToken;
 
-			const bridgeBalance = new Balance(bridgeAmount, bridgeToken);
+				const bridgeBalance = new Balance(amount, bridgeToken, false);
 
-			const decoded = decodeAccountID(state.toAddress.trim());
+				const decoded = decodeAccountID(toAddress.trim());
 
-			const decodedToAddress = `0x${convertStringToHex(decoded as any)}`;
+				const decodedToAddress = `0x${convertStringToHex(decoded as any)}`;
 
-			const tx = trnApi.tx.xrplBridge.withdraw(
-				bridgeToken.assetId,
-				bridgeBalance.toPlanckString(),
-				decodedToAddress,
-				null
-			);
+				const tx = trnApi.tx.xrplBridge.withdraw(
+					bridgeToken.assetId,
+					bridgeBalance.toPlanckString(),
+					decodedToAddress,
+					null
+				);
 
-			updateState({ tx });
-		}
-
-		if (network === "xrpl" && xrplProvider) {
-			const bridgeToken = state.bridgeToken as XrplCurrency;
-
-			let amount: Amount;
-			if (bridgeToken.currency === "XRP") {
-				amount = xrpToDrops(bridgeAmount);
-			} else {
-				amount = {
-					currency: bridgeToken.currency,
-					value: bridgeAmount,
-					issuer: bridgeToken.issuer!,
-				};
+				updateState({ tx });
 			}
 
-			const tx: Payment = {
-				Amount: amount,
-				TransactionType: "Payment",
-				Destination: XRPL_BRIDGE_ADDRESS,
-				Account: xrplProvider.getAccount(),
-				Memos: [
-					{
-						Memo: {
-							MemoType: convertStringToHex("Address"),
-							MemoData: convertStringToHex(state.toAddress),
+			if (network === "xrpl" && xrplProvider) {
+				const bridgeToken = token as XrplCurrency;
+
+				let xrplAmount: Amount;
+				if (bridgeToken.currency === "XRP") {
+					xrplAmount = xrpToDrops(amount);
+				} else {
+					xrplAmount = {
+						currency: bridgeToken.currency,
+						value: amount,
+						issuer: bridgeToken.issuer!,
+					};
+				}
+
+				const tx: Payment = {
+					Amount: xrplAmount,
+					TransactionType: "Payment",
+					Destination: XRPL_BRIDGE_ADDRESS,
+					Account: xrplProvider.getAccount(),
+					Memos: [
+						{
+							Memo: {
+								MemoType: convertStringToHex("Address"),
+								MemoData: convertStringToHex(toAddress),
+							},
 						},
-					},
-				],
-			};
+					],
+				};
 
-			updateState({ tx });
-		}
-	}, [trnApi, state, xrplProvider, network, bridgeAmount]);
-
-	const setAmount = useCallback(
-		(amount: string) => {
-			setBridgeAmount(amount);
-
-			buildTransaction();
+				updateState({ tx });
+			}
 		},
-		[setBridgeAmount, buildTransaction]
+		[trnApi, xrplProvider, network]
 	);
 
 	const signRootTransaction = useCallback(async () => {
@@ -222,8 +216,9 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 						}
 					} else if (response.status === "success") {
 						setTag("submitted");
+
 						updateState({
-							explorerUrl: `${XRPL_NETWORK.ExplorerUrl}/transactions/${response.hash}`,
+							explorerUrl: `${getXrplExplorerUrl("Bridge")}/transactions/${response.hash}`,
 						});
 					} else {
 						setTag("failed");
@@ -249,31 +244,98 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		}
 	}, [authenticationMethod?.method, xamanData?.progress, setTag]);
 
-	const isDisabled = useMemo(() => {
-		if (state.tag === "sign") return true;
+	const isDisabled = useMemo(
+		() => !!state.error || isTokenDisabled || !!destinationError || !!state.feeError,
+		[state.error, isTokenDisabled, destinationError, state.feeError]
+	);
 
-		return !!state.error || !!bridgeTokenError;
-	}, [state, bridgeTokenError]);
+	const doSetToken = useCallback(
+		(token?: Token, triggerBuild = true) => {
+			bridgeTokenInput.setToken(token);
+			if (triggerBuild)
+				buildTransaction({ token, amount: bridgeTokenInput.amount, toAddress: destination });
+		},
+		[bridgeTokenInput, destination]
+	);
+
+	const doSetAmount = useCallback(
+		(amount: string, triggerBuild = true) => {
+			bridgeTokenInput.setAmount(amount);
+			if (triggerBuild)
+				buildTransaction({ amount, token: bridgeTokenInput.token, toAddress: destination });
+		},
+		[bridgeTokenInput, destination]
+	);
+
+	const doSetDestination = useCallback(
+		(destination: string, triggerBuild = true) => {
+			setDestination(destination);
+			if (triggerBuild)
+				buildTransaction({
+					toAddress: destination,
+					amount: bridgeTokenInput.amount,
+					token: bridgeTokenInput.token,
+				});
+		},
+		[bridgeTokenInput]
+	);
+
+	// Update the token to correct type on network switch
+	useEffect(() => {
+		if (!bridgeTokenInput.token) return;
+
+		if (network === "xrpl") {
+			if (isXrplCurrency(bridgeTokenInput.token)) return;
+			const token = bridgeTokenInput.token;
+
+			const xrplCurrency = currencies.find(
+				(c) => c.ticker === token.symbol || c.currency === token.symbol
+			);
+
+			return doSetToken(xrplCurrency, false);
+		}
+
+		if (!isXrplCurrency(bridgeTokenInput.token)) return;
+		const token = bridgeTokenInput.token;
+
+		const trnToken = Object.values(tokens).find(
+			(t) => t.symbol === token.ticker || t.symbol === token.currency
+		);
+
+		doSetToken(trnToken, false);
+	}, [network, bridgeTokenInput.token, doSetToken]);
+
+	const error = useMemo(
+		() => destinationError || bridgeTokenInput.tokenError || state.feeError,
+		[destinationError, bridgeTokenInput, state]
+	);
 
 	return (
 		<BridgeContext.Provider
 			value={{
 				resetState,
-				setToken,
 				setTag,
 				setGasToken,
 
 				xamanData,
 				signTransaction,
 
-				isDisabled,
-
 				estimatedFee,
 
-				bridgeAmount,
-				setBridgeAmount,
+				isDisabled,
 
 				...state,
+
+				...bridgeTokenInput,
+
+				destination,
+				setDestination: doSetDestination,
+				destinationError,
+
+				setToken: doSetToken,
+				setAmount: doSetAmount,
+
+				error,
 			}}
 		>
 			{children}

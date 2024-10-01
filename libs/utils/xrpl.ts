@@ -4,6 +4,8 @@ import { isIssuedCurrency } from "xrpl/dist/npm/models/transactions/common";
 import type { XrplCurrency } from "@/libs/types";
 import type { IXrplWalletProvider } from "@/libs/utils";
 
+import { ROOT_NETWORK, XRPL_NETWORK } from "../constants";
+
 export const getRatioAndAmounts = async (
 	provider: IXrplWalletProvider,
 	asset1Currency: XrplCurrency,
@@ -154,4 +156,10 @@ export function getCurrency(currency: XrplCurrency) {
 		currency: currency.currency,
 		...(currency.issuer && { issuer: currency.issuer }),
 	};
+}
+
+export function getXrplExplorerUrl(page: "Bridge" | "Swap") {
+	return ROOT_NETWORK.LinkedXrpChain === "livenet"
+		? (XRPL_NETWORK.ExplorerUrl as string)
+		: (XRPL_NETWORK.ExplorerUrl as { Bridge: string; Swap: string })[page];
 }

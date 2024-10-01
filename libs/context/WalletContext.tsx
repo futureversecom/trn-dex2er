@@ -28,11 +28,15 @@ export type WalletContextType = {
 	address?: string;
 	isConnected: boolean;
 	connect: (xamanWallet?: ProviderName) => void;
+	xrplConnect: (xamanWallet: ProviderName) => Promise<void>;
+	trnLogin: () => void;
 	disconnect: () => Promise<void>;
 	userSession?: UserSession;
 	xrplProvider?: IXrplWalletProvider;
 	isXrplWalletSelectOpen: boolean;
 	setIsXrplWalletSelectOpen: Dispatch<SetStateAction<boolean>>;
+	rAddress?: string;
+	futurepass?: string;
 };
 
 const WalletContext = createContext<WalletContextType>({} as WalletContextType);
@@ -112,6 +116,8 @@ export function WalletProvider({ children }: PropsWithChildren) {
 		window.ethereum?.request({ method: "eth_requestAccounts" });
 	}, [userSession, isTrnConnected]);
 
+	const rAddress = useMemo(() => xrplProvider?.getAccount(), [xrplProvider]);
+
 	return (
 		<WalletContext.Provider
 			value={{
@@ -119,12 +125,16 @@ export function WalletProvider({ children }: PropsWithChildren) {
 				setNetwork,
 				address,
 				connect,
+				xrplConnect,
+				trnLogin,
 				disconnect,
 				isConnected,
 				xrplProvider,
 				userSession: userSession ?? undefined,
 				isXrplWalletSelectOpen,
 				setIsXrplWalletSelectOpen,
+				rAddress,
+				futurepass: userSession?.futurepass,
 			}}
 		>
 			<Modal
@@ -147,7 +157,7 @@ export function useWallets() {
 }
 
 function WalletOption({ name, href }: { name: ProviderName; href?: string }) {
-	const { connect, xrplProvider, disconnect } = useWallets();
+	const { xrplConnect: connect, xrplProvider, disconnect } = useWallets();
 
 	const onClick = useCallback(
 		async (name: ProviderName) => {

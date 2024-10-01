@@ -28,7 +28,9 @@ export function TokenSelect<T extends Token>({
 		if (!filter) return tokens;
 
 		if (isXrpl) {
-			return tokens.filter((token) => token.currency.toLowerCase().includes(filter.toLowerCase()));
+			return tokens.filter(
+				(token) => token.ticker || token.currency.toLowerCase().includes(filter.toLowerCase())
+			);
 		}
 
 		return tokens.filter(
@@ -43,8 +45,9 @@ export function TokenSelect<T extends Token>({
 		(token: T) => {
 			onTokenClick(token);
 			setFilter("");
+			onClose?.();
 		},
-		[onTokenClick]
+		[onTokenClick, onClose]
 	);
 
 	return (
@@ -81,10 +84,10 @@ export function TokenSelect<T extends Token>({
 									key={token.currency}
 									onClick={onRowClick.bind(null, token as T)}
 									items={[
-										<TokenImage symbol={token.currency} size={28} key="token" />,
+										<TokenImage symbol={token.ticker || token.currency} size={28} key="token" />,
 										<div key="symbol">
-											<Text>{token.currency}</Text>
-											<Text className="!text-neutral-500">{token.currency}</Text>
+											<Text>{token.ticker || token.currency}</Text>
+											<Text className="!text-neutral-500">{token.ticker || token.currency}</Text>
 										</div>,
 										<div key="balance" className="flex w-full justify-end">
 											<Text>{tokenBalance}</Text>

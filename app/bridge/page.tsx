@@ -1,6 +1,6 @@
 "use client";
 
-import { TrnBridge, XrplBridge } from "@/libs/components/bridge";
+import { Bridge } from "@/libs/components/bridge";
 import { Buttons } from "@/libs/components/shared";
 import { useWallets } from "@/libs/context";
 
@@ -19,8 +19,7 @@ export default function Home() {
 				}))}
 			/>
 
-			{network === "root" && <TrnBridge />}
-			{network === "xrpl" && <XrplBridge />}
+			<Bridge />
 		</>
 	);
 }

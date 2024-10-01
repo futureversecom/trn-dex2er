@@ -1,2 +1,1 @@
-export * from "./TrnBridge";
-export * from "./XrplBridge";
+export * from "./Bridge";

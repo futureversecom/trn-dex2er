@@ -4,7 +4,7 @@ import type {
 	Balance,
 	BaseRequest,
 	BaseResponse,
-	SubmittableTransaction,
+	Transaction,
 } from "xrpl";
 import type { Xumm } from "xumm";
 
@@ -94,7 +94,7 @@ export class XrplWalletProvider implements IXrplWalletProvider {
 	}
 
 	async signTransaction<TResposne>(
-		tx: SubmittableTransaction,
+		tx: Transaction,
 		callback: (response: TResposne) => void
 	): Promise<void> {
 		this.checkProviderInitialized();
