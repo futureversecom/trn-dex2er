@@ -1,4 +1,5 @@
 import classNames from "@sindresorhus/class-names";
+import Image from "next/image";
 import { useCallback, useMemo } from "react";
 
 import {
@@ -130,6 +131,15 @@ export function Bridge() {
 
 				<AddressInput {...props} />
 
+				<div className="flex space-x-4 rounded bg-neutral-400 p-4">
+					<Image src="/images/info.svg" width={32} height={32} alt="info" />
+
+					<Text size="xs">
+						Bridging from one chain to another involves two steps, which may take approximately 12
+						minutes or more to complete. You can track the progress in the transaction history.
+					</Text>
+				</div>
+
 				{props.error && (
 					<Text className="text-red-300" size="md">
 						{props.error}
@@ -175,7 +185,7 @@ function AddressInput({ destination, setDestination, destinationError: error }: 
 
 	return (
 		<div className="flex space-x-4">
-			<div className="flex h-28 w-full min-w-[50em] flex-col justify-center space-y-2 bg-neutral-400 px-6">
+			<div className="flex h-28 w-full min-w-[50em] flex-col justify-center space-y-2 rounded bg-neutral-400 px-6">
 				<span className="flex items-center justify-between text-sm">
 					<label htmlFor="address-input" className="cursor-pointer text-neutral-700">
 						Destination Address
@@ -193,7 +203,7 @@ function AddressInput({ destination, setDestination, destinationError: error }: 
 					/>
 				</span>
 
-				<Text className={classNames(error && "text-red-300")}>
+				<Text size="xs" className={classNames(error && "text-red-300")}>
 					{error ? error : "This is auto-filled with the wallet you're connected to."}
 				</Text>
 			</div>
