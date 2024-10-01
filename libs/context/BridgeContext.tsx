@@ -305,6 +305,11 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		doSetToken(trnToken, false);
 	}, [network, bridgeTokenInput.token, doSetToken]);
 
+	const error = useMemo(
+		() => destinationError || bridgeTokenInput.tokenError || state.feeError,
+		[destinationError, bridgeTokenInput, state]
+	);
+
 	return (
 		<BridgeContext.Provider
 			value={{
@@ -329,6 +334,8 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 				setToken: doSetToken,
 				setAmount: doSetAmount,
+
+				error,
 			}}
 		>
 			{children}

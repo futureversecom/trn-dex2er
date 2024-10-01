@@ -140,12 +140,6 @@ export function Bridge() {
 					</Text>
 				</div>
 
-				{props.error && (
-					<Text className="text-red-300" size="md">
-						{props.error}
-					</Text>
-				)}
-
 				{tokenSymbol && network === "root" && (
 					<>
 						<div className="flex items-center justify-end px-2">
