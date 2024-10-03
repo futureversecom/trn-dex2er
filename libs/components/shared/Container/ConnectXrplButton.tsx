@@ -1,4 +1,5 @@
 import { useWallets } from "@/libs/context";
+import { shortenAddress } from "@/libs/utils";
 
 import { Blockie, Button, Text } from "../";
 
@@ -28,7 +29,7 @@ export function ConnectXrplButton() {
 				className="hover:bg-transparent"
 				onClick={() => setIsXrplWalletSelectOpen((prev) => !prev)}
 			>
-				<Text variant="heading">{address.slice(0, 5).concat("...").concat(address.slice(-5))}</Text>
+				<Text variant="heading">{shortenAddress(address)}</Text>
 			</Button>
 		</div>
 	);

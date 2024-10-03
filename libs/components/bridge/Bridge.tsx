@@ -161,9 +161,9 @@ export function Bridge() {
 				)}
 
 				<ActionButton text={buttonText} disabled={isDisabled} onClick={onButtonClick} />
-			</Box>
 
-			<TxHistory />
+				<TxHistory />
+			</Box>
 		</>
 	);
 }

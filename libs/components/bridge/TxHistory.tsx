@@ -1,11 +1,13 @@
+import classNames from "@sindresorhus/class-names";
 import { utils as ethers } from "ethers";
 import { useMemo } from "react";
 import { dropsToXrp } from "xrpl";
 
+import { Hyperlink, TableRow, Text, TokenImage } from "@/libs/components/shared";
 import { ROOT_NETWORK } from "@/libs/constants";
 import { useWallets, useXrplCurrencies } from "@/libs/context";
 import { useBridgeHistory } from "@/libs/hooks";
-import { formatRootscanId, formatTime, getXrplExplorerUrl } from "@/libs/utils";
+import { formatRootscanId, formatTime, getXrplExplorerUrl, shortenAddress } from "@/libs/utils";
 
 const statusMap = {
 	Processing: "Processing",
@@ -62,18 +64,68 @@ export function TxHistory() {
 				amount,
 				explorerLink,
 				date: formatTime(tx.createdAt),
+				token: typeof amount === "string" ? "XRP" : amount.currency,
 			};
 		});
 	}, [history, network, currencies]);
 
 	return (
-		<div>
-			{transactions &&
-				transactions.map((tx, i) => (
-					<pre key={i}>
-						<code>{JSON.stringify(tx, null, 2)}</code>
-					</pre>
-				))}
+		<div className="pt-6">
+			<Text variant="heading" className="flex justify-center" size="xl">
+				Transaction History
+			</Text>
+			{!transactions ? (
+				<Text className="flex justify-center">
+					This is where your transaction history will appear.
+				</Text>
+			) : (
+				<div className="flex flex-col space-y-2 pt-4">
+					{transactions.map((tx, i) => (
+						<Hyperlink
+							href={tx.explorerLink}
+							key={i}
+							target="_blank"
+							className="flex justify-center"
+						>
+							<TableRow
+								className="[&>div]:flex [&>div]:min-w-[8em] [&>div]:flex-col [&>div]:items-center"
+								items={[
+									<div key="token" className="space-y-2">
+										<TokenImage symbol={tx.token as string} size={28} />
+										<Text className="!text-neutral-500">{tx.token}</Text>
+									</div>,
+									<div key="amount" className="space-y-2">
+										<Text>{typeof tx.amount === "string" ? tx.amount : tx.amount.value}</Text>
+										<Text className="!text-neutral-500">Amount</Text>
+									</div>,
+									<div key="from" className="space-y-2">
+										<Text>{shortenAddress(tx.from)}</Text>
+										<Text className="!text-neutral-500">From</Text>
+									</div>,
+									<div key="to" className="space-y-2">
+										<Text>{shortenAddress(tx.to)}</Text>
+										<Text className="!text-neutral-500">To</Text>
+									</div>,
+									<div key="status" className="space-y-2">
+										<Text
+											className={classNames(
+												{
+													Success: "!text-green-400",
+													Processing: "!text-yellow-400",
+													Failed: "!text-red-400",
+												}[tx.status]
+											)}
+										>
+											{tx.status}
+										</Text>
+										<Text className="!text-neutral-500">Status</Text>
+									</div>,
+								]}
+							/>
+						</Hyperlink>
+					))}
+				</div>
+			)}
 		</div>
 	);
 }

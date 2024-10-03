@@ -4,6 +4,7 @@ import { useAuthenticationMethod } from "@futureverse/react";
 import { useState } from "react";
 
 import { useWallets } from "@/libs/context";
+import { shortenAddress } from "@/libs/utils";
 
 import { Blockie, Button, Text } from "../";
 
@@ -47,9 +48,7 @@ export function ConnectTrnButton() {
 					className="hover:bg-transparent"
 					onClick={() => setIsWalletOpen((prev) => !prev)}
 				>
-					<Text variant="heading">
-						{address.slice(0, 5).concat("...").concat(address.slice(-5))}
-					</Text>
+					<Text variant="heading">{shortenAddress(address)}</Text>
 				</Button>
 			</div>
 		</>
