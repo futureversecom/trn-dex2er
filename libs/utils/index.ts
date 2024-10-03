@@ -15,3 +15,4 @@ export * from "./XrplWalletProvider";
 export * from "./xrplCurrencies";
 export * from "./isXrplCurrency";
 export * from "./xrpl";
+export * from "./toDollarValue";

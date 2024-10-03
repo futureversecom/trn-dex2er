@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { ROOT_NETWORK, XRPL_BRIDGE_TOKENS } from "../constants";
 import { useTrnTokens, useWallets, useXrplCurrencies } from "../context";
 import { Token, TrnToken, TrnTokens, XrplCurrency } from "../types";
-import { Balance, isXrplCurrency } from "../utils";
+import { Balance, isXrplCurrency, toDollarValue } from "../utils";
 import { useAmountInput } from "./useAmountInput";
 
 export type BridgeTokenInput = {
@@ -71,7 +71,7 @@ export function useBridgeTokenInput(): BridgeTokenInput {
 	const tokenUSD = useMemo(() => {
 		if (!amount || !token?.priceInUSD) return;
 
-		return token.priceInUSD * +amount;
+		return toDollarValue(token.priceInUSD * +amount);
 	}, [amount, token?.priceInUSD]);
 
 	return {

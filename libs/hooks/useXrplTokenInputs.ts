@@ -3,6 +3,7 @@ import { type Dispatch, type SetStateAction, useCallback, useMemo, useState } fr
 
 import { useXrplCurrencies } from "../context";
 import type { IsTokenOpen, TokenSource, XrplCurrency } from "../types";
+import { toDollarValue } from "../utils";
 import { useAmountInput } from "./useAmountInput";
 
 export interface XrplTokenInputs {
@@ -120,19 +121,19 @@ export function useXrplTokenInputs<T extends XrplTokenInputState>(
 	const xTokenUSD = useMemo(() => {
 		if (!xAmount || !state.xToken?.priceInUSD) return;
 
-		return state.xToken.priceInUSD * +xAmount;
+		return toDollarValue(state.xToken.priceInUSD * +xAmount);
 	}, [xAmount, state.xToken]);
 
 	const yTokenUSD = useMemo(() => {
 		if (!yAmount || !state.yToken?.priceInUSD) return;
 
-		return state.yToken.priceInUSD * +yAmount;
+		return toDollarValue(state.yToken.priceInUSD * +yAmount);
 	}, [yAmount, state.yToken]);
 
 	const priceDifference = useMemo(() => {
 		if (!xTokenUSD || !yTokenUSD) return;
 
-		return ((yTokenUSD - xTokenUSD) / xTokenUSD) * 100;
+		return toDollarValue(((yTokenUSD - xTokenUSD) / xTokenUSD) * 100);
 	}, [xTokenUSD, yTokenUSD]);
 
 	return {
