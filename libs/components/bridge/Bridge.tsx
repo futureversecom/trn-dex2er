@@ -49,6 +49,12 @@ export function Bridge() {
 		props.setTag("review");
 	}, [rAddress, futurepass]);
 
+	const isDisabled = useMemo(() => {
+		if (!rAddress || !futurepass) return false;
+
+		return props.isDisabled;
+	}, [props.isDisabled, rAddress, futurepass]);
+
 	return (
 		<>
 			<TokenSelect
@@ -152,7 +158,7 @@ export function Bridge() {
 					</>
 				)}
 
-				<ActionButton text={buttonText} disabled={props.isDisabled} onClick={onButtonClick} />
+				<ActionButton text={buttonText} disabled={isDisabled} onClick={onButtonClick} />
 			</Box>
 		</>
 	);
