@@ -76,3 +76,18 @@ export type XrplBalance = CurrencyBalance & {
 export type IsTokenOpen = "xToken" | "yToken" | false;
 
 export type Token = TrnToken | XrplCurrency;
+
+export type XrplBridgeTransaction = {
+	from: string;
+	to: string;
+	sender?: string;
+	status: string;
+	createdAt: string;
+	updatedAt: string;
+	extrinsicId: string;
+	xrplHash: string;
+	xrpValue: {
+		amount: string;
+		tokenName: string;
+	};
+};

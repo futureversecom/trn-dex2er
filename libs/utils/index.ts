@@ -16,3 +16,4 @@ export * from "./xrplCurrencies";
 export * from "./isXrplCurrency";
 export * from "./xrpl";
 export * from "./toDollarValue";
+export * from "./formatTime";

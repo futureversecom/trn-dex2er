@@ -2,20 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { useWallets } from "../context";
-
-export type XrplBridgeTransaction = {
-	from: string;
-	to: string;
-	status: string;
-	createdAt: string;
-	updatedAt: string;
-	extrinsicId: string;
-	xrplHash: string;
-	xrpValue: {
-		amount: string;
-		tokenName: string;
-	};
-};
+import { XrplBridgeTransaction } from "../types";
 
 export function useBridgeHistory() {
 	const { network, rAddress, futurepass } = useWallets();
