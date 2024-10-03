@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { useTrnTokens, useXrplCurrencies } from "../context";
+import { useTrnTokens, useWallets, useXrplCurrencies } from "../context";
 import type { Token } from "../types";
 import { isXrplCurrency } from "../utils";
 
@@ -8,6 +8,7 @@ export function useAmountInput(token?: Token) {
 	const [amount, setAmount] = useState("");
 	const [error, setError] = useState<string>();
 
+	const { network } = useWallets();
 	const { getTokenBalance } = useTrnTokens();
 	const { getBalance } = useXrplCurrencies();
 
@@ -44,7 +45,7 @@ export function useAmountInput(token?: Token) {
 		if (isInsufficientBalance) maybeError = "Insufficient balance";
 
 		setError(maybeError);
-	}, [amount, token, getTokenBalance, getBalance]);
+	}, [amount, token, getTokenBalance, getBalance, network]);
 
 	return { amount, setAmount: updateAmount, error };
 }
