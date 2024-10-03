@@ -90,3 +90,7 @@ export const NETWORK_FEE_RATE = parseFloat(process.env.NEXT_PUBLIC_NETWORK_FEE_R
 export const EXCHANGE_RATE = parseFloat(process.env.NEXT_PUBLIC_EXCHANGE_RATE ?? "0.3");
 
 export const XRPL_BRIDGE_TOKENS = (process.env.NEXT_PUBLIC_XRPL_BRIDGE_TOKENS ?? "").split(",");
+
+export const MONGO_API_URL = process.env.MONGO_API_URL ?? "";
+
+export const MONGO_API_KEY = process.env.MONGO_API_KEY ?? "";

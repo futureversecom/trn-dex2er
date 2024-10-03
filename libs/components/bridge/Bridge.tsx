@@ -19,6 +19,8 @@ import { type BridgeContextType, useBridge, useWallets } from "@/libs/context";
 import type { TrnToken, XrplCurrency } from "@/libs/types";
 import { Balance, isXrplCurrency } from "@/libs/utils";
 
+import { TxHistory } from "./TxHistory";
+
 export function Bridge() {
 	const { network, rAddress, futurepass, setIsXrplWalletSelectOpen, trnLogin } = useWallets();
 
@@ -160,6 +162,8 @@ export function Bridge() {
 
 				<ActionButton text={buttonText} disabled={isDisabled} onClick={onButtonClick} />
 			</Box>
+
+			<TxHistory />
 		</>
 	);
 }
