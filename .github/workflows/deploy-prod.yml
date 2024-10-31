@@ -1,0 +1,81 @@
+name: Deploy | PROD
+run-name: Deploy to `${{ github.event.inputs.branch }}` by @${{ github.actor }}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.inputs.branch }}
+  cancel-in-progress: true
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        type: choice
+        required: true
+        description: Select a PROD branch
+        options: ["", "prod/mainnet"]
+      commitSHA:
+        type: string
+        required: false
+        description: "And input a valid commit SHA (40 chars string) to reset the PROD branch to \n(Optional: defaults to latest commit if empty)"
+      token:
+        type: string
+        description: Deploy token, generate one with `repo` permission
+        required: true
+jobs:
+  deploy_prod_head:
+    if: github.event.inputs.commitSHA == ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout and fetch main branch
+        uses: actions/checkout@v3
+        with:
+          token: ${{github.event.inputs.token}}
+          ref: ${{github.event.repository.default_branch}}
+
+      - name: Get the commit message
+        id: step2
+        run: |
+          MSG=$(git log -1 --pretty=format:%s)
+          echo "COMMIT_MESSAGE=${MSG}" >> $GITHUB_OUTPUT
+
+      - name: Check if commit message starts with `Release v`
+        run: |
+          echo "commit message: ${{steps.step2.outputs.COMMIT_MESSAGE}}"
+          [[ "${{steps.step2.outputs.COMMIT_MESSAGE}}" = "Release v"* ]] && exit 0
+
+      - name: Run the deployment using latest commit from default branch
+        run: |
+          echo "Using default branch: ${{github.event.repository.default_branch}}"
+          git fetch
+          git checkout ${{github.event.inputs.branch}}
+          git reset --hard ${{github.event.repository.default_branch}}
+          git push origin ${{github.event.inputs.branch}} --force-with-lease
+
+  deploy_prod_sha:
+    if: github.event.inputs.commitSHA != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout and fetch using provided commit SHA
+        uses: actions/checkout@v3
+        with:
+          token: ${{github.event.inputs.token}}
+          ref: ${{github.event.inputs.commitSHA}}
+
+      - name: Get the commit message
+        id: step2
+        run: |
+          SHA="${{github.event.inputs.commitSHA}}"
+          MSG=$(git log -1 --pretty=format:%s $SHA)
+          echo "COMMIT_MESSAGE=${MSG}" >> $GITHUB_OUTPUT
+
+      - name: Check if commit message starts with `Release v`
+        run: |
+          echo "commit message: ${{steps.step2.outputs.COMMIT_MESSAGE}}"
+          [[ "${{steps.step2.outputs.COMMIT_MESSAGE}}" = "Release v"* ]] && exit 0
+
+      - name: Run the deployment using provided commit SHA
+        run: |
+          echo "Using commit #: ${{github.event.inputs.commitSHA}}"
+          git fetch
+          git checkout ${{github.event.inputs.branch}}
+          git reset --hard ${{github.event.inputs.commitSHA}}
+          git push origin ${{github.event.inputs.branch}} --force-with-lease
+

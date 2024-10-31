@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://p.typekit.net/p.css?s=1&k=ygs5yid&ht=tk&f=52398&a=83148016&app=typekit&e=css");
+
+@font-face {
+	font-family: "mikrobe-variable";
+	src:
+		url("https://use.typekit.net/af/a59bfe/0000000000000000774cf86f/30/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
+			format("woff2"),
+		url("https://use.typekit.net/af/a59bfe/0000000000000000774cf86f/30/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
+			format("woff"),
+		url("https://use.typekit.net/af/a59bfe/0000000000000000774cf86f/30/a?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
+			format("opentype");
+	font-display: auto;
+	font-style: normal;
+	font-weight: 400;
+	font-stretch: normal;
+}
+
+.tk-mikrobe-variable {
+	font-family: "mikrobe-variable", sans-serif;
+}
+
+:root {
+	--foreground-rgb: 0, 0, 0;
+	--background-start-rgb: 214, 219, 220;
+	--background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--foreground-rgb: 255, 255, 255;
+		--background-start-rgb: 0, 0, 0;
+		--background-end-rgb: 0, 0, 0;
+	}
+}
+
+html,
+body {
+	max-width: 100vw;
+	overflow-x: hidden;
+	color-scheme: dark;
+}
+
+body {
+	width: 100%;
+
+	color: rgb(var(--foreground-rgb));
+	background: linear-gradient(to bottom, transparent, rgb(var(--background-end-rgb)))
+		rgb(var(--background-start-rgb));
+
+	background-color: #1d1e20;
+	background-image: url("/images/background.svg");
+	background-repeat: no-repeat;
+	background-size: cover;
+}
+
+@layer utilities {
+	.text-balance {
+		text-wrap: balance;
+	}
+}
+
+.font-mikrobe {
+	font-family: "mikrobe-variable", sans-serif;
+	font-variation-settings: "wdth" 125;
+
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	font-weight: 400;
+}

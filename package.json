@@ -1,0 +1,70 @@
+{
+  "name": "trn-dex2er",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": "18"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "prettier --config .prettierrc.js --check . && next lint",
+    "format": "prettier --config .prettierrc.js --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@crossmarkio/sdk": "^0.4.0",
+    "@download/blockies": "^1.0.3",
+    "@futureverse/component-library": "^0.2.4",
+    "@futureverse/experience-sdk": "^1.4.0",
+    "@futureverse/react": "^1.12.0",
+    "@headlessui/react": "^2.1.2",
+    "@polkadot/util": "12.6.2",
+    "@sinclair/typebox": "^0.33.7",
+    "@sindresorhus/class-names": "^2.0.0",
+    "@tanstack/react-query": "^5.51.21",
+    "@therootnetwork/api": "^1.0.9",
+    "bignumber.js": "^9.1.2",
+    "dayjs": "^1.11.13",
+    "ethers": "5.7.2",
+    "lottie-react": "^2.4.0",
+    "next": "14.2.5",
+    "rc-slider": "^11.1.5",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-tooltip": "^5.28.0",
+    "react-use-pagination": "^2.0.1",
+    "wagmi": "^0.12.16",
+    "xrpl": "^2.14.0"
+  },
+  "devDependencies": {
+    "@polkadot/api": "10.9.1",
+    "@polkadot/types": "10.9.1",
+    "@polkadot/types-codec": "10.9.1",
+    "@svgr/webpack": "^8.1.0",
+    "@tailwindcss/typography": "^0.5.13",
+    "@therootnetwork/api-types": "1.0.4-next.0",
+    "@trivago/prettier-plugin-sort-imports": "^4.3.0",
+    "@types/lodash": "^4.17.7",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "core-js": "^3.38.0",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.5",
+    "pino-pretty": "^11.2.2",
+    "postcss": "^8",
+    "prettier": "^3.3.3",
+    "prettier-plugin-tailwindcss": "^0.6.5",
+    "tailwind-merge": "^2.4.0",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5",
+    "xumm": "^1.7.7",
+    "xumm-oauth2-pkce": "^2.8.5"
+  },
+  "resolutions": {
+    "@therootnetwork/api-types": "1.0.4-next.0"
+  },
+  "packageManager": "pnpm@9.6.0+sha512.38dc6fba8dba35b39340b9700112c2fe1e12f10b17134715a4aa98ccf7bb035e76fd981cf0bb384dfa98f8d6af5481c2bef2f4266a24bfa20c34eb7147ce0b5e"
+}
