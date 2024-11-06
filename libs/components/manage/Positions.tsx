@@ -1,64 +1,23 @@
-import type { BigNumber } from "bignumber.js";
-import { useMemo } from "react";
 import { usePagination } from "react-use-pagination";
 
 import { LPTokens, Pagination, TableRow, Text } from "@/libs/components/shared";
 import { useManagePool, useTrnTokens } from "@/libs/context";
-import type { TrnToken, TrnTokens } from "@/libs/types";
-import { type Balance, toFixed } from "@/libs/utils";
-
-interface Position {
-	assetId: number;
-	xToken: TrnToken;
-	yToken: TrnToken;
-	lpBalance: Balance<TrnToken>;
-	poolShare: BigNumber;
-}
+import { toFixed } from "@/libs/utils";
 
 export function Positions() {
+	const { position } = useTrnTokens();
 	const { onPoolClick } = useManagePool();
-	const { pools, tokens, getTokenBalance } = useTrnTokens();
-
-	const positions = useMemo(() => {
-		if (!pools || !tokens) return null;
-
-		return pools
-			.sort((a, b) => (a.assetId > b.assetId ? 1 : -1))
-			.map((pool) => {
-				const lpToken = findToken(pool.assetId, tokens);
-				const lpBalance = getTokenBalance(lpToken);
-
-				if (!lpToken || !lpBalance || lpBalance.eq(0)) return null;
-
-				const [xAssetId, yAssetId] = pool.poolKey.split("-").map(Number);
-				const xToken = findToken(xAssetId, tokens);
-				const yToken = findToken(yAssetId, tokens);
-
-				if (!xToken || !yToken) return null;
-
-				const poolShare = lpBalance.div(lpToken.supply).multipliedBy(100);
-
-				return {
-					assetId: pool.assetId,
-					xToken,
-					yToken,
-					lpBalance,
-					poolShare,
-				};
-			})
-			.filter((pool): pool is Position => !!pool);
-	}, [pools, tokens, getTokenBalance]);
 
 	const { startIndex, endIndex, ...paginationProps } = usePagination({
-		totalItems: positions?.length ?? 0,
+		totalItems: position?.length ?? 0,
 		initialPageSize: 5,
 	});
 
-	if (!positions?.length) return null;
+	if (!position?.length) return null;
 
 	return (
 		<>
-			{positions.slice(startIndex, endIndex + 1).map((pool) => (
+			{position.slice(startIndex, endIndex + 1).map((pool) => (
 				<TableRow
 					key={pool.assetId}
 					onClick={onPoolClick.bind(null, pool.xToken, pool.yToken)}
@@ -80,8 +39,4 @@ export function Positions() {
 			<Pagination {...paginationProps} />
 		</>
 	);
-}
-
-function findToken(assetId: number, tokens: TrnTokens): TrnToken | undefined {
-	return Object.values(tokens).find((token) => token.assetId === assetId);
 }

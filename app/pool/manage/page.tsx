@@ -1,7 +1,7 @@
 "use client";
 
 import { Manage, Positions } from "@/libs/components/manage";
-import { BackButton, Box, Text } from "@/libs/components/shared";
+import { BackButton, Box, Text, YourPosition } from "@/libs/components/shared";
 import { useManagePool, useTrnTokens, useWallets } from "@/libs/context";
 
 export default function Home() {
@@ -29,7 +29,10 @@ export default function Home() {
 	return (
 		<div className="relative">
 			<BackButton onClick={resetState} />
-			<Manage />
+			<div className="flex gap-x-4">
+				<Manage />
+				<YourPosition />
+			</div>
 		</div>
 	);
 }
