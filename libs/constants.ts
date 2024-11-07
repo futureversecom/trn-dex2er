@@ -15,7 +15,7 @@ export const ROOT_NETWORK = {
 			InHex: `0x${Number(7672).toString(16)}`,
 		},
 		ApiUrl: {
-			InWebSocket: "wss://porcini.au.rootnet.app/ws",
+			InWebSocket: process.env.NEXT_PUBLIC_CHAIN_RPC_ENDPOINT ?? "wss://porcini.rootnet.app/ws",
 		},
 		LinkedEthChain: "sepolia",
 		LinkedXrpChain: "testnet",
@@ -32,7 +32,7 @@ export const ROOT_NETWORK = {
 			InHex: `0x${Number(7668).toString(16)}`,
 		},
 		ApiUrl: {
-			InWebSocket: "wss://root.au.rootnet.live/ws",
+			InWebSocket: process.env.NEXT_PUBLIC_CHAIN_RPC_ENDPOINT ?? "wss://root.rootnet.live/ws",
 		},
 		LinkedEthChain: "homestead",
 		LinkedXrpChain: "livenet",
