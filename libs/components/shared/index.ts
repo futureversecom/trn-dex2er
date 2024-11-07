@@ -27,3 +27,4 @@ export * from "./ConfirmModal";
 export * from "./InfoItem";
 export * from "./Ratio";
 export * from "./QrModal";
+export * from "./YourPosition";

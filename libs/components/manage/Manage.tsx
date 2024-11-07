@@ -92,7 +92,23 @@ export function Manage() {
 				</ConfirmModal>
 			)}
 
-			<Box heading={heading} className="relative">
+			<Box heading={"I WOULD LIKE TO"} className="relative">
+				<div className="flex space-x-4">
+					<Button
+						variant={props.action === "add" ? "primary" : "secondary"}
+						size="rounded"
+						onClick={props.onSwitchClick}
+					>
+						+ Add Liquidity
+					</Button>
+					<Button
+						variant={props.action === "add" ? "secondary" : "primary"}
+						size="rounded"
+						onClick={props.onSwitchClick}
+					>
+						- Remove Liquidity
+					</Button>
+				</div>
 				<div className="pb-8">
 					{props.action === "add" ? (
 						<Text>
@@ -107,14 +123,6 @@ export function Manage() {
 							accrued will be included in the amounts you receive.
 						</Text>
 					)}
-				</div>
-
-				<div className="absolute right-0 top-36 flex w-full justify-center">
-					<Button variant="tertiary" size="rounded" onClick={props.onSwitchClick}>
-						<svg width="16" height="16">
-							<use xlinkHref="/images/commons.svg#switch" />
-						</svg>
-					</Button>
 				</div>
 
 				<AmountInputs

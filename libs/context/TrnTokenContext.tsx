@@ -1,4 +1,5 @@
 import type { VoidFn } from "@polkadot/api/types";
+import type { BigNumber } from "bignumber.js";
 import { createContext, type PropsWithChildren, useCallback, useContext, useMemo } from "react";
 
 import { Balance } from "@/libs/utils";
@@ -7,6 +8,14 @@ import { useFetchTrnPools, useTrnBalanceSubscription } from "../hooks";
 import type { LiquidityPools, TrnToken, TrnTokens } from "../types";
 import { useUsdPrices } from "./UsdPriceContext";
 
+export interface Position {
+	assetId: number;
+	xToken: TrnToken;
+	yToken: TrnToken;
+	lpBalance: Balance<TrnToken>;
+	poolShare: BigNumber;
+}
+
 export type TrnTokenContextType = {
 	tokens: TrnTokens;
 	pools: LiquidityPools;
@@ -14,6 +23,7 @@ export type TrnTokenContextType = {
 	tokenBalances: Record<number, Balance<TrnToken>>;
 	refetchTokenBalances: () => Promise<VoidFn | undefined>;
 	getTokenBalance: (token?: TrnToken) => Balance<TrnToken> | undefined;
+	position: Position[];
 };
 
 const TrnTokenContext = createContext<TrnTokenContextType>({} as TrnTokenContextType);
@@ -57,6 +67,40 @@ export function TrnTokenProvider({ tokens, children }: TrnTokenProviderProps) {
 
 	const { data: pools, isFetching: isFetchingPools } = useFetchTrnPools(tokensWithPrices);
 
+	const positions = useMemo(() => {
+		if (!pools || !tokens) return null;
+
+		const findToken = (assetId: number, tokens: TrnTokens): TrnToken | undefined => {
+			return Object.values(tokens).find((token) => token.assetId === assetId);
+		};
+
+		return pools
+			.sort((a, b) => (a.assetId > b.assetId ? 1 : -1))
+			.map((pool) => {
+				const lpToken = findToken(pool.assetId, tokens);
+				const lpBalance = getTokenBalance(lpToken);
+
+				if (!lpToken || !lpBalance || lpBalance.eq(0)) return null;
+
+				const [xAssetId, yAssetId] = pool.poolKey.split("-").map(Number);
+				const xToken = findToken(xAssetId, tokens);
+				const yToken = findToken(yAssetId, tokens);
+
+				if (!xToken || !yToken) return null;
+
+				const poolShare = lpBalance.div(lpToken.supply).multipliedBy(100);
+
+				return {
+					assetId: pool.assetId,
+					xToken,
+					yToken,
+					lpBalance,
+					poolShare,
+				};
+			})
+			.filter((pool): pool is Position => !!pool);
+	}, [pools, tokens, getTokenBalance]);
+
 	return (
 		<TrnTokenContext.Provider
 			value={{
@@ -66,6 +110,7 @@ export function TrnTokenProvider({ tokens, children }: TrnTokenProviderProps) {
 				pools: pools ?? [],
 				tokens: tokensWithPrices ?? tokens,
 				isFetching: isFetchingPools,
+				position: positions ?? [],
 			}}
 		>
 			{children}
