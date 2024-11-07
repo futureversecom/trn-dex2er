@@ -25,7 +25,7 @@ export function Box({
 
 				{isLoading && <Loader />}
 			</div>
-			<div className="space-y-4">{children}</div>
+			<div className="relative space-y-4">{children}</div>
 		</div>
 	);
 }
