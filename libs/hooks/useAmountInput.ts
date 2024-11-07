@@ -13,7 +13,10 @@ export function useAmountInput(token?: Token) {
 	const { getBalance } = useXrplCurrencies();
 
 	const limitDecimalsRegExp = useMemo(() => {
-		return new RegExp(String.raw`^(?:[1-9]\d*|0)?(?:\.\d{1,${token?.decimals ?? 6}}|\.)?`, "g");
+		return new RegExp(
+			String.raw`^(?:[1-9]\d*|0)?(?:\.\d{1,${token?.decimals ? (token?.decimals > 0 ? token.decimals : 1) : 6}}|\.)?`,
+			"g"
+		);
 	}, [token?.decimals]);
 
 	const updateAmount = useCallback(

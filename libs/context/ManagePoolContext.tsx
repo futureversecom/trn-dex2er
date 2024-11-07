@@ -261,7 +261,6 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 
 	const isDisabled = useMemo(() => {
 		if (state.tag === "sign") return true;
-		if (state.action === "remove") return false;
 
 		return isTokenDisabled || !!state.error;
 	}, [state, isTokenDisabled]);
