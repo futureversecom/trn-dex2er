@@ -16,11 +16,6 @@ export function YourPosition() {
 		(p) => p.xToken === props.xToken && p.yToken === props.yToken
 	);
 
-	const balanceX =
-		props.xToken && toHuman(props.poolBalances?.x.balance.toUnit().toString() ?? 0, props.xToken);
-	const balanceY =
-		props.yToken && toHuman(props.poolBalances?.y.balance.toUnit().toString() ?? 0, props.yToken);
-
 	return (
 		<div className="h-[16em] w-[25em] rounded-2xl bg-neutral-200 p-8">
 			<div className="grid grid-cols-2 gap-4">
@@ -40,12 +35,12 @@ export function YourPosition() {
 
 				<Text>{xSymbol}</Text>
 				<p className="text-right">
-					{balanceX && (+balanceX < 1 ? toFixed(+balanceX, 4) : balanceX)}
+					{props.poolBalances && toFixed(props.poolBalances.x.balance.toUnit().toNumber(), 4)}
 				</p>
 
 				<Text>{ySymbol}</Text>
 				<p className="text-right">
-					{balanceY && (+balanceY < 1 ? toFixed(+balanceY, 4) : balanceY)}
+					{props.poolBalances && toFixed(props.poolBalances?.y.balance.toUnit().toNumber(), 4)}
 				</p>
 			</div>
 		</div>
