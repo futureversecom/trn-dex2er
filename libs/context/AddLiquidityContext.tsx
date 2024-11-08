@@ -301,6 +301,9 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 			updateState({
 				explorerUrl: `${ROOT_NETWORK.ExplorerUrl}/extrinsic/${formatRootscanId(res.extrinsicId)}`,
 			});
+
+			setXAmount("");
+			setYAmount("");
 		} catch (err: any) {
 			setTag("failed");
 			updateState({
