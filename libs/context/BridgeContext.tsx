@@ -201,6 +201,8 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 			updateState({
 				explorerUrl: `${ROOT_NETWORK.ExplorerUrl}/extrinsic/${formatRootscanId(res.extrinsicId)}`,
 			});
+
+			bridgeTokenInput.setAmount("");
 		} catch (err: any) {
 			setTag("failed");
 			updateState({
@@ -231,6 +233,8 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 							explorerUrl: `${getXrplExplorerUrl("Bridge")}/transactions/${response.hash}`,
 						});
 						refetchXrplBalances();
+
+						bridgeTokenInput.setAmount("");
 					} else {
 						setTag("failed");
 					}

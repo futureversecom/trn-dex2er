@@ -230,6 +230,9 @@ export function XrplSwapProvider({ children }: PropsWithChildren) {
 					updateState({
 						explorerUrl: `${getXrplExplorerUrl("Swap")}/transactions/${response.hash}`,
 					});
+
+					setXAmount("");
+					setYAmount("");
 				} else {
 					setTag("failed");
 				}
