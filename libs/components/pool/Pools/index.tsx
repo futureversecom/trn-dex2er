@@ -9,11 +9,7 @@ import { LPTokens, Pagination, TableRow, Text } from "../../shared";
 import { Liquidity } from "./Liquidity";
 import { TokenBalance } from "./TokenBalance";
 
-interface PoolsProps {
-	onPoolClick: (xToken: TrnToken, yToken: TrnToken) => void;
-}
-
-export function Pools({ onPoolClick }: PoolsProps) {
+export function Pools() {
 	const { pools, tokens } = useTrnTokens();
 
 	const validPools = useMemo(() => {
@@ -57,7 +53,6 @@ export function Pools({ onPoolClick }: PoolsProps) {
 						return (
 							<TableRow
 								key={pool.poolKey}
-								onClick={() => onPoolClick(token1, token2)}
 								className="[&>div]:flex [&>div]:min-w-[12em] [&>div]:flex-col [&>div]:items-center"
 								items={[
 									<LPTokens tokens={[token1.symbol, token2.symbol]} key="LP Tokens" />,
