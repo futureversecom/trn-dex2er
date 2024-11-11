@@ -37,8 +37,6 @@ export function Pools() {
 
 	return (
 		<>
-			<Text>To add liquidity, select a pool below.</Text>
-
 			{!!validPools?.length && (
 				<div>
 					{validPools.slice(startIndex, endIndex + 1).map((pool) => {
