@@ -4,9 +4,11 @@ import { useTokenSymbols } from "@/libs/hooks";
 import type { Token, TokenSource, TrnToken } from "@/libs/types";
 import { Balance } from "@/libs/utils";
 
-import { AmountInput, Button, TokenImage } from "./";
+import { AmountInput, Button, SelectedToken, TokenImage } from "./";
 
 interface AmountInputsProps {
+	tokenSelectEnabled?: boolean;
+
 	xToken?: Token;
 	yToken?: Token;
 
@@ -31,6 +33,8 @@ interface AmountInputsProps {
 }
 
 export function AmountInputs({
+	tokenSelectEnabled = true,
+
 	xToken,
 	yToken,
 
@@ -87,16 +91,27 @@ export function AmountInputs({
 						max
 					</Button>
 				)}
-				<Button
-					chevron
-					size="sm"
-					onClick={() => setIsOpen("xToken")}
-					variant={xToken ? "secondary" : "primary"}
-					className={classNames(xToken && "text-neutral-700")}
-					icon={xSymbol ? <TokenImage symbol={xSymbol} /> : undefined}
-				>
-					{xSymbol ? xSymbol : "select token"}
-				</Button>
+				{tokenSelectEnabled ? (
+					<Button
+						chevron
+						size="sm"
+						onClick={() => setIsOpen("xToken")}
+						variant={xToken ? "secondary" : "primary"}
+						className={classNames(xToken && "text-neutral-700")}
+						icon={xSymbol ? <TokenImage symbol={xSymbol} /> : undefined}
+					>
+						{xSymbol ? xSymbol : "select token"}
+					</Button>
+				) : (
+					<SelectedToken
+						size="sm"
+						variant={xToken ? "secondary" : "primary"}
+						className={classNames(xToken && "text-neutral-700")}
+						icon={xSymbol ? <TokenImage symbol={xSymbol} /> : undefined}
+					>
+						{xSymbol ? xSymbol : "token"}
+					</SelectedToken>
+				)}
 			</AmountInput>
 
 			{between
@@ -129,16 +144,27 @@ export function AmountInputs({
 						max
 					</Button>
 				)}
-				<Button
-					chevron
-					size="sm"
-					onClick={() => setIsOpen("yToken")}
-					variant={yToken ? "secondary" : "primary"}
-					className={classNames(yToken && "text-neutral-700")}
-					icon={ySymbol ? <TokenImage symbol={ySymbol} /> : undefined}
-				>
-					{ySymbol ? ySymbol : "select token"}
-				</Button>
+				{tokenSelectEnabled ? (
+					<Button
+						chevron
+						size="sm"
+						onClick={() => setIsOpen("yToken")}
+						variant={yToken ? "secondary" : "primary"}
+						className={classNames(yToken && "text-neutral-700")}
+						icon={ySymbol ? <TokenImage symbol={ySymbol} /> : undefined}
+					>
+						{ySymbol ? ySymbol : "select token"}
+					</Button>
+				) : (
+					<SelectedToken
+						size="sm"
+						variant={yToken ? "secondary" : "primary"}
+						className={classNames(yToken && "text-neutral-700")}
+						icon={ySymbol ? <TokenImage symbol={ySymbol} /> : undefined}
+					>
+						{ySymbol ? ySymbol : "token"}
+					</SelectedToken>
+				)}
 			</AmountInput>
 		</>
 	);

@@ -31,6 +31,7 @@ export function AddLiquidity({ children }: AddLiquidityProps) {
 				onTokenClick={props.onTokenClick}
 				onClose={() => props.setIsOpen(false)}
 				tokens={Object.values(props.filteredTokens)}
+				onlyShowNonZeroBalance={true}
 			/>
 
 			<QrModal
