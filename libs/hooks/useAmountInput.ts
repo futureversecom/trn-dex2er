@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useTrnTokens, useWallets, useXrplCurrencies } from "../context";
-import type { Token } from "../types";
-import { isXrplCurrency } from "../utils";
+import type { Token, TrnToken, XrplBalance } from "../types";
+import { Balance, isXrplCurrency } from "../utils";
 
-export function useAmountInput(token?: Token) {
+export function useAmountInput(token?: Token, poolBalance?: XrplBalance | Balance<TrnToken> | undefined) {
 	const [amount, setAmount] = useState("");
 	const [error, setError] = useState<string>();
 
@@ -36,17 +36,19 @@ export function useAmountInput(token?: Token) {
 		let isInsufficientBalance = false;
 
 		if (isXrplCurrency(token)) {
-			const balance = +(getBalance(token)?.value ?? 0);
+			const xrplPoolBalance = poolBalance as XrplBalance;
+			const balance = xrplPoolBalance ? +(xrplPoolBalance) : +(getBalance(token)?.value ?? 0);
 			isInsufficientBalance = balance < +amount;
 		} else {
-			const balance = getTokenBalance(token)?.toUnit();
+			const tokenPoolBalance = poolBalance as Balance<TrnToken>;
+			const balance = tokenPoolBalance ? tokenPoolBalance : getTokenBalance(token)?.toUnit();
 			isInsufficientBalance = balance?.lt(amount) ?? true;
 		}
 
 		if (isInsufficientBalance) maybeError = "Insufficient balance";
 
 		setError(maybeError);
-	}, [amount, token, getTokenBalance, getBalance, network]);
+	}, [amount, token, getTokenBalance, getBalance, network, poolBalance]);
 
 	return { amount, setAmount: updateAmount, error };
 }

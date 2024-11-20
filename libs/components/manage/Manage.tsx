@@ -165,7 +165,7 @@ export function Manage() {
 				)}
 
 				<ActionButton
-					disabled={props.isDisabled}
+					disabled={props.isDisabled || props.xAmount === "0" || props.yAmount === "0"}
 					onClick={() => props.setTag("review")}
 					text={heading}
 				/>

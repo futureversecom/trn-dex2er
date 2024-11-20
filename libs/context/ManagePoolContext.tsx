@@ -105,22 +105,9 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 		});
 	}, []);
 
-	const {
-		setXAmount,
-		setYAmount,
-		isDisabled: isTokenDisabled,
-		...tokenInputs
-	} = useTrnTokenInputs(state, setToken);
-
-	const resetState = useCallback(() => {
-		setState(initialState);
-		setXAmount("");
-		setYAmount("");
-	}, [setXAmount, setYAmount]);
-
 	const { trnApi } = useTrnApi();
 	const { userSession } = useWallets();
-	const { getTokenBalance, pools, tokens } = useTrnTokens();
+	const { getTokenBalance, pools, tokens, isFetching } = useTrnTokens();
 	const authenticationMethod = useAuthenticationMethod();
 
 	const futurepass = userSession?.futurepass as string | undefined;
@@ -135,7 +122,7 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 	});
 
 	const positions = useMemo(() => {
-		if (!pools || !tokens) return [];
+		if (!pools || !tokens || isFetching) return [];
 
 		return pools
 			.sort((a, b) => (a.assetId > b.assetId ? 1 : -1))
@@ -160,7 +147,7 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 				};
 			})
 			.filter((pool): pool is Position => !!pool);
-	}, [pools, tokens, getTokenBalance]);
+	}, [pools, tokens, isFetching, getTokenBalance]);
 
 	const liquidityPool = useMemo(() => {
 		if (!state.xToken || !state.yToken) return;
@@ -179,15 +166,15 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 	}, [pools, state.xToken, state.yToken]);
 
 	useEffect(() => {
-		if (!liquidityPool || !positions.length) return;
+		if (!liquidityPool || !positions.length || isFetching) return;
 
 		const position = positions.find((pos) => pos.assetId === liquidityPool.assetId);
 
 		updateState({ position });
-	}, [positions, liquidityPool]);
+	}, [positions, liquidityPool, isFetching]);
 
 	const poolBalances = useMemo(() => {
-		if (!state.xToken || !state.yToken || !state.position || !liquidityPool) return;
+		if (!state.xToken || !state.yToken || !state.position || !liquidityPool || isFetching) return;
 
 		const [x] = liquidityPool.poolKey.split("-");
 
@@ -215,7 +202,20 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 				liquidity: yLiquidity,
 			},
 		};
-	}, [state.xToken, state.yToken, state.position, liquidityPool]);
+	}, [state.xToken, state.yToken, state.position, liquidityPool, isFetching]);
+
+	const {
+		setXAmount,
+		setYAmount,
+		isDisabled: isTokenDisabled,
+		...tokenInputs
+	} = useTrnTokenInputs(state, setToken, state.action === 'remove' ? poolBalances : undefined);
+
+	const resetState = useCallback(() => {
+		setState(initialState);
+		setXAmount("");
+		setYAmount("");
+	}, [setXAmount, setYAmount]);
 
 	useEffect(() => {
 		if (!state.tx) return;
