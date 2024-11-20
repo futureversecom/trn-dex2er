@@ -18,7 +18,7 @@ export function Footer() {
 				<b>NEED HELP?</b>&nbsp;Get in touch for&nbsp;
 				<Hyperlink
 					className="underline"
-					// href={contactUsLink}
+					href={"mailto:support@therootnetwork.com"}
 					target="_blank"
 				>
 					support
