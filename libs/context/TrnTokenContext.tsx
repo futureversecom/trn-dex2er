@@ -30,12 +30,12 @@ export type TrnTokenContextType = {
 const TrnTokenContext = createContext<TrnTokenContextType>({} as TrnTokenContextType);
 
 interface TrnTokenProviderProps extends PropsWithChildren {
-	// tokens?: TrnTokens;
+	trnTokens?: TrnTokens;
 }
 
-export function TrnTokenProvider({ children }: TrnTokenProviderProps) {
+export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps) {
 	const { prices } = useUsdPrices();
-	const {data: tokens} = useFetchTrnTokens();
+	const {data: tokens} = useFetchTrnTokens(trnTokens);
 
 	const tokensWithPrices = useMemo(() => { 
 		if (!tokens) return undefined;

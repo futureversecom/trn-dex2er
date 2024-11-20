@@ -14,10 +14,9 @@ export default function PageLayout({
 	children: React.ReactNode;
 }>) {
 	const trnTokens = use(fetchTrnTokens());
-	console.log(trnTokens);
 
 	return (
-		<TrnTokenProvider>
+		<TrnTokenProvider trnTokens={trnTokens}>
 			<TrnSwapProvider>
 				<XrplCurrencyProvider currencies={getXrplCurrencies("swap")}>
 					<XrplSwapProvider>{children}</XrplSwapProvider>
