@@ -1,7 +1,6 @@
 import { PageButton } from "@/libs/components/home";
 
 export default function Home() {
-
 	return (
 		<>
 			<svg className="aspect-[120/22] w-[calc(100vw-48px)] text-neutral-100">

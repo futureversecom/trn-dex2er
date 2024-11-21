@@ -209,7 +209,7 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 		setYAmount,
 		isDisabled: isTokenDisabled,
 		...tokenInputs
-	} = useTrnTokenInputs(state, setToken, state.action === 'remove' ? poolBalances : undefined);
+	} = useTrnTokenInputs(state, setToken, state.action === "remove" ? poolBalances : undefined);
 
 	const resetState = useCallback(() => {
 		setState(initialState);

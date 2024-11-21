@@ -1,4 +1,3 @@
-
 import {
 	TrnSwapProvider,
 	TrnTokenProvider,
@@ -12,10 +11,7 @@ export default function PageLayout({
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
-	// const trnTokens = use(fetchTrnTokens());
-
 	return (
-		// <TrnTokenProvider trnTokens={trnTokens}>
 		<TrnTokenProvider>
 			<TrnSwapProvider>
 				<XrplCurrencyProvider currencies={getXrplCurrencies("swap")}>

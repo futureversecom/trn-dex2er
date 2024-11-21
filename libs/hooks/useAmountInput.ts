@@ -4,7 +4,10 @@ import { useTrnTokens, useWallets, useXrplCurrencies } from "../context";
 import type { Token, TrnToken, XrplBalance } from "../types";
 import { Balance, isXrplCurrency } from "../utils";
 
-export function useAmountInput(token?: Token, poolBalance?: XrplBalance | Balance<TrnToken> | undefined) {
+export function useAmountInput(
+	token?: Token,
+	poolBalance?: XrplBalance | Balance<TrnToken> | undefined
+) {
 	const [amount, setAmount] = useState("");
 	const [error, setError] = useState<string>();
 
@@ -37,7 +40,7 @@ export function useAmountInput(token?: Token, poolBalance?: XrplBalance | Balanc
 
 		if (isXrplCurrency(token)) {
 			const xrplPoolBalance = poolBalance as XrplBalance;
-			const balance = xrplPoolBalance ? +(xrplPoolBalance) : +(getBalance(token)?.value ?? 0);
+			const balance = xrplPoolBalance ? +xrplPoolBalance : +(getBalance(token)?.value ?? 0);
 			isInsufficientBalance = balance < +amount;
 		} else {
 			const tokenPoolBalance = poolBalance as Balance<TrnToken>;
