@@ -1,5 +1,6 @@
 import * as sdk from "@futureverse/experience-sdk";
 import { useAuthenticationMethod, useTrnApi } from "@futureverse/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import {
 	createContext,
@@ -65,6 +66,7 @@ const initialState = {
 export function AddLiquidityProvider({ children }: PropsWithChildren) {
 	const [state, setState] = useState<AddLiquidityState>(initialState);
 	const [estimatedFee, setEstimatedFee] = useState<string>();
+	const queryClient = useQueryClient();
 
 	const updateState = (update: Partial<AddLiquidityState>) =>
 		setState((prev) => ({ ...prev, ...update }));
@@ -301,13 +303,19 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 			updateState({
 				explorerUrl: `${ROOT_NETWORK.ExplorerUrl}/extrinsic/${formatRootscanId(res.extrinsicId)}`,
 			});
+			void queryClient.invalidateQueries({
+				queryKey: ["tokenMetadata"],
+			});
+			void queryClient.invalidateQueries({
+				queryKey: ["trnLiquidityPools"],
+			});
 		} catch (err: any) {
 			setTag("failed");
 			updateState({
 				error: err.message ?? err,
 			});
 		}
-	}, [state.tx, setTag, submitExtrinsic]);
+	}, [state.tx, submitExtrinsic, setTag, queryClient]);
 
 	useEffect(() => {
 		switch (xamanData?.progress) {

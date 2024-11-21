@@ -5,6 +5,7 @@ import { createContext, type PropsWithChildren, useCallback, useContext, useMemo
 import { Balance } from "@/libs/utils";
 
 import { useFetchTrnPools, useTrnBalanceSubscription } from "../hooks";
+import { useFetchTrnTokens } from "../hooks/useFetchTokens";
 import type { LiquidityPools, TrnToken, TrnTokens } from "../types";
 import { useUsdPrices } from "./UsdPriceContext";
 
@@ -29,13 +30,15 @@ export type TrnTokenContextType = {
 const TrnTokenContext = createContext<TrnTokenContextType>({} as TrnTokenContextType);
 
 interface TrnTokenProviderProps extends PropsWithChildren {
-	tokens: TrnTokens;
+	trnTokens?: TrnTokens;
 }
 
-export function TrnTokenProvider({ tokens, children }: TrnTokenProviderProps) {
+export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps) {
 	const { prices } = useUsdPrices();
+	const { data: tokens } = useFetchTrnTokens(trnTokens);
 
 	const tokensWithPrices = useMemo(() => {
+		if (!tokens) return undefined;
 		if (!prices) return tokens;
 
 		return Object.entries(tokens).reduce<TrnTokens>(
@@ -68,7 +71,7 @@ export function TrnTokenProvider({ tokens, children }: TrnTokenProviderProps) {
 	const { data: pools, isFetching: isFetchingPools } = useFetchTrnPools(tokensWithPrices);
 
 	const positions = useMemo(() => {
-		if (!pools || !tokens) return null;
+		if (!pools || !tokens || isFetchingPools) return null;
 
 		const findToken = (assetId: number, tokens: TrnTokens): TrnToken | undefined => {
 			return Object.values(tokens).find((token) => token.assetId === assetId);
@@ -99,7 +102,7 @@ export function TrnTokenProvider({ tokens, children }: TrnTokenProviderProps) {
 				};
 			})
 			.filter((pool): pool is Position => !!pool);
-	}, [pools, tokens, getTokenBalance]);
+	}, [pools, tokens, getTokenBalance, isFetchingPools]);
 
 	return (
 		<TrnTokenContext.Provider
@@ -108,7 +111,7 @@ export function TrnTokenProvider({ tokens, children }: TrnTokenProviderProps) {
 				getTokenBalance,
 				refetchTokenBalances,
 				pools: pools ?? [],
-				tokens: tokensWithPrices ?? tokens,
+				tokens: tokensWithPrices ?? tokens ?? {},
 				isFetching: isFetchingPools,
 				position: positions ?? [],
 			}}

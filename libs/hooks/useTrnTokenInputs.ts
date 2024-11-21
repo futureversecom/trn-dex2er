@@ -35,7 +35,19 @@ export type TrnTokenInputState = Pick<TrnTokenInputs, "xToken" | "yToken">;
 
 export function useTrnTokenInputs<T extends TrnTokenInputState>(
 	state: T,
-	setToken: (props: { src: TokenSource; token: TrnToken }) => void
+	setToken: (props: { src: TokenSource; token: TrnToken }) => void,
+	poolBalances?:
+		| {
+				x: {
+					balance: Balance<TrnToken>;
+					liquidity: Balance<TrnToken>;
+				};
+				y: {
+					balance: Balance<TrnToken>;
+					liquidity: Balance<TrnToken>;
+				};
+		  }
+		| undefined
 ) {
 	const pathname = usePathname();
 	const { tokens, getTokenBalance } = useTrnTokens();
@@ -46,13 +58,13 @@ export function useTrnTokenInputs<T extends TrnTokenInputState>(
 		amount: xAmount,
 		setAmount: setXAmount,
 		error: xTokenError,
-	} = useAmountInput(state.xToken);
+	} = useAmountInput(state.xToken, poolBalances?.x?.balance ?? undefined);
 
 	const {
 		amount: yAmount,
 		setAmount: setYAmount,
 		error: yTokenBalanceError,
-	} = useAmountInput(state.yToken);
+	} = useAmountInput(state.yToken, poolBalances?.y?.balance ?? undefined);
 
 	// 'yToken' doesn't need a balance to be swapped to
 	const yTokenError = useMemo(() => {

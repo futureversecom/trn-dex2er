@@ -119,7 +119,7 @@ export function AddLiquidity({ children }: AddLiquidityProps) {
 				)}
 
 				<ActionButton
-					disabled={props.isDisabled}
+					disabled={props.isDisabled || props.xAmount === "0" || props.yAmount === "0"}
 					onClick={() => props.setTag("review")}
 					text={props.action === "add" ? "add liquidity" : "create"}
 				/>

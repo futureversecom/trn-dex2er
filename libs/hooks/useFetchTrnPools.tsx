@@ -6,7 +6,7 @@ import BigNumber from "bignumber.js";
 import type { LiquidityPoolKey, LiquidityPools, TrnTokens } from "../types";
 import { Balance, humanToNumber } from "../utils";
 
-export function useFetchTrnPools(tokens?: TrnTokens) {
+export function useFetchTrnPools(tokens?: TrnTokens | undefined) {
 	const { trnApi } = useTrnApi();
 
 	return useQuery({
