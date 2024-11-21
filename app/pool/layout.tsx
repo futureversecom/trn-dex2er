@@ -1,17 +1,18 @@
 
 import { Nav } from "@/libs/components/pool";
 import { TrnTokenProvider } from "@/libs/context";
+import { fetchTrnTokens } from "@/libs/utils";
+import { use } from "react";
 
-export default function PageLayout({
+export default async function PageLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
-	// const trnTokens = use(fetchTrnTokens());
+	const trnTokens = await fetchTrnTokens();
 
 	return (
-		// <TrnTokenProvider trnTokens={trnTokens}>
-		<TrnTokenProvider>
+		<TrnTokenProvider trnTokens={trnTokens}>
 			<Nav />
 			{children}
 		</TrnTokenProvider>
