@@ -36,16 +36,18 @@ export type TrnTokenInputState = Pick<TrnTokenInputs, "xToken" | "yToken">;
 export function useTrnTokenInputs<T extends TrnTokenInputState>(
 	state: T,
 	setToken: (props: { src: TokenSource; token: TrnToken }) => void,
-	poolBalances?: {
-			x: {
-				balance: Balance<TrnToken>,
-				liquidity: Balance<TrnToken>,
-			},
-			y: {
-				balance: Balance<TrnToken>,
-				liquidity: Balance<TrnToken>,
-			}
-		} | undefined
+	poolBalances?:
+		| {
+				x: {
+					balance: Balance<TrnToken>;
+					liquidity: Balance<TrnToken>;
+				};
+				y: {
+					balance: Balance<TrnToken>;
+					liquidity: Balance<TrnToken>;
+				};
+		  }
+		| undefined
 ) {
 	const pathname = usePathname();
 	const { tokens, getTokenBalance } = useTrnTokens();

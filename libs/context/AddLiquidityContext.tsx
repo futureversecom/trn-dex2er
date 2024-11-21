@@ -1,5 +1,6 @@
 import * as sdk from "@futureverse/experience-sdk";
 import { useAuthenticationMethod, useTrnApi } from "@futureverse/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import {
 	createContext,
@@ -23,7 +24,6 @@ import {
 	useTrnTokenInputs,
 } from "../hooks";
 import { Balance, formatRootscanId, getMinAmount, parseSlippage, toFixed } from "../utils";
-import { useQueryClient } from "@tanstack/react-query";
 
 export type AddLiquidityContextType = {
 	resetState: () => void;
@@ -305,10 +305,10 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 			});
 			void queryClient.invalidateQueries({
 				queryKey: ["tokenMetadata"],
-			})
+			});
 			void queryClient.invalidateQueries({
 				queryKey: ["trnLiquidityPools"],
-			})
+			});
 		} catch (err: any) {
 			setTag("failed");
 			updateState({

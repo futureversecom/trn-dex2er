@@ -5,9 +5,9 @@ import { createContext, type PropsWithChildren, useCallback, useContext, useMemo
 import { Balance } from "@/libs/utils";
 
 import { useFetchTrnPools, useTrnBalanceSubscription } from "../hooks";
+import { useFetchTrnTokens } from "../hooks/useFetchTokens";
 import type { LiquidityPools, TrnToken, TrnTokens } from "../types";
 import { useUsdPrices } from "./UsdPriceContext";
-import { useFetchTrnTokens } from "../hooks/useFetchTokens";
 
 export interface Position {
 	assetId: number;
@@ -35,9 +35,9 @@ interface TrnTokenProviderProps extends PropsWithChildren {
 
 export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps) {
 	const { prices } = useUsdPrices();
-	const {data: tokens} = useFetchTrnTokens(trnTokens);
+	const { data: tokens } = useFetchTrnTokens(trnTokens);
 
-	const tokensWithPrices = useMemo(() => { 
+	const tokensWithPrices = useMemo(() => {
 		if (!tokens) return undefined;
 		if (!prices) return tokens;
 
@@ -74,7 +74,6 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 		if (!pools || !tokens || isFetchingPools) return null;
 
 		const findToken = (assetId: number, tokens: TrnTokens): TrnToken | undefined => {
-
 			return Object.values(tokens).find((token) => token.assetId === assetId);
 		};
 
@@ -112,7 +111,7 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 				getTokenBalance,
 				refetchTokenBalances,
 				pools: pools ?? [],
-				tokens: tokensWithPrices ?? (tokens ?? {}),
+				tokens: tokensWithPrices ?? tokens ?? {},
 				isFetching: isFetchingPools,
 				position: positions ?? [],
 			}}

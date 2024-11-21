@@ -66,7 +66,7 @@ export const Providers = ({ children }: PropsWithChildren) => {
 				<WalletProvider key="wallet-provider" />,
 				<UsdPriceProvider key="usd-price-provider" />,
 			]}
-			>
+		>
 			{children}
 		</MainProvider>
 	);

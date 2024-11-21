@@ -14,7 +14,7 @@ export const createTrnApi = async () => {
 	await api.isReady;
 
 	return api;
-}
+};
 
 export async function fetchTrnTokens() {
 	const api = await createTrnApi();
@@ -22,4 +22,3 @@ export async function fetchTrnTokens() {
 	void api.disconnect();
 	return tokens;
 }
-

@@ -44,7 +44,7 @@ export class Balance<T extends { decimals: number }> extends BigNumber {
 	}
 
 	override toString(): string {
-		if (this.c === null) return "0"
+		if (this.c === null) return "0";
 		// using super.toString() as this.toNumber() calls this.toString() internally if the value is null resulting in a infinite loop in this case
 		return super.toNumber().toLocaleString("fullwide", {
 			useGrouping: false,
