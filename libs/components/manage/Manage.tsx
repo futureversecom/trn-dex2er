@@ -29,13 +29,6 @@ export function Manage() {
 
 	return (
 		<>
-			<TokenSelect
-				open={props.isOpen !== false}
-				onTokenClick={props.onTokenClick}
-				onClose={() => props.setIsOpen(false)}
-				tokens={Object.values(props.filteredTokens)}
-			/>
-
 			<QrModal
 				qr={props.xamanData?.qrCodeImg}
 				onClose={() => props.setTag(undefined)}
@@ -127,6 +120,7 @@ export function Manage() {
 
 				<AmountInputs
 					{...{
+						tokenSelectEnabled: false,
 						xToken: props.xToken,
 						yToken: props.yToken,
 						labels: new Array(2).fill(props.action === "add" ? "Deposit" : "Withdraw") as [

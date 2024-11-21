@@ -15,6 +15,10 @@ const pages = [
 		children: "manage positions",
 		href: "/pool/manage",
 	},
+	{
+		children: "token liquidity",
+		href: "/pool/browse",
+	},
 ];
 
 export function Nav() {

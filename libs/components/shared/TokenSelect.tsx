@@ -9,6 +9,7 @@ import { Modal, type ModalProps, TableRow, Text, TokenImage } from "./";
 interface TokenSelectProps<T extends Token> extends ModalProps {
 	tokens: TrnToken[] | XrplCurrency[];
 	onTokenClick: (token: T) => void;
+	onlyShowNonZeroBalance?: boolean;
 }
 
 export function TokenSelect<T extends Token>({
@@ -16,6 +17,7 @@ export function TokenSelect<T extends Token>({
 	onClose,
 	tokens,
 	onTokenClick,
+	onlyShowNonZeroBalance,
 }: TokenSelectProps<T>) {
 	const { getBalance } = useXrplCurrencies();
 	const { getTokenBalance } = useTrnTokens();
@@ -40,6 +42,26 @@ export function TokenSelect<T extends Token>({
 				token.symbol.toLowerCase().includes(filter.toLowerCase())
 		);
 	}, [filter, tokens, isXrpl]);
+
+	const filteredTokensNonZeroBalance = useMemo(() => {
+		if (isXrpl) {
+			return (filteredTokens as XrplCurrency[]).filter((token) => {
+				const tokenBalance = getBalance(token)?.value ?? 0;
+				if (tokenBalance === 0 || tokenBalance === "0") {
+					return false;
+				}
+				return true;
+			});
+		}
+
+		return (filteredTokens as TrnToken[]).filter((token) => {
+			const tokenBalance = getTokenBalance(token) ?? 0;
+			if (tokenBalance === 0 || tokenBalance.isZero()) {
+				return false;
+			}
+			return true;
+		});
+	}, [onlyShowNonZeroBalance, filteredTokens, isXrpl]);
 
 	const onRowClick = useCallback(
 		(token: T) => {
@@ -76,7 +98,10 @@ export function TokenSelect<T extends Token>({
 
 			<div className="flex max-h-[20em] flex-col space-y-2 overflow-y-scroll">
 				{isXrpl
-					? (filteredTokens as XrplCurrency[]).map((token) => {
+					? (onlyShowNonZeroBalance
+							? (filteredTokensNonZeroBalance as XrplCurrency[])
+							: (filteredTokens as XrplCurrency[])
+						).map((token) => {
 							const tokenBalance = toHuman(getBalance(token)?.value ?? 0, token);
 
 							return (
@@ -96,7 +121,10 @@ export function TokenSelect<T extends Token>({
 								/>
 							);
 						})
-					: (filteredTokens as TrnToken[]).map((token) => {
+					: (onlyShowNonZeroBalance
+							? (filteredTokensNonZeroBalance as TrnToken[])
+							: (filteredTokens as TrnToken[])
+						).map((token) => {
 							const tokenBalance = getTokenBalance(token)?.toHuman() ?? 0;
 
 							return (
