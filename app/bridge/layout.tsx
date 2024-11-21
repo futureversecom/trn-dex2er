@@ -1,5 +1,3 @@
-import { use } from "react";
-
 import { BridgeProvider, TrnTokenProvider, XrplCurrencyProvider } from "@/libs/context";
 import { fetchTrnTokens, getXrplCurrencies } from "@/libs/utils";
 
