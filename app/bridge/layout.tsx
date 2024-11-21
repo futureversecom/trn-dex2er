@@ -1,13 +1,15 @@
 import { BridgeProvider, TrnTokenProvider, XrplCurrencyProvider } from "@/libs/context";
-import { getXrplCurrencies } from "@/libs/utils";
+import { fetchTrnTokens, getXrplCurrencies } from "@/libs/utils";
 
-export default function PageLayout({
+export default async function PageLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
+	const trnTokens = await fetchTrnTokens();
+
 	return (
-		<TrnTokenProvider>
+		<TrnTokenProvider trnTokens={trnTokens}>
 			<XrplCurrencyProvider currencies={getXrplCurrencies("bridge")}>
 				<BridgeProvider>{children}</BridgeProvider>
 			</XrplCurrencyProvider>
