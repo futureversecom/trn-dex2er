@@ -1,4 +1,3 @@
-import { use } from "react";
 
 import {
 	TrnSwapProvider,
@@ -6,17 +5,18 @@ import {
 	XrplCurrencyProvider,
 	XrplSwapProvider,
 } from "@/libs/context";
-import { fetchTrnTokens, getXrplCurrencies } from "@/libs/utils";
+import { getXrplCurrencies } from "@/libs/utils";
 
 export default function PageLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
-	const trnTokens = use(fetchTrnTokens());
+	// const trnTokens = use(fetchTrnTokens());
 
 	return (
-		<TrnTokenProvider trnTokens={trnTokens}>
+		// <TrnTokenProvider trnTokens={trnTokens}>
+		<TrnTokenProvider>
 			<TrnSwapProvider>
 				<XrplCurrencyProvider currencies={getXrplCurrencies("swap")}>
 					<XrplSwapProvider>{children}</XrplSwapProvider>

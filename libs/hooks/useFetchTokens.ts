@@ -6,9 +6,9 @@ export function useFetchTrnTokens(trnTokens?: TrnTokens) {
 	return useQuery({
 		queryKey: ["tokenMetadata"], 
 		queryFn: async () => await fetchTrnTokens(),
-		staleTime: 1000 * 60,
-		initialData: trnTokens,
-		refetchInterval: 1000 * 60 * 5,
+		// staleTime: 1000 * 60,
+		// initialData: trnTokens,
+		// refetchInterval: 1000 * 60 * 5,
 		refetchOnWindowFocus: true,
 	})
 }
