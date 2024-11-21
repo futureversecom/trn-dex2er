@@ -3,7 +3,7 @@ import "rc-slider/assets/index.css";
 
 import { useManagePool } from "@/libs/context";
 
-import { Button, Text } from "../shared";
+import { Button, Text } from "../../shared";
 
 export function PercentButtons() {
 	const { percentage, setPercentage } = useManagePool();

@@ -47,7 +47,11 @@ export const XRPL_NETWORK: XrplNetworkDetails = {
 		ApiUrl: {
 			InWebSocket: "wss://s.altnet.rippletest.net/",
 		},
-		ExplorerUrl: { Bridge: "https://testnet.xrpl.org", Swap: "https://devnet.xrpl.org" },
+		ExplorerUrl: {
+			Bridge: "https://testnet.xrpl.org",
+			Swap: "https://devnet.xrpl.org",
+			Pool: "https://devnet.xrpl.org",
+		},
 	},
 
 	livenet: {

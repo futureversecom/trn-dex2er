@@ -14,7 +14,7 @@ import type { ContextTag, TokenSource, XrplCurrency } from "@/libs/types";
 import { DEFAULT_GAS_TOKEN } from "../constants";
 import { useXrplTokenInputs, type XrplTokenInputs, type XrplTokenInputState } from "../hooks";
 import {
-	buildTx,
+	buildPaymentTx,
 	getCurrency,
 	getRatioAndAmounts,
 	getXrplExplorerUrl,
@@ -124,7 +124,7 @@ export function XrplSwapProvider({ children }: PropsWithChildren) {
 					});
 				}
 
-				const tx = buildTx(
+				const tx = buildPaymentTx(
 					address,
 					fromToken,
 					result.fromAmount,

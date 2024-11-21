@@ -14,3 +14,4 @@ export * from "./useIsMobile";
 export * from "./useBridgeTokenInput";
 export * from "./useBridgeDestinationInput";
 export * from "./useBridgeHistory";
+export * from "./useFetchXrplPools";

@@ -3,11 +3,11 @@ import { convertStringToHex } from "xrpl";
 import { ROOT_NETWORK } from "../constants";
 import { XrplCurrency } from "../types";
 
-function getCurrencyCode(ticker: string) {
+export function getCurrencyCode(ticker: string) {
 	return convertStringToHex(ticker).padEnd(40, "0");
 }
 
-type XrplCurrencies = Record<"swap" | "bridge", XrplCurrency[]>;
+type XrplCurrencies = Record<"swap" | "bridge" | "pool", XrplCurrency[]>;
 
 const mainnet: XrplCurrencies = {
 	swap: [
@@ -70,6 +70,7 @@ const mainnet: XrplCurrencies = {
 			issuer: "rUetS7kbVYJZ76za5ywa1DgViNZMgT9Bvq",
 		},
 	],
+	pool: [],
 	bridge: [
 		{
 			currency: "XRP",
@@ -101,7 +102,7 @@ const mainnet: XrplCurrencies = {
 	],
 };
 
-const devnet: XrplCurrencies = {
+const testnet: XrplCurrencies = {
 	swap: [
 		{
 			currency: "XRP",
@@ -116,6 +117,64 @@ const devnet: XrplCurrencies = {
 			currency: "BTC",
 			decimals: 18,
 			issuer: "rNYjPW7NbiVDYy6K23b8ye6iZnowj4PsL7",
+		},
+	],
+	pool: [
+		{
+			currency: "XRP",
+			decimals: 6,
+		},
+		{
+			decimals: 6,
+			currency: "ROOT",
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
+		// {
+		// 	decimals: 18,
+		// 	currency: "ZRP",
+		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		// },
+		// {
+		// 	decimals: 6,
+		// 	ticker: "USDC",
+		// 	currency: getCurrencyCode("USDC"),
+		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		// },
+		// {
+		// 	decimals: 6,
+		// 	ticker: "USDT",
+		// 	currency: getCurrencyCode("USDT"),
+		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		// },
+		// {
+		// 	decimals: 18,
+		// 	ticker: "ASTO",
+		// 	currency: getCurrencyCode("ASTO"),
+		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		// },
+		// {
+		// 	decimals: 18,
+		// 	ticker: "SYLO",
+		// 	currency: getCurrencyCode("SYLO"),
+		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		// },
+		{
+			currency: "ETH",
+			decimals: 18,
+			issuer: "rpwY2B7RHSCPDsmdYjvsYxBLkzHXLhQykS",
+		},
+		{
+			currency: "BTC",
+			decimals: 18,
+			issuer: "rNYjPW7NbiVDYy6K23b8ye6iZnowj4PsL7",
+		},
+		{
+			currency: "TST",
+			issuer: "rnok9ePZWgheay8BodttsUgceXf7QDF9d6",
+		},
+		{
+			currency: "FLT",
+			issuer: "roEdoQdW7nv6iqwTKG4C8zoEKWGh9StTX",
 		},
 	],
 	bridge: [
@@ -161,6 +220,121 @@ const devnet: XrplCurrencies = {
 	],
 };
 
-export function getXrplCurrencies(page: "swap" | "bridge") {
-	return ROOT_NETWORK.LinkedXrpChain === "livenet" ? mainnet[page] : devnet[page];
+const devnet: XrplCurrencies = {
+	swap: [
+		{
+			currency: "XRP",
+			decimals: 6,
+		},
+		{
+			currency: "ETH",
+			decimals: 18,
+			issuer: "rpwY2B7RHSCPDsmdYjvsYxBLkzHXLhQykS",
+		},
+		{
+			currency: "BTC",
+			decimals: 18,
+			issuer: "rNYjPW7NbiVDYy6K23b8ye6iZnowj4PsL7",
+		},
+	],
+	pool: [
+		{
+			currency: "XRP",
+			decimals: 6,
+		},
+
+		{
+			decimals: 6,
+			currency: "USDC",
+			issuer: "rrnhCibA8Vo1t7veoSUGJCXpW6xv1c45Fq",
+		},
+		{
+			decimals: 6,
+			currency: "USDT",
+			issuer: "rax5V9EiMfTo7fUxyxBrN48PVFwKqTYLPf",
+		},
+
+		{
+			currency: "ETH",
+			decimals: 18,
+			issuer: "rpwY2B7RHSCPDsmdYjvsYxBLkzHXLhQykS",
+		},
+		{
+			currency: "BTC",
+			decimals: 18,
+			issuer: "rNYjPW7NbiVDYy6K23b8ye6iZnowj4PsL7",
+		},
+		// {
+		// 	decimals: 6,
+		// 	ticker: "ROOT",
+		// 	currency: getCurrencyCode("ROOT"),
+		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		// },
+		// {
+		// 	decimals: 18,
+		// 	currency: "ZRP",
+		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		// },
+		// {
+		// 	decimals: 18,
+		// 	ticker: "ASTO",
+		// 	currency: getCurrencyCode("ASTO"),
+		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		// },
+		// {
+		// 	decimals: 18,
+		// 	ticker: "SYLO",
+		// 	currency: getCurrencyCode("SYLO"),
+		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		// },
+	],
+	bridge: [
+		{
+			currency: "XRP",
+			decimals: 6,
+		},
+		{
+			decimals: 6,
+			ticker: "ROOT",
+			currency: getCurrencyCode("ROOT"),
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
+		{
+			decimals: 18,
+			currency: "ZRP",
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
+		{
+			decimals: 6,
+			ticker: "USDC",
+			currency: getCurrencyCode("USDC"),
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
+		{
+			decimals: 6,
+			ticker: "USDT",
+			currency: getCurrencyCode("USDT"),
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
+		{
+			decimals: 18,
+			ticker: "ASTO",
+			currency: getCurrencyCode("ASTO"),
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
+		{
+			decimals: 18,
+			ticker: "SYLO",
+			currency: getCurrencyCode("SYLO"),
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
+	],
+};
+
+export function getXrplCurrencies(page: "swap" | "bridge" | "pool") {
+	return ROOT_NETWORK.LinkedXrpChain === "livenet"
+		? mainnet[page]
+		: ROOT_NETWORK.LinkedXrpChain === "testnet"
+			? testnet[page]
+			: devnet[page];
 }

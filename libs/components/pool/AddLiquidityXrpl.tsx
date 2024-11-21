@@ -1,26 +1,22 @@
 import { type PropsWithChildren } from "react";
 
-import { type AddLiquidityContextType, useAddLiquidity } from "@/libs/context";
-import { toFixed } from "@/libs/utils";
+import { useAddLiquidityXrpl } from "@/libs/context";
 
 import {
 	ActionButton,
+	AmountInput,
 	AmountInputs,
 	Box,
 	ConfirmModal,
 	InfoItem,
 	QrModal,
-	Ratio,
-	SettingsButton,
 	Text,
 	TokenImage,
 	TokenSelect,
 } from "../shared";
 
-export function AddLiquidity({ children }: PropsWithChildren) {
-	const props = useAddLiquidity();
-
-	const infoItems = getInfoItems(props);
+export function AddLiquidityXrpl({ children }: PropsWithChildren) {
+	const props = useAddLiquidityXrpl();
 
 	return (
 		<>
@@ -32,9 +28,9 @@ export function AddLiquidity({ children }: PropsWithChildren) {
 			/>
 
 			<QrModal
-				qr={props.xamanData?.qrCodeImg}
+				qr={props.qr}
 				onClose={() => props.setTag(undefined)}
-				open={!!props.xamanData && props.tag === "sign"}
+				open={!!props.qr && props.tag === "sign"}
 			/>
 
 			{props.xToken && props.yToken && (
@@ -50,9 +46,9 @@ export function AddLiquidity({ children }: PropsWithChildren) {
 					<InfoItem
 						heading={
 							<span className="flex items-center gap-2">
-								<TokenImage symbol={props.xToken.symbol} />
+								<TokenImage symbol={props.xToken.currency} />
 								<Text size="md" className="!text-neutral-600">
-									{props.xToken.symbol} deposit
+									{props.xToken.currency} deposit
 								</Text>
 							</span>
 						}
@@ -66,9 +62,9 @@ export function AddLiquidity({ children }: PropsWithChildren) {
 					<InfoItem
 						heading={
 							<span className="flex items-center gap-2">
-								<TokenImage symbol={props.yToken.symbol} />
+								<TokenImage symbol={props.yToken.currency} />
 								<Text size="md" className="!text-neutral-600">
-									{props.yToken.symbol} deposit
+									{props.yToken.currency} deposit
 								</Text>
 							</span>
 						}
@@ -82,8 +78,6 @@ export function AddLiquidity({ children }: PropsWithChildren) {
 					<div className="py-2">
 						<hr className="border-neutral-600" />
 					</div>
-
-					{infoItems}
 				</ConfirmModal>
 			)}
 
@@ -104,20 +98,18 @@ export function AddLiquidity({ children }: PropsWithChildren) {
 					</Text>
 				)}
 
-				{props.xToken && props.yToken && props.ratio && (
-					<>
-						<div className="flex items-center justify-between px-2">
-							<Ratio isSwitchable ratio={props.ratio} xToken={props.xToken} yToken={props.yToken} />
+				{props.action === "create" && (
+					<AmountInput setAmount={props.setTradingFee} amount={props.tradingFee ?? "0.00"} />
+				)}
 
-							<SettingsButton {...props} />
-						</div>
-
-						<div className="space-y-2 rounded-lg bg-neutral-400 p-6">{infoItems}</div>
-					</>
+				{props.ammExists && !props.ammExists && (
+					<Text className="!text-neutral-600" size="md">
+						Pool does not exist, Create it belows
+					</Text>
 				)}
 
 				<ActionButton
-					disabled={props.isDisabled || props.xAmount === "0" || props.yAmount === "0"}
+					disabled={props.isDisabled}
 					onClick={() => props.setTag("review")}
 					text={props.action === "add" ? "add liquidity" : "create"}
 				/>
@@ -125,20 +117,3 @@ export function AddLiquidity({ children }: PropsWithChildren) {
 		</>
 	);
 }
-
-const getInfoItems = ({ estPoolShare, estimatedFee, gasToken }: AddLiquidityContextType) => {
-	return (
-		<>
-			{estPoolShare && (
-				<InfoItem heading="Estimated share of pool" value={`${toFixed(estPoolShare, 6)}%`} />
-			)}
-			{estimatedFee && (
-				<InfoItem
-					heading="Gas Fee"
-					value={`~${estimatedFee} ${gasToken.symbol}`}
-					tip="Is the fee paid to the miners who process your transaction."
-				/>
-			)}
-		</>
-	);
-};

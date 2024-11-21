@@ -14,7 +14,7 @@ export default async function PageLayout({
 }>) {
 	return (
 		<TrnTokenProvider>
-			<XrplCurrencyProvider currencies={getXrplCurrencies("swap")}>
+			<XrplCurrencyProvider currencies={getXrplCurrencies("pool")}>
 				<Nav />
 				{children}
 			</XrplCurrencyProvider>

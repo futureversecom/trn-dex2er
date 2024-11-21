@@ -80,7 +80,7 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 		return pools
 			.sort((a, b) => (a.assetId > b.assetId ? 1 : -1))
 			.map((pool) => {
-				const lpToken = findToken(pool.assetId, tokens);
+				const lpToken = findToken(pool.assetId as number, tokens);
 				const lpBalance = getTokenBalance(lpToken);
 
 				if (!lpToken || !lpBalance || lpBalance.eq(0)) return null;

@@ -34,7 +34,7 @@ export function Nav() {
 				buttons={networks.map((network) => ({
 					children: `${network} network`,
 					onClick: () => {
-						let newPath = pathname.split("/");
+						const newPath = pathname.split("/");
 						newPath[3] = network;
 						const path = newPath.join("/");
 						setNetwork(network);

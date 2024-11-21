@@ -1,10 +1,52 @@
-import { type AMMInfoRequest, type Amount, dropsToXrp, type Payment, xrpToDrops } from "xrpl";
+import {
+	AMMCreate,
+	AMMDeposit,
+	type AMMInfoRequest,
+	AMMWithdraw,
+	type Amount,
+	dropsToXrp,
+	type Payment,
+	ServerStateResponse,
+	xrpToDrops,
+} from "xrpl";
 import { isIssuedCurrency } from "xrpl/dist/npm/models/transactions/common";
 
 import type { XrplCurrency } from "@/libs/types";
-import type { IXrplWalletProvider } from "@/libs/utils";
+import { getCurrencyCode, type IXrplWalletProvider } from "@/libs/utils";
 
 import { ROOT_NETWORK, XRPL_NETWORK } from "../constants";
+
+export const normalizeCurrencyCode = (currencyCode: string, maxLength = 20) => {
+	if (!currencyCode) return "";
+
+	if (currencyCode.length === 3 && currencyCode.trim().toLowerCase() !== "xrp") {
+		// "Standard" currency code
+		return currencyCode.trim();
+	}
+
+	if (currencyCode.match(/^[a-fA-F0-9]{40}$/) && !isNaN(parseInt(currencyCode, 16))) {
+		// Hexadecimal currency code
+		const hex = currencyCode.toString().replace(/(00)+$/g, "");
+		// if (hex.startsWith("01")) {
+		// 	// Old demurrage code. https://xrpl.org/demurrage.html
+		// 	return convertDemurrageToUTF8(currencyCode);
+		// }
+		if (hex.startsWith("02")) {
+			// XLS-16d NFT Metadata using XLS-15d Concise Transaction Identifier
+			// https://github.com/XRPLF/XRPL-Standards/discussions/37
+			const xlf15d = Buffer.from(hex, "hex").slice(8).toString("utf-8").slice(0, maxLength).trim();
+			if (xlf15d.match(/[a-zA-Z0-9]{3,}/) && xlf15d.toLowerCase() !== "xrp") {
+				return xlf15d;
+			}
+		}
+		const decodedHex = Buffer.from(hex, "hex").toString("utf-8").slice(0, maxLength).trim();
+		if (decodedHex.match(/[a-zA-Z0-9]{3,}/) && decodedHex.toLowerCase() !== "xrp") {
+			// ASCII or UTF-8 encoded alphanumeric code, 3+ characters long
+			return decodedHex;
+		}
+	}
+	return "";
+};
 
 export const getRatioAndAmounts = async (
 	provider: IXrplWalletProvider,
@@ -50,7 +92,7 @@ export const getRatioAndAmounts = async (
 			(isIssuedCurrency(amm.amount2) ? Number(amm.amount2.value) : Number(amm.amount2));
 
 		// Reverse calculation for "from" amount before trading fee adjustment
-		let estimatedFromAmount = toAmount / ratio;
+		const estimatedFromAmount = toAmount / ratio;
 
 		// Adjust "from" amount for trading fee to ensure the desired "to" amount is achieved
 		fromAmount = estimatedFromAmount / (1 - tradingFeePercentage);
@@ -97,7 +139,7 @@ export function dropToCurrency(currency: string, amount: string) {
 	return Number(amount).toFixed(8);
 }
 
-export function buildTx(
+export function buildPaymentTx(
 	walletAddress: string,
 	fromCurrency: XrplCurrency,
 	fromAmount: string,
@@ -151,6 +193,131 @@ export function buildTx(
 	return crossCurrencyPaymentTx;
 }
 
+export async function checkAmmExists(
+	provider: IXrplWalletProvider,
+	asset: XrplCurrency,
+	asset2: XrplCurrency
+) {
+	const ammInfoRequest: AMMInfoRequest = {
+		command: "amm_info",
+		ledger_index: "validated",
+		limit: 10,
+
+		asset: asset as any,
+		asset2: asset2 as any,
+	};
+
+	return provider
+		.request(ammInfoRequest)
+		.then(() => true)
+		.catch(() => false);
+}
+
+// https://xrpl.org/docs/references/protocol/transactions/types/ammcreate#special-transaction-cost
+export const getAmmcost = async (
+	xrplProvider?: IXrplWalletProvider
+): Promise<string | undefined> => {
+	if (!xrplProvider) return undefined;
+	const ss = (await xrplProvider.request({
+		command: "server_state",
+	})) as ServerStateResponse;
+	const amm_fee_drops = ss.result.state.validated_ledger!.reserve_inc.toString();
+
+	return amm_fee_drops;
+};
+
+// https://xrpl.org/docs/references/protocol/transactions/types/ammcreate
+// TODO 711 must check default ripple enabled
+// TODO: 711 consider error cases
+export function buildCreateAmmTx(
+	walletAddress: string,
+	TokenOne: Amount,
+	TokenTwo: Amount,
+	TradingFee: number,
+	amm_fee_drops: string
+): AMMCreate {
+	const formatAmount = (token: Amount) =>
+		isIssuedCurrency(token)
+			? { currency: getCurrencyCode(token.currency), issuer: token.issuer, value: token.value }
+			: token;
+
+	const create: AMMCreate = {
+		TransactionType: "AMMCreate",
+		Account: walletAddress,
+		Amount: formatAmount(TokenOne),
+		Amount2: formatAmount(TokenTwo),
+		TradingFee,
+		Fee: amm_fee_drops,
+	};
+
+	console.log("create tx ", create);
+
+	return create;
+}
+
+// https://xrpl.org/docs/references/protocol/transactions/types/ammdeposit
+// TODO: 711 consider that this create a trust line ... check it maybe ?
+// TODO: 711 double and single asset deposit
+export function buildDepositAmmTx(
+	walletAddress: string,
+	TokenOne: Amount,
+	TokenTwo: Amount
+): AMMDeposit {
+	const formatAmount = (token: Amount) =>
+		isIssuedCurrency(token)
+			? { currency: token.currency, issuer: token.issuer, value: token.value }
+			: token;
+
+	const depo: AMMDeposit = {
+		TransactionType: "AMMDeposit",
+		Account: walletAddress,
+		Amount: formatAmount(TokenOne),
+		Amount2: formatAmount(TokenTwo),
+		Asset: isIssuedCurrency(TokenOne)
+			? { currency: TokenOne.currency, issuer: TokenOne.issuer }
+			: { currency: "XRP" },
+		Asset2: isIssuedCurrency(TokenTwo)
+			? { currency: TokenTwo.currency, issuer: TokenTwo.issuer }
+			: { currency: "XRP" },
+		Flags: 1048576, // Keps the balance of the amm deposits up to the users specification 0x00100000 tfTwoAsset
+	};
+
+	console.log("deposit tx ", depo);
+
+	return depo as AMMDeposit;
+}
+
+// https://xrpl.org/docs/references/protocol/transactions/types/ammwithdraw
+export function buildWithdrawAmmTx(
+	walletAddress: string,
+	TokenOne: Amount,
+	TokenTwo: Amount
+): AMMWithdraw {
+	const formatAmount = (token: Amount) =>
+		isIssuedCurrency(token)
+			? { currency: token.currency, issuer: token.issuer, value: token.value }
+			: token;
+
+	const withdraw: AMMWithdraw = {
+		TransactionType: "AMMWithdraw",
+		Account: walletAddress,
+		Amount: formatAmount(TokenOne),
+		Amount2: formatAmount(TokenTwo),
+		Asset: isIssuedCurrency(TokenOne)
+			? { currency: TokenOne.currency, issuer: TokenOne.issuer }
+			: { currency: "XRP" },
+		Asset2: isIssuedCurrency(TokenTwo)
+			? { currency: TokenTwo.currency, issuer: TokenTwo.issuer }
+			: { currency: "XRP" },
+		Flags: 1048576, // withdraws both amm assets up to specified amounts. Actual amounts received
+		// maintain balance of assets in the amms pool 0x00100000 tfTwoAsset
+	};
+
+	console.log("withdraw tx ", withdraw);
+
+	return withdraw;
+}
+
 export function getCurrency(currency: XrplCurrency) {
 	return {
 		currency: currency.currency,
@@ -158,8 +325,8 @@ export function getCurrency(currency: XrplCurrency) {
 	};
 }
 
-export function getXrplExplorerUrl(page: "Bridge" | "Swap") {
+export function getXrplExplorerUrl(page: "Bridge" | "Swap" | "Pool") {
 	return ROOT_NETWORK.LinkedXrpChain === "livenet"
 		? (XRPL_NETWORK.ExplorerUrl as string)
-		: (XRPL_NETWORK.ExplorerUrl as { Bridge: string; Swap: string })[page];
+		: (XRPL_NETWORK.ExplorerUrl as { Bridge: string; Swap: string; Pool: string })[page];
 }

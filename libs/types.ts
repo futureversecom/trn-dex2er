@@ -36,19 +36,29 @@ export interface XrplNetworkDetails {
 	ApiUrl: {
 		InWebSocket: string;
 	};
-	ExplorerUrl: string | { Bridge: string; Swap: string };
+	ExplorerUrl: string | { Bridge: string; Swap: string; Pool: string };
 }
 
 export type LiquidityPoolKey = `${string}-${string}`;
 
-export interface LiquidityPool {
+export interface LiquidityPoolRoot {
 	assetId: number;
 	poolKey: LiquidityPoolKey;
 	liquidity: [number, number];
 	liquidityInUSD?: BigNumber;
+	lpTokenIssuer?: string;
+	lpTokenSupply?: string;
 }
 
-export type LiquidityPools = Array<LiquidityPool>;
+// TODO 711 rename this to Root
+export type LiquidityPools = Array<LiquidityPoolRoot>;
+
+export type LiquidityPoolXrpl = Omit<LiquidityPoolRoot, "assetId" | "liquidity"> & {
+	currency: string;
+	liquidity: [string, string];
+};
+
+export type LiquidityPoolsXrpl = Array<LiquidityPoolXrpl>;
 
 export interface XamanData {
 	qrCodeImg?: string;

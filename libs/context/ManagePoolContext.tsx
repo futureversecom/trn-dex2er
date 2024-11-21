@@ -127,7 +127,7 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 		return pools
 			.sort((a, b) => (a.assetId > b.assetId ? 1 : -1))
 			.map((pool) => {
-				const lpToken = tokens[pool.assetId];
+				const lpToken = tokens[pool.assetId as number];
 				const lpBalance = getTokenBalance(lpToken);
 
 				if (!lpToken || !lpBalance || lpBalance.eq(0)) return null;
@@ -462,7 +462,7 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 	// Rebuild tx on action change
 	useEffect(() => {
 		buildTransaction({});
-	}, [state.action]);
+	}, [buildTransaction, state.action]);
 
 	return (
 		<ManagePoolContext.Provider

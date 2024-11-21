@@ -1,4 +1,6 @@
 "use client";
 
-export * from "./Manage";
-export * from "./Positions";
+export * from "./root/Manage";
+export * from "./root/Positions";
+export * from "./xrpl/XrplManage";
+export * from "./xrpl/XrplPositions";

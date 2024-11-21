@@ -1,9 +1,9 @@
-import { AddLiquidityProvider } from "@/libs/context";
+import { AddLiquidityXrplProvider } from "@/libs/context";
 
 export default function PageLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
-	return <AddLiquidityProvider>{children}</AddLiquidityProvider>;
+	return <AddLiquidityXrplProvider>{children}</AddLiquidityXrplProvider>;
 }

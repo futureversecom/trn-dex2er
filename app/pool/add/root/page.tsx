@@ -12,7 +12,7 @@ export default function Home() {
 	if (!xToken && !yToken)
 		return (
 			<Box heading="pools" isLoading={isFetching}>
-				<Pools onPoolClick={onPoolClick} />
+				<Pools onPoolClick={onPoolClick} network="ROOT" />
 			</Box>
 		);
 
