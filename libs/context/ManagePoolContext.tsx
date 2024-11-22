@@ -437,7 +437,7 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 				if (
 					(state.gasToken.symbol === "XRP" && gasTokenBalance?.toUnit().lt(+estimatedFee)) ||
 					(state.gasToken.symbol === state.xToken!.symbol &&
-						gasTokenBalance?.toUnit().lt(+tokenInputs.xAmount + +estimatedFee))
+						gasTokenBalance?.toUnit().lt(state.action === 'add' ? (+tokenInputs.xAmount + +estimatedFee) : (+estimatedFee)))
 				)
 					error = `Insufficient ${state.gasToken.symbol} balance for gas fee`;
 			}
@@ -446,15 +446,7 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 
 			updateState({ error });
 		});
-	}, [
-		state.xToken,
-		state.yToken,
-		state.gasToken,
-		estimatedFee,
-		checkValidPool,
-		getTokenBalance,
-		tokenInputs.xAmount,
-	]);
+	}, [state.xToken, state.yToken, state.gasToken, estimatedFee, checkValidPool, getTokenBalance, tokenInputs.xAmount, state.action]);
 
 	// Rebuild tx on action change
 	useEffect(() => {

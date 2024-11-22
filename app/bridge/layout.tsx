@@ -2,6 +2,7 @@ import { BridgeProvider, TrnTokenProvider, XrplCurrencyProvider } from "@/libs/c
 import { fetchTrnTokens, getXrplCurrencies } from "@/libs/utils";
 import { use } from "react";
 
+const dynamic = "force-dynamic";
 
 export default async function PageLayout({
 	children,

@@ -8,7 +8,7 @@ import { useAddLiquidity, useTrnTokens } from "@/libs/context";
 export default function Home() {
 	const { isFetching } = useTrnTokens();
 	const { xToken, yToken, resetState, onPoolClick } = useAddLiquidity();
-
+	
 	if (!xToken && !yToken)
 		return (
 			<Box heading="pools" isLoading={isFetching}>
