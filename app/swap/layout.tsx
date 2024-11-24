@@ -1,3 +1,5 @@
+import { use } from "react";
+
 import {
 	TrnSwapProvider,
 	TrnTokenProvider,
@@ -5,6 +7,8 @@ import {
 	XrplSwapProvider,
 } from "@/libs/context";
 import { fetchTrnTokens, getXrplCurrencies } from "@/libs/utils";
+
+const dynamic = "force-dynamic";
 
 export default async function PageLayout({
 	children,
@@ -15,6 +19,7 @@ export default async function PageLayout({
 
 	return (
 		<TrnTokenProvider trnTokens={trnTokens}>
+			{/* <TrnTokenProvider> */}
 			<TrnSwapProvider>
 				<XrplCurrencyProvider currencies={getXrplCurrencies("swap")}>
 					<XrplSwapProvider>{children}</XrplSwapProvider>
