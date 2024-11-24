@@ -1,7 +1,8 @@
+import { use } from "react";
+
 import { Nav } from "@/libs/components/pool";
 import { TrnTokenProvider } from "@/libs/context";
 import { fetchTrnTokens } from "@/libs/utils";
-import { use } from "react";
 
 const dynamic = "force-dynamic";
 
