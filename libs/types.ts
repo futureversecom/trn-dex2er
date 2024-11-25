@@ -2,7 +2,7 @@ import * as sdk from "@futureverse/experience-sdk";
 import { Static, Type } from "@sinclair/typebox";
 import type { NetworkName } from "@therootnetwork/api";
 import type BigNumber from "bignumber.js";
-import type { AccountLinesTrustline, Balance as CurrencyBalance } from "xrpl";
+import type { AccountLinesTrustline, Balance } from "xrpl";
 
 export interface TrnToken {
 	assetId: number;
@@ -79,7 +79,7 @@ export const XrplCurrency = Type.Object({
 });
 export type XrplCurrency = Static<typeof XrplCurrency>;
 
-export type XrplBalance = CurrencyBalance & {
+export type XrplBalance = Balance & {
 	trustline?: AccountLinesTrustline;
 };
 

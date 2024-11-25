@@ -17,8 +17,6 @@ import { XrplPosition } from "./ManageXrplPoolContext";
 import { useUsdPrices } from "./UsdPriceContext";
 import { useWallets } from "./WalletContext";
 
-const ISO_REGEX = /^[A-Z0-9a-z?!@#$%^&*(){}[\]|]{3}$/;
-
 export type XrplCurrencyContextType = {
 	currencies: XrplCurrency[];
 	balances: XrplBalance[];
@@ -29,6 +27,7 @@ export type XrplCurrencyContextType = {
 	refetch: () => Promise<void>;
 	positions: XrplPosition[];
 	pools: LiquidityPoolsXrpl;
+	findToken: (currencyCode: string) => XrplCurrency | undefined;
 };
 
 const XrplCurrencyContext = createContext<XrplCurrencyContextType>({} as XrplCurrencyContextType);
@@ -98,17 +97,22 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 	const getBalance = useCallback(
 		(currency?: XrplCurrency) => {
 			return balances?.find((balance) => {
-				if (!ISO_REGEX.test(balance.currency)) {
-					return (
-						normalizeCurrencyCode(balance.currency) === currency?.currency &&
-						balance.issuer === currency?.issuer
-					);
-				} else {
-					return balance.currency === currency?.currency && balance.issuer === currency?.issuer;
-				}
+				return balance.currency === currency?.currency && balance.issuer === currency?.issuer;
 			});
 		},
 		[balances]
+	);
+
+	const findToken = useCallback(
+		(currencyCode: string): XrplCurrency | undefined => {
+			return Object.values(currencies).find((currency) => {
+				return (
+					currency.currency === currencyCode ||
+					normalizeCurrencyCode(currency.currency) === currencyCode
+				);
+			});
+		},
+		[currencies]
 	);
 
 	const checkTrustline = useCallback(
@@ -123,19 +127,12 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 	const positions = useMemo(() => {
 		if (!pools) return null;
 
-		const findToken = (
-			currencyCode: string,
-			currencies: XrplCurrency[]
-		): XrplCurrency | undefined => {
-			return Object.values(currencies).find((currency) => currency.currency === currencyCode);
-		};
-
 		return pools
 			.map((pool) => {
 				const [xCurrency, yCurrency] = pool.poolKey.split("-");
 
-				const xToken = findToken(xCurrency, currencies);
-				const yToken = findToken(yCurrency, currencies);
+				const xToken = findToken(xCurrency);
+				const yToken = findToken(yCurrency);
 
 				if (!xToken || !yToken || !pool.lpTokenIssuer) return null;
 
@@ -157,7 +154,7 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 				} as XrplPosition;
 			})
 			.filter((pool) => !!pool);
-	}, [balances, currencies, pools]);
+	}, [balances, findToken, pools]);
 
 	const refetch = useCallback(async () => {
 		await Promise.all([refetchBalances(), refetchTrustlines()]);
@@ -175,6 +172,7 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 				refetch,
 				positions: positions ?? [],
 				pools: pools ?? [],
+				findToken,
 			}}
 		>
 			{children}

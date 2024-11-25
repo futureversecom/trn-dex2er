@@ -2,6 +2,7 @@ import { upperFirst } from "lodash";
 import { useMemo } from "react";
 
 import { useManageXrplPool } from "@/libs/context";
+import { normalizeCurrencyCode } from "@/libs/utils";
 
 import {
 	ActionButton,
@@ -49,9 +50,12 @@ export function XrplManage() {
 					<InfoItem
 						heading={
 							<span className="flex items-center gap-2">
-								<TokenImage symbol={props.xToken.currency} />
+								<TokenImage
+									symbol={props.xToken.ticker || normalizeCurrencyCode(props.xToken.currency)}
+								/>
 								<Text size="md" className="!text-neutral-600">
-									{props.xToken.currency} {props.action === "add" ? "deposit" : "withdrawal"}
+									{props.xToken.ticker || normalizeCurrencyCode(props.xToken.currency)}{" "}
+									{props.action === "add" ? "deposit" : "withdrawal"}
 								</Text>
 							</span>
 						}
@@ -65,9 +69,12 @@ export function XrplManage() {
 					<InfoItem
 						heading={
 							<span className="flex items-center gap-2">
-								<TokenImage symbol={props.yToken.currency} />
+								<TokenImage
+									symbol={props.yToken.ticker || normalizeCurrencyCode(props.yToken.currency)}
+								/>
 								<Text size="md" className="!text-neutral-600">
-									{props.yToken.currency} {props.action === "add" ? "deposit" : "withdrawal"}
+									{props.yToken.ticker || normalizeCurrencyCode(props.yToken.currency)}{" "}
+									{props.action === "add" ? "deposit" : "withdrawal"}
 								</Text>
 							</span>
 						}

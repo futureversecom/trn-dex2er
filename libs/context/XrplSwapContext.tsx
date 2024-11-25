@@ -235,7 +235,7 @@ export function XrplSwapProvider({ children }: PropsWithChildren) {
 				}
 			})
 			.catch((err) => {
-				console.log("err", err);
+				console.log("could not sign XRPL transaction", err);
 			});
 	}, [state, setTag, xrplProvider, checkTrustline, hasTrustlines, address, refetchBalances]);
 

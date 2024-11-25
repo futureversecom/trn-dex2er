@@ -4,7 +4,9 @@ import {
 	type AMMInfoRequest,
 	AMMWithdraw,
 	type Amount,
+	Currency,
 	dropsToXrp,
+	IssuedCurrency,
 	type Payment,
 	ServerStateResponse,
 	xrpToDrops,
@@ -12,16 +14,17 @@ import {
 import { isIssuedCurrency } from "xrpl/dist/npm/models/transactions/common";
 
 import type { XrplCurrency } from "@/libs/types";
-import { getCurrencyCode, type IXrplWalletProvider } from "@/libs/utils";
+import { getCurrencyCode, type IXrplWalletProvider, toFixed } from "@/libs/utils";
 
 import { ROOT_NETWORK, XRPL_NETWORK } from "../constants";
+
+const ISO_REGEX = /^[A-Z0-9a-z?!@#$%^&*(){}[\]|]{3,4}$/;
 
 export const normalizeCurrencyCode = (currencyCode: string, maxLength = 20) => {
 	if (!currencyCode) return "";
 
-	if (currencyCode.length === 3 && currencyCode.trim().toLowerCase() !== "xrp") {
-		// "Standard" currency code
-		return currencyCode.trim();
+	if (currencyCode.length <= 4) {
+		return currencyCode;
 	}
 
 	if (currencyCode.match(/^[a-fA-F0-9]{40}$/) && !isNaN(parseInt(currencyCode, 16))) {
@@ -128,7 +131,6 @@ export async function getAmmInfo(
 }
 
 export function dropToCurrency(currency: string, amount: string) {
-	console.log("currency", currency, amount);
 	if (currency === "XRP") {
 		if (amount.includes(".")) {
 			const integer = Number(dropsToXrp(amount.split(".")[0]));
@@ -193,24 +195,87 @@ export function buildPaymentTx(
 	return crossCurrencyPaymentTx;
 }
 
-export async function checkAmmExists(
-	provider: IXrplWalletProvider,
-	asset: XrplCurrency,
-	asset2: XrplCurrency
-) {
-	const ammInfoRequest: AMMInfoRequest = {
+export function formatTxInput(token: { currency: string; issuer?: string }, amount: string) {
+	return token.issuer
+		? { ...token, issuer: token.issuer as string, value: toFixed(+amount) }
+		: xrpToDrops(toFixed(+amount, 6));
+}
+
+export function xrplCurrencytoCurrency(token: XrplCurrency): Currency {
+	const assetOne: Currency =
+		token.currency === "XRP"
+			? { currency: "XRP" }
+			: ({
+					currency: token.currency,
+					issuer: token.issuer,
+				} as IssuedCurrency);
+
+	return assetOne;
+}
+
+function createAMMInfoRequest(asset: Currency, asset2: Currency): AMMInfoRequest {
+	return {
 		command: "amm_info",
 		ledger_index: "validated",
 		limit: 10,
 
-		asset: asset as any,
-		asset2: asset2 as any,
-	};
+		asset: asset,
+		asset2: asset2,
+	} as AMMInfoRequest;
+}
 
-	return provider
-		.request(ammInfoRequest)
-		.then(() => true)
-		.catch(() => false);
+export async function checkAmmExists(
+	provider: IXrplWalletProvider,
+	asset: Currency,
+	asset2: Currency
+) {
+	let assetOneModified: Currency = asset;
+	if (ISO_REGEX.test(asset.currency) && asset.currency != "XRP") {
+		assetOneModified = {
+			...assetOneModified,
+			currency: getCurrencyCode(asset.currency),
+		} as IssuedCurrency;
+	} else {
+		assetOneModified = {
+			...assetOneModified,
+			currency: normalizeCurrencyCode(asset.currency),
+		} as IssuedCurrency;
+	}
+
+	let assetTwoModified: Currency = asset2;
+	if (ISO_REGEX.test(asset2.currency) && asset2.currency != "XRP") {
+		assetTwoModified = {
+			...assetTwoModified,
+			currency: getCurrencyCode(asset2.currency),
+		} as IssuedCurrency;
+	} else {
+		assetTwoModified = {
+			...assetTwoModified,
+			currency: normalizeCurrencyCode(asset2.currency),
+		} as IssuedCurrency;
+	}
+
+	const reqs = [
+		createAMMInfoRequest(asset, asset2),
+		createAMMInfoRequest(asset, assetTwoModified),
+		createAMMInfoRequest(assetOneModified, asset2),
+		createAMMInfoRequest(assetOneModified, assetTwoModified),
+	];
+
+	const exists = (
+		await Promise.all(
+			reqs.map(async (r) => {
+				try {
+					await provider.request(r);
+					return true;
+				} catch (err: any) {
+					return false;
+				}
+			})
+		)
+	).some((r) => r);
+
+	return exists;
 }
 
 // https://xrpl.org/docs/references/protocol/transactions/types/ammcreate#special-transaction-cost
@@ -238,7 +303,7 @@ export function buildCreateAmmTx(
 ): AMMCreate {
 	const formatAmount = (token: Amount) =>
 		isIssuedCurrency(token)
-			? { currency: getCurrencyCode(token.currency), issuer: token.issuer, value: token.value }
+			? { currency: token.currency, issuer: token.issuer, value: token.value }
 			: token;
 
 	const create: AMMCreate = {
@@ -246,7 +311,7 @@ export function buildCreateAmmTx(
 		Account: walletAddress,
 		Amount: formatAmount(TokenOne),
 		Amount2: formatAmount(TokenTwo),
-		TradingFee,
+		TradingFee: TradingFee * 1000, // scale trading fee between 0 - 1000
 		Fee: amm_fee_drops,
 	};
 

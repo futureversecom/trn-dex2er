@@ -7,7 +7,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { Balance as CurrencyBalance, dropsToXrp, Transaction, xrpToDrops } from "xrpl";
+import { Balance, Currency, dropsToXrp, Transaction } from "xrpl";
 
 import type { ContextTag, TokenSource, XrplCurrency } from "@/libs/types";
 
@@ -17,22 +17,25 @@ import {
 	buildDepositAmmTx,
 	buildWithdrawAmmTx,
 	checkAmmExists,
+	formatTxInput,
 	getCurrency,
 	getXrplExplorerUrl,
 	InteractiveTransactionResponse,
+	normalizeCurrencyCode,
+	xrplCurrencytoCurrency,
 } from "../utils";
 
 export interface XrplPosition {
 	currency: string;
 	xToken: XrplCurrency;
 	yToken: XrplCurrency;
-	lpBalance?: CurrencyBalance;
+	lpBalance?: Balance;
 	poolShare?: BigNumber;
 }
 
 interface PoolBalance {
-	balance: CurrencyBalance;
-	liquidity: CurrencyBalance;
+	balance: Balance;
+	liquidity: Balance;
 }
 
 interface PoolBalances {
@@ -54,7 +57,7 @@ export type XrplManagePoolContextType = {
 
 // TODO 711 prune these
 interface ManageXrplPoolState extends XrplTokenInputState {
-	action: "add" | "remove" | "create";
+	action: "add" | "remove";
 	slippage?: string;
 	tx?: Transaction;
 	tradingFee?: number;
@@ -89,60 +92,120 @@ export function ManageXrplPoolProvider({ children }: PropsWithChildren) {
 
 	const { address, xrplProvider } = useWallets();
 
-	const checkPool = useCallback(
-		({
-			xToken = tokenInputs[`xToken`],
-			yToken = tokenInputs[`yToken`],
-		}: {
-			xToken?: XrplCurrency;
-			yToken?: XrplCurrency;
-		}) => {
-			void (async () => {
-				if (!xToken || !yToken || !xrplProvider) return;
+	const setToken = useCallback(({ src, token }: { src: TokenSource; token: XrplCurrency }) => {
+		updateState({
+			[`${src}Token`]: token,
+		});
+	}, []);
 
-				let error = "";
-				const valid = await checkAmmExists(xrplProvider, xToken, yToken);
-				if (state.action === "add" && !valid)
-					error = "This pair is not valid yet. Choose another token to deposit";
-				if (state.action === "create" && valid)
-					error = "This pool already exists. Choose another token to deposit";
+	// use to check lp token balance
+	const { positions, pools, refetch: refetchBalances } = useXrplCurrencies();
 
-				updateState({ error, ammExists: valid });
-			})();
-		},
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[state.action, state.xToken, state.yToken, xrplProvider]
-	);
+	const liquidityPool = useMemo(() => {
+		if (!state.xToken || !state.yToken) return;
 
-	const setToken = useCallback(
-		({ src, token }: { src: TokenSource; token: XrplCurrency }) => {
-			if (src === "x") {
-				checkPool({ xToken: token });
-			} else {
-				checkPool({ yToken: token });
-			}
-			updateState({
-				[`${src}Token`]: token,
-			});
-		},
-		[checkPool]
-	);
+		const xToken = state.xToken;
+		const yToken = state.yToken;
+
+		return pools.find(({ poolKey }) => {
+			const [x, y] = poolKey.split("-");
+
+			const xCurrencyFormat = xToken.ticker || normalizeCurrencyCode(xToken.currency);
+			const yCurrencyFormat = yToken.ticker || normalizeCurrencyCode(yToken.currency);
+
+			return (
+				(x === xCurrencyFormat && y === yCurrencyFormat) ||
+				(x === yCurrencyFormat && y === xCurrencyFormat)
+			);
+		});
+	}, [pools, state.xToken, state.yToken]);
+
+	const poolBalances = useMemo(() => {
+		if (!state.xToken || !state.yToken || !liquidityPool || !state.position?.poolShare) return;
+
+		const [x] = liquidityPool.poolKey.split("-");
+
+		const poolShare = state.position.poolShare.dividedBy(100);
+
+		const xLiquidity = liquidityPool.liquidity[x === state.xToken.currency ? 0 : 1];
+		const yLiquidity = liquidityPool.liquidity[x === state.xToken.currency ? 1 : 0];
+
+		const xBalance = poolShare.multipliedBy(+xLiquidity);
+		const yBalance = poolShare.multipliedBy(+yLiquidity);
+
+		const bal = {
+			x: {
+				balance: {
+					currency: state.xToken.currency,
+					value:
+						state.xToken.currency === "XRP" ? dropsToXrp(xBalance.toFixed(0)) : xBalance.toString(),
+				} as Balance,
+				liquidity: {
+					currency: state.xToken.currency,
+					value: xLiquidity.toString(),
+				} as Balance,
+			},
+			y: {
+				balance: {
+					currency: state.yToken.currency,
+					value:
+						state.yToken.currency === "XRP" ? dropsToXrp(yBalance.toFixed(0)) : yBalance.toString(),
+				} as Balance,
+				liquidity: {
+					currency: state.yToken.currency,
+					value: yLiquidity.toString(),
+				} as Balance,
+			},
+		};
+
+		return bal;
+	}, [liquidityPool, state.position?.poolShare, state.xToken, state.yToken]);
 
 	const {
 		setXAmount,
 		setYAmount,
 		isDisabled: isTokenDisabled,
 		...tokenInputs
-	} = useXrplTokenInputs(state, setToken);
+	} = useXrplTokenInputs(
+		state,
+		setToken,
+		state.action === "remove"
+			? poolBalances && {
+					x: poolBalances?.x.balance,
+					y: poolBalances?.y.balance,
+				}
+			: undefined
+	);
+
+	useMemo(() => {
+		void (async () => {
+			const xToken = tokenInputs[`xToken`];
+			const yToken = tokenInputs[`yToken`];
+
+			if (!xToken || !yToken || !xrplProvider) return;
+
+			const assetOne: Currency = xrplCurrencytoCurrency(xToken);
+			const assetTwo: Currency = xrplCurrencytoCurrency(yToken);
+
+			const valid = await checkAmmExists(xrplProvider, assetOne, assetTwo);
+
+			if (!valid) {
+				return updateState({
+					error: "This pair is not valid yet. Choose another token to deposit",
+				});
+			} else {
+				return updateState({
+					error: undefined,
+				});
+			}
+		})();
+	}, [tokenInputs, xrplProvider]);
 
 	const resetState = useCallback(() => {
 		setState(initialState);
 		setXAmount("");
 		setYAmount("");
 	}, [setXAmount, setYAmount]);
-
-	// use to check lp token balance
-	const { positions, pools, refetch: refetchBalances } = useXrplCurrencies();
 
 	const onPoolClick = useCallback((xToken: XrplCurrency, yToken: XrplCurrency) => {
 		updateState({ xToken, yToken });
@@ -166,29 +229,20 @@ export function ManageXrplPoolProvider({ children }: PropsWithChildren) {
 			const xToken = getCurrency(state[`xToken`]!);
 			const yToken = getCurrency(state[`yToken`]!);
 
-			// TODO 711 need to check if these pools are valid
 			if (state.action === "add") {
 				return updateState({
 					tx: buildDepositAmmTx(
 						address,
-						xToken.issuer
-							? { ...xToken, issuer: xToken.issuer as string, value: xAmount }
-							: xrpToDrops(xAmount),
-						yToken.issuer
-							? { ...yToken, issuer: yToken.issuer as string, value: yAmount }
-							: xrpToDrops(yAmount)
+						formatTxInput(xToken, xAmount),
+						formatTxInput(yToken, yAmount)
 					),
 				});
 			} else if (state.action === "remove") {
 				return updateState({
 					tx: buildWithdrawAmmTx(
 						address,
-						xToken.issuer
-							? { ...xToken, issuer: xToken.issuer as string, value: xAmount }
-							: xrpToDrops(xAmount),
-						yToken.issuer
-							? { ...yToken, issuer: yToken.issuer as string, value: yAmount }
-							: xrpToDrops(yAmount)
+						formatTxInput(xToken, xAmount),
+						formatTxInput(yToken, yAmount)
 					),
 				});
 			}
@@ -224,6 +278,19 @@ export function ManageXrplPoolProvider({ children }: PropsWithChildren) {
 		return isTokenDisabled || !!state.error;
 	}, [state, isTokenDisabled]);
 
+	const getPoolBalances = useCallback(() => {
+		if (!state.xToken || !state.yToken || !liquidityPool) return;
+
+		const [x] = liquidityPool.poolKey.split("-");
+
+		const xCurrencyFormat = state.xToken.ticker || normalizeCurrencyCode(state.xToken.currency);
+
+		return {
+			x: liquidityPool.liquidity[x === xCurrencyFormat ? 0 : 1],
+			y: liquidityPool.liquidity[x === xCurrencyFormat ? 1 : 0],
+		};
+	}, [state.xToken, state.yToken, liquidityPool]);
+
 	const setAmount = useCallback(
 		({ src, amount }: { src: TokenSource; amount: string }) => {
 			if (src === "x") {
@@ -233,26 +300,36 @@ export function ManageXrplPoolProvider({ children }: PropsWithChildren) {
 				setYAmount(amount);
 				buildTransaction({ yAmount: amount });
 			}
-			checkPool({});
+			const otherSrc = src === "x" ? "y" : "x";
+
+			const token = state[`${src}Token`];
+			const otherToken = state[`${otherSrc}Token`];
+
+			if (!token || !otherToken) return;
+
+			const poolBalances = getPoolBalances();
+			if (!poolBalances) return;
+
+			const tokenLiquidity =
+				token.currency === "XRP" ? dropsToXrp(poolBalances[src]) : poolBalances[src];
+			const otherLiquidity =
+				otherToken.currency === "XRP" ? dropsToXrp(poolBalances[otherSrc]) : poolBalances[otherSrc];
+
+			const otherConverted = +amount * (+otherLiquidity / +tokenLiquidity);
+
+			if (src === "x") setYAmount(otherConverted.toString());
+			else setXAmount(otherConverted.toString());
+
+			const xBalance = src === "x" ? amount : otherConverted.toString();
+			const yBalance = src === "y" ? amount : otherConverted.toString();
+
+			buildTransaction({
+				xAmount: xBalance.toString(),
+				yAmount: yBalance.toString(),
+			});
 		},
-		[buildTransaction, checkPool, setXAmount, setYAmount]
+		[buildTransaction, getPoolBalances, setXAmount, setYAmount, state]
 	);
-
-	const liquidityPool = useMemo(() => {
-		if (!state.xToken || !state.yToken) return;
-
-		const xToken = state.xToken;
-		const yToken = state.yToken;
-
-		return pools.find(({ poolKey }) => {
-			const [x, y] = poolKey.split("-");
-
-			return (
-				(x === xToken.currency && y === yToken.currency) ||
-				(x === yToken.currency && y === xToken.currency)
-			);
-		});
-	}, [pools, state.xToken, state.yToken]);
 
 	useMemo(() => {
 		if (!liquidityPool || !positions.length) return;
@@ -261,47 +338,6 @@ export function ManageXrplPoolProvider({ children }: PropsWithChildren) {
 
 		updateState({ position });
 	}, [positions, liquidityPool]);
-
-	const poolBalances = useMemo(() => {
-		if (!state.xToken || !state.yToken || !liquidityPool || !state.position?.poolShare) return;
-
-		const [x] = liquidityPool.poolKey.split("-");
-
-		const poolShare = state.position.poolShare.dividedBy(100);
-
-		const xLiquidity = liquidityPool.liquidity[x === state.xToken.currency ? 0 : 1];
-		const yLiquidity = liquidityPool.liquidity[x === state.xToken.currency ? 1 : 0];
-
-		const xBalance = poolShare.multipliedBy(+xLiquidity);
-		const yBalance = poolShare.multipliedBy(+yLiquidity);
-
-		const bal = {
-			x: {
-				balance: {
-					currency: state.xToken.currency,
-					value:
-						state.xToken.currency === "XRP" ? dropsToXrp(xBalance.toFixed(0)) : xBalance.toString(),
-				} as CurrencyBalance,
-				liquidity: {
-					currency: state.xToken.currency,
-					value: xLiquidity.toString(),
-				} as CurrencyBalance,
-			},
-			y: {
-				balance: {
-					currency: state.yToken.currency,
-					value:
-						state.yToken.currency === "XRP" ? dropsToXrp(yBalance.toFixed(0)) : yBalance.toString(),
-				} as CurrencyBalance,
-				liquidity: {
-					currency: state.yToken.currency,
-					value: yLiquidity.toString(),
-				} as CurrencyBalance,
-			},
-		};
-
-		return bal;
-	}, [liquidityPool, state.position?.poolShare, state.xToken, state.yToken]);
 
 	return (
 		<ManageXrplPoolContext.Provider

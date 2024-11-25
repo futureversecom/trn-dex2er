@@ -126,38 +126,39 @@ const testnet: XrplCurrencies = {
 		},
 		{
 			decimals: 6,
-			currency: "ROOT",
+			ticker: "ROOT",
+			currency: getCurrencyCode("ROOT"),
 			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
 		},
-		// {
-		// 	decimals: 18,
-		// 	currency: "ZRP",
-		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
-		// },
-		// {
-		// 	decimals: 6,
-		// 	ticker: "USDC",
-		// 	currency: getCurrencyCode("USDC"),
-		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
-		// },
-		// {
-		// 	decimals: 6,
-		// 	ticker: "USDT",
-		// 	currency: getCurrencyCode("USDT"),
-		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
-		// },
-		// {
-		// 	decimals: 18,
-		// 	ticker: "ASTO",
-		// 	currency: getCurrencyCode("ASTO"),
-		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
-		// },
-		// {
-		// 	decimals: 18,
-		// 	ticker: "SYLO",
-		// 	currency: getCurrencyCode("SYLO"),
-		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
-		// },
+		{
+			decimals: 18,
+			currency: "ZRP",
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
+		{
+			decimals: 6,
+			ticker: "USDC",
+			currency: getCurrencyCode("USDC"),
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
+		{
+			decimals: 6,
+			ticker: "USDT",
+			currency: getCurrencyCode("USDT"),
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
+		{
+			decimals: 18,
+			ticker: "ASTO",
+			currency: getCurrencyCode("ASTO"),
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
+		{
+			decimals: 18,
+			ticker: "SYLO",
+			currency: getCurrencyCode("SYLO"),
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+		},
 		{
 			currency: "ETH",
 			decimals: 18,
@@ -264,29 +265,17 @@ const devnet: XrplCurrencies = {
 			decimals: 18,
 			issuer: "rNYjPW7NbiVDYy6K23b8ye6iZnowj4PsL7",
 		},
-		// {
-		// 	decimals: 6,
-		// 	ticker: "ROOT",
-		// 	currency: getCurrencyCode("ROOT"),
-		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
-		// },
-		// {
-		// 	decimals: 18,
-		// 	currency: "ZRP",
-		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
-		// },
-		// {
-		// 	decimals: 18,
-		// 	ticker: "ASTO",
-		// 	currency: getCurrencyCode("ASTO"),
-		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
-		// },
-		// {
-		// 	decimals: 18,
-		// 	ticker: "SYLO",
-		// 	currency: getCurrencyCode("SYLO"),
-		// 	issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
-		// },
+		{
+			ticker: "DOGE",
+			currency: getCurrencyCode("DOGE"),
+			issuer: "rEz3WMt5ZB36HfcLavkhvM1y2UeVMQJzCU",
+		},
+		{
+			ticker: "ASTO",
+			currency: getCurrencyCode("ASTO"),
+			issuer: "rpFEEHBkoFwK3J9Mzi426PvTzGEMZizEh1",
+			decimals: 18,
+		},
 	],
 	bridge: [
 		{

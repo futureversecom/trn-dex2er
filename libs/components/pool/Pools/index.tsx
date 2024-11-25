@@ -4,7 +4,7 @@ import { dropsToXrp } from "xrpl";
 
 import { useTrnTokens, useXrplCurrencies } from "@/libs/context";
 import type { TrnToken, XrplCurrency } from "@/libs/types";
-import { Balance } from "@/libs/utils";
+import { Balance, normalizeCurrencyCode } from "@/libs/utils";
 
 import { LPTokens, Pagination, TableRow, Text } from "../../shared";
 import { Liquidity } from "./Liquidity";
@@ -25,7 +25,7 @@ type PoolProps<T extends "XRP" | "ROOT"> = T extends "XRP"
 
 export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 	const { pools: trnPools, tokens: trnTokens } = useTrnTokens();
-	const { pools: xrplPools, currencies } = useXrplCurrencies();
+	const { pools: xrplPools, findToken } = useXrplCurrencies();
 	const { onPoolClick, network } = props;
 
 	const pools = network === "ROOT" ? trnPools : xrplPools;
@@ -44,12 +44,8 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 					new Balance(pool.liquidity[1], token1 as TrnToken).gt(0)
 				);
 			} else {
-				const currency1 = Object.values(currencies).find(
-					(currency) => currency.currency === asset1
-				);
-				const currency2 = Object.values(currencies).find(
-					(currency) => currency.currency === asset2
-				);
+				const currency1 = findToken(asset1);
+				const currency2 = findToken(asset2);
 
 				return (
 					currency1 &&
@@ -59,7 +55,7 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 				);
 			}
 		});
-	}, [currencies, network, pools, trnTokens]);
+	}, [findToken, network, pools, trnTokens]);
 
 	const { startIndex, endIndex, ...paginationProps } = usePagination({
 		totalItems: validPools.length,
@@ -110,17 +106,17 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 								/>
 							);
 						} else {
-							const currency1 = Object.values(currencies).find(
-								(currency) => currency.currency === asset1
-							);
-							const currency2 = Object.values(currencies).find(
-								(currency) => currency.currency === asset2
-							);
+							const currency1 = findToken(asset1);
+							const currency2 = findToken(asset2);
 
+							if (!currency1 || !currency2) {
+								// if currencies cannot be found return empty tsx
+								return <></>;
+							}
 							const liquidityPool1 =
-								currency1?.currency === "XRP" ? dropsToXrp(pool.liquidity[0]) : pool.liquidity[0];
+								currency1.currency === "XRP" ? dropsToXrp(pool.liquidity[0]) : pool.liquidity[0];
 							const liquidityPool2 =
-								currency2?.currency === "XRP" ? dropsToXrp(pool.liquidity[1]) : pool.liquidity[1];
+								currency2.currency === "XRP" ? dropsToXrp(pool.liquidity[1]) : pool.liquidity[1];
 
 							return (
 								<TableRow
@@ -130,22 +126,22 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 									items={[
 										<LPTokens
 											tokens={[
-												(currency1 as XrplCurrency).currency,
-												(currency2 as XrplCurrency).currency,
+												currency1.ticker || normalizeCurrencyCode(currency1.currency),
+												currency2.ticker || normalizeCurrencyCode(currency2.currency),
 											]}
 											key="LP Tokens"
 										/>,
 
 										<TokenBalance
 											balance={liquidityPool1 as string}
-											token={(currency1 as XrplCurrency).currency}
-											key={(currency1 as XrplCurrency).currency}
+											token={currency1.ticker || normalizeCurrencyCode(currency1.currency)}
+											key={currency1.ticker || currency1.currency}
 										/>,
 
 										<TokenBalance
 											balance={liquidityPool2 as string}
-											token={(currency2 as XrplCurrency).currency}
-											key={(currency2 as XrplCurrency).currency}
+											token={currency2.ticker || normalizeCurrencyCode(currency2.currency)}
+											key={currency2.ticker || currency2.currency}
 										/>,
 
 										<Liquidity liquidity={pool.liquidityInUSD} key="Liquidity (USD)" />,

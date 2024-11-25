@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import { useTrnTokens, useXrplCurrencies } from "@/libs/context";
 import { Token, TrnToken, XrplCurrency } from "@/libs/types";
-import { isXrplCurrency, toHuman } from "@/libs/utils";
+import { isXrplCurrency, normalizeCurrencyCode, toHuman } from "@/libs/utils";
 
 import { Modal, type ModalProps, TableRow, Text, TokenImage } from "./";
 
@@ -84,10 +84,16 @@ export function TokenSelect<T extends Token>({
 									key={token.currency}
 									onClick={onRowClick.bind(null, token as T)}
 									items={[
-										<TokenImage symbol={token.ticker || token.currency} size={28} key="token" />,
+										<TokenImage
+											symbol={token.ticker || normalizeCurrencyCode(token.currency)}
+											size={28}
+											key="token"
+										/>,
 										<div key="symbol">
-											<Text>{token.ticker || token.currency}</Text>
-											<Text className="!text-neutral-500">{token.ticker || token.currency}</Text>
+											<Text>{token.ticker || normalizeCurrencyCode(token.currency)}</Text>
+											<Text className="!text-neutral-500">
+												{token.ticker || normalizeCurrencyCode(token.currency)}
+											</Text>
 										</div>,
 										<div key="balance" className="flex w-full justify-end">
 											<Text>{tokenBalance}</Text>

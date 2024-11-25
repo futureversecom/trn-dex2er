@@ -7,7 +7,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { dropsToXrp, Transaction, xrpToDrops } from "xrpl";
+import { Currency, dropsToXrp, Transaction } from "xrpl";
 
 import type { ContextTag, TokenSource, XamanData, XrplCurrency } from "@/libs/types";
 
@@ -18,10 +18,13 @@ import {
 	buildCreateAmmTx,
 	buildDepositAmmTx,
 	checkAmmExists,
+	formatTxInput,
 	getAmmcost,
 	getCurrency,
 	getXrplExplorerUrl,
 	InteractiveTransactionResponse,
+	normalizeCurrencyCode,
+	xrplCurrencytoCurrency,
 } from "../utils";
 
 export type AddLiquidityXrplContextType = {
@@ -33,7 +36,7 @@ export type AddLiquidityXrplContextType = {
 	setTag: (tag?: ContextTag) => void;
 	xamanData?: XamanData;
 	setTradingFee: (fee: string) => void;
-	tradingFee?: string;
+	tradingFee?: number;
 } & AddLiquidityStateXrpl &
 	Omit<XrplTokenInputs, "setXAmount" | "setYAmount">;
 
@@ -51,7 +54,8 @@ interface AddLiquidityStateXrpl extends XrplTokenInputState {
 	estPoolShare?: number;
 	ratioBase: TokenSource;
 	action: "add" | "create";
-	tradingFee?: string;
+	tradingFee?: number;
+	tradingFeeError?: string;
 	qr?: string;
 	ammExists?: boolean;
 }
@@ -72,44 +76,11 @@ export function AddLiquidityXrplProvider({ children }: PropsWithChildren) {
 
 	const setTag = useCallback((tag?: ContextTag) => updateState({ tag }), []);
 
-	const checkPool = useCallback(
-		({
-			xToken = tokenInputs[`xToken`],
-			yToken = tokenInputs[`yToken`],
-		}: {
-			xToken?: XrplCurrency;
-			yToken?: XrplCurrency;
-		}) => {
-			void (async () => {
-				if (!xToken || !yToken || !xrplProvider) return;
-
-				const valid = await checkAmmExists(xrplProvider, xToken, yToken);
-				if (state.action === "add" && !valid) {
-					return updateState({ action: "create", ammExists: valid });
-				}
-				if (state.action === "create" && valid) {
-					return updateState({ action: "add", ammExists: valid });
-				}
-			})();
-		},
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[state.action, state.xToken, state.yToken, xrplProvider]
-	);
-
-	const setToken = useCallback(
-		({ src, token }: { src: TokenSource; token: XrplCurrency }) => {
-			if (src === "x") {
-				checkPool({ xToken: token });
-			} else {
-				checkPool({ yToken: token });
-			}
-
-			updateState({
-				[`${src}Token`]: token,
-			});
-		},
-		[checkPool]
-	);
+	const setToken = useCallback(({ src, token }: { src: TokenSource; token: XrplCurrency }) => {
+		updateState({
+			[`${src}Token`]: token,
+		});
+	}, []);
 
 	const { data: ammCost } = useQuery({
 		queryKey: ["amm_cost"],
@@ -117,16 +88,33 @@ export function AddLiquidityXrplProvider({ children }: PropsWithChildren) {
 		enabled: !!xrplProvider,
 	});
 
-	const setTradingFee = useCallback((fee: string) => {
-		updateState({ tradingFee: fee });
-	}, []);
-
 	const {
 		setXAmount,
 		setYAmount,
 		isDisabled: isTokenDisabled,
 		...tokenInputs
 	} = useXrplTokenInputs(state, setToken);
+
+	useMemo(() => {
+		void (async () => {
+			const xToken = tokenInputs[`xToken`];
+			const yToken = tokenInputs[`yToken`];
+
+			if (!xToken || !yToken || !xrplProvider) return;
+
+			const assetOne: Currency = xrplCurrencytoCurrency(xToken);
+			const assetTwo: Currency = xrplCurrencytoCurrency(yToken);
+
+			const valid = await checkAmmExists(xrplProvider, assetOne, assetTwo);
+
+			if (state.action === "add" && !valid) {
+				return updateState({ action: "create", ammExists: valid });
+			}
+			if (state.action === "create" && valid) {
+				return updateState({ action: "add", ammExists: valid });
+			}
+		})();
+	}, [state.action, tokenInputs, xrplProvider]);
 
 	const resetState = useCallback(() => {
 		setState(initialState);
@@ -145,9 +133,12 @@ export function AddLiquidityXrplProvider({ children }: PropsWithChildren) {
 		return pools.find(({ poolKey }) => {
 			const [x, y] = poolKey.split("-");
 
+			const xCurrencyFormat = xToken.ticker || normalizeCurrencyCode(xToken.currency);
+			const yCurrencyFormat = yToken.ticker || normalizeCurrencyCode(yToken.currency);
+
 			return (
-				(x === xToken.currency && y === yToken.currency) ||
-				(x === yToken.currency && y === xToken.currency)
+				(x === xCurrencyFormat && y === yCurrencyFormat) ||
+				(x === yCurrencyFormat && y === xCurrencyFormat)
 			);
 		});
 	}, [pools, state.xToken, state.yToken]);
@@ -179,25 +170,17 @@ export function AddLiquidityXrplProvider({ children }: PropsWithChildren) {
 				return updateState({
 					tx: buildDepositAmmTx(
 						address,
-						xToken.issuer
-							? { ...xToken, issuer: xToken.issuer as string, value: xAmount }
-							: xrpToDrops(xAmount),
-						yToken.issuer
-							? { ...yToken, issuer: yToken.issuer as string, value: yAmount }
-							: xrpToDrops(yAmount)
+						formatTxInput(xToken, xAmount),
+						formatTxInput(yToken, yAmount)
 					),
 				});
 			} else if (state.action === "create" && state.tradingFee && ammCost) {
 				return updateState({
 					tx: buildCreateAmmTx(
 						address,
-						xToken.issuer
-							? { ...xToken, issuer: xToken.issuer as string, value: xAmount }
-							: xrpToDrops(xAmount),
-						yToken.issuer
-							? { ...yToken, issuer: yToken.issuer as string, value: yAmount }
-							: xrpToDrops(yAmount),
-						+state.tradingFee,
+						formatTxInput(xToken, xAmount),
+						formatTxInput(yToken, yAmount),
+						state.tradingFee,
 						ammCost
 					),
 				});
@@ -206,14 +189,24 @@ export function AddLiquidityXrplProvider({ children }: PropsWithChildren) {
 		[tokenInputs, address, state, ammCost]
 	);
 
+	const setTradingFee = useCallback(
+		(fee: string) => {
+			updateState({ tradingFee: +fee });
+			buildTransaction({});
+		},
+		[buildTransaction]
+	);
+
 	const getPoolBalances = useCallback(() => {
 		if (!state.xToken || !state.yToken || !liquidityPool) return;
 
 		const [x] = liquidityPool.poolKey.split("-");
 
+		const xCurrencyFormat = state.xToken.ticker || normalizeCurrencyCode(state.xToken.currency);
+
 		return {
-			x: liquidityPool.liquidity[x === state.xToken.currency ? 0 : 1],
-			y: liquidityPool.liquidity[x === state.xToken.currency ? 1 : 0],
+			x: liquidityPool.liquidity[x === xCurrencyFormat ? 0 : 1],
+			y: liquidityPool.liquidity[x === xCurrencyFormat ? 1 : 0],
 		};
 	}, [state.xToken, state.yToken, liquidityPool]);
 
@@ -231,7 +224,7 @@ export function AddLiquidityXrplProvider({ children }: PropsWithChildren) {
 			const token = state[`${src}Token`];
 			const otherToken = state[`${otherSrc}Token`];
 
-			if (!token || !otherToken) return;
+			if (!token || !otherToken || state.action === "create") return;
 
 			const poolBalances = getPoolBalances();
 			if (!poolBalances) return;

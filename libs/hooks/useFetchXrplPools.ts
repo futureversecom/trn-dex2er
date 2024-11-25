@@ -42,8 +42,6 @@ const fetchPoolData = async (
 		})
 	);
 
-	console.log("fetchPooldata info response ", infoResponse);
-
 	return infoResponse;
 };
 
