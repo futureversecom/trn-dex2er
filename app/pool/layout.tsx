@@ -1,5 +1,3 @@
-import { use } from "react";
-
 import { Nav } from "@/libs/components/pool";
 import { TrnTokenProvider } from "@/libs/context";
 import { XrplCurrencyProvider } from "@/libs/context";

@@ -49,8 +49,8 @@ export const XRPL_NETWORK: XrplNetworkDetails = {
 		},
 		ExplorerUrl: {
 			Bridge: "https://testnet.xrpl.org",
-			Swap: "https://devnet.xrpl.org",
-			Pool: "https://devnet.xrpl.org",
+			Swap: "https://testnet.xrpl.org",
+			Pool: "https://testnet.xrpl.org",
 		},
 	},
 
