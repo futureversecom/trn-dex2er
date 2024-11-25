@@ -64,7 +64,7 @@ const initialState = {
 	slippage: "5",
 	gasToken: DEFAULT_GAS_TOKEN,
 	ratioBase: "x",
-	action: "add",
+	action: "create",
 } as AddLiquidityStateXrpl;
 
 export function AddLiquidityXrplProvider({ children }: PropsWithChildren) {

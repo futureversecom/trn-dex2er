@@ -40,7 +40,7 @@ export function AddLiquidityXrpl({ children }: PropsWithChildren) {
 					tag={props.tag}
 					onClose={() => props.setTag(undefined)}
 					onConfirm={props.signTransaction}
-					title="Confirm Added liquidity"
+					title={props.action === "add" ? "Confirm Added liquidity" : "Confirm Create Pair"}
 					description=""
 					explorerUrl={props.explorerUrl}
 					error={props.error}
