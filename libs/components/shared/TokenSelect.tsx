@@ -107,7 +107,7 @@ export function TokenSelect<T extends Token>({
 								/>
 							);
 						})}
-						<TableRow
+						{/* <TableRow
 							key="import token"
 							onClick={() => onImportTokenClick()}
 							items={[
@@ -115,7 +115,7 @@ export function TokenSelect<T extends Token>({
 									<Text className="font-bold">+ Import Token</Text>
 								</div>,
 							]}
-						/>
+						/> */}
 					</>
 				) : (
 					(filteredTokens as TrnToken[]).map((token) => {

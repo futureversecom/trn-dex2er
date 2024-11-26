@@ -9,8 +9,7 @@ import {
 	AmountInputs,
 	Box,
 	Button,
-	ConfirmModal,
-	ImportToken,
+	ConfirmModal, // ImportToken,
 	InfoItem,
 	QrModal,
 	Text,
@@ -26,12 +25,12 @@ export function XrplManage() {
 
 	return (
 		<>
-			<ImportToken
+			{/* <ImportToken
 				open={props.isOpen === false && importModalOpen}
 				onClose={() => {
 					openImportModal(false);
 				}}
-			/>
+			/> */}
 
 			<TokenSelect
 				open={props.isOpen !== false}

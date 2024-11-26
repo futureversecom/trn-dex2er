@@ -24,12 +24,12 @@ export function AddLiquidityXrpl({ children }: PropsWithChildren) {
 
 	return (
 		<>
-			<ImportToken
+			{/* <ImportToken
 				open={props.isOpen === false && importModalOpen}
 				onClose={() => {
 					openImportModal(false);
 				}}
-			/>
+			/> */}
 
 			<TokenSelect
 				open={props.isOpen !== false && importModalOpen === false}
