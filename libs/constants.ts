@@ -43,6 +43,17 @@ export const ROOT_NETWORK = {
 }[process.env.NEXT_PUBLIC_ROOT_NETWORK ?? "porcini"] as TrnNetworkDetails;
 
 export const XRPL_NETWORK: XrplNetworkDetails = {
+	devnet: {
+		ApiUrl: {
+			InWebSocket: "wss://s.devnet.rippletest.net:51233",
+		},
+		ExplorerUrl: {
+			Bridge: "https://devnet.xrpl.org",
+			Swap: "https://devnet.xrpl.org",
+			Pool: "https://devnet.xrpl.org",
+		},
+	},
+
 	testnet: {
 		ApiUrl: {
 			InWebSocket: "wss://s.altnet.rippletest.net/",

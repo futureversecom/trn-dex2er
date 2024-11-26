@@ -48,7 +48,11 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 	const { prices } = useUsdPrices();
 	const { address, xrplProvider } = useWallets();
 	const [tokenPairs, setTokenPairs] = useState<Array<AMMInfoRequest>>(initialTokenPairs);
-	const { data: pools, isFetching: isFetchingPools } = useFetchXrplPools(xrplProvider, tokenPairs);
+	const { data: pools, isFetching: isFetchingPools } = useFetchXrplPools(
+		xrplProvider,
+		tokenPairs,
+		prices
+	);
 
 	const [curr, setCurr] = useState<XrplCurrency[]>(currencies);
 	const [updateCurrError, setCurrError] = useState<string>();
@@ -120,14 +124,14 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 
 	const findToken = useCallback(
 		(currencyCode: string): XrplCurrency | undefined => {
-			return Object.values(curr).find((currency) => {
+			return Object.values(currenciesWithPrices).find((currency) => {
 				return (
 					currency.currency === currencyCode ||
 					normalizeCurrencyCode(currency.currency) === currencyCode
 				);
 			});
 		},
-		[curr]
+		[currenciesWithPrices]
 	);
 
 	const checkTrustline = useCallback(
@@ -141,7 +145,7 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 
 	const updateCurr = useCallback(
 		(update: XrplCurrency) => {
-			if (curr.includes(update)) {
+			if (currenciesWithPrices.includes(update)) {
 				setCurrError("Token already imported");
 				return;
 			}
@@ -158,7 +162,7 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 				setCurrError("Trust line not set");
 			}
 		},
-		[checkTrustline, curr]
+		[checkTrustline, currenciesWithPrices]
 	);
 
 	useMemo(() => {

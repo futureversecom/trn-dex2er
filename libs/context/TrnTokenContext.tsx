@@ -6,7 +6,7 @@ import { Balance } from "@/libs/utils";
 
 import { useFetchTrnPools, useTrnBalanceSubscription } from "../hooks";
 import { useFetchTrnTokens } from "../hooks/useFetchTokens";
-import type { LiquidityPools, TrnToken, TrnTokens } from "../types";
+import type { LiquidityPoolsRoot, TrnToken, TrnTokens } from "../types";
 import { useUsdPrices } from "./UsdPriceContext";
 
 export interface Position {
@@ -19,7 +19,7 @@ export interface Position {
 
 export type TrnTokenContextType = {
 	tokens: TrnTokens;
-	pools: LiquidityPools;
+	pools: LiquidityPoolsRoot;
 	isFetching: boolean;
 	tokenBalances: Record<number, Balance<TrnToken>>;
 	refetchTokenBalances: () => Promise<VoidFn | undefined>;

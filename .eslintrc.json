@@ -1,4 +1,5 @@
 {
+  "plugins": ["unused-imports"],
   "extends": [
     "eslint:recommended",
     "plugin:@next/next/recommended",
@@ -6,7 +7,6 @@
     "plugin:react/recommended",
     "plugin:react-hooks/recommended",
     "prettier",
-    "plugin:eslint-plugin-unused-imports",
     "plugin:prettier/recommended",
     "plugin:@next/next/recommended"
   ],

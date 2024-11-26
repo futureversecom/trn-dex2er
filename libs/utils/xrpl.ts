@@ -30,12 +30,7 @@ export const normalizeCurrencyCode = (currencyCode: string, maxLength = 20) => {
 	if (currencyCode.match(/^[a-fA-F0-9]{40}$/) && !isNaN(parseInt(currencyCode, 16))) {
 		// Hexadecimal currency code
 		const hex = currencyCode.toString().replace(/(00)+$/g, "");
-		// if (hex.startsWith("01")) {
-		// 	// Old demurrage code. https://xrpl.org/demurrage.html
-		// 	return convertDemurrageToUTF8(currencyCode);
-		// }
 		if (hex.startsWith("02")) {
-			// XLS-16d NFT Metadata using XLS-15d Concise Transaction Identifier
 			// https://github.com/XRPLF/XRPL-Standards/discussions/37
 			const xlf15d = Buffer.from(hex, "hex").slice(8).toString("utf-8").slice(0, maxLength).trim();
 			if (xlf15d.match(/[a-zA-Z0-9]{3,}/) && xlf15d.toLowerCase() !== "xrp") {
@@ -292,8 +287,6 @@ export const getAmmcost = async (
 };
 
 // https://xrpl.org/docs/references/protocol/transactions/types/ammcreate
-// TODO 711 must check default ripple enabled
-// TODO: 711 consider error cases
 export function buildCreateAmmTx(
 	walletAddress: string,
 	TokenOne: Amount,
@@ -315,14 +308,11 @@ export function buildCreateAmmTx(
 		Fee: amm_fee_drops,
 	};
 
-	console.log("create tx ", create);
-
 	return create;
 }
 
 // https://xrpl.org/docs/references/protocol/transactions/types/ammdeposit
-// TODO: 711 consider that this create a trust line ... check it maybe ?
-// TODO: 711 double and single asset deposit
+// TODO double and single asset deposit
 export function buildDepositAmmTx(
 	walletAddress: string,
 	TokenOne: Amount,
@@ -346,8 +336,6 @@ export function buildDepositAmmTx(
 			: { currency: "XRP" },
 		Flags: 1048576, // Keps the balance of the amm deposits up to the users specification 0x00100000 tfTwoAsset
 	};
-
-	console.log("deposit tx ", depo);
 
 	return depo as AMMDeposit;
 }
@@ -375,10 +363,8 @@ export function buildWithdrawAmmTx(
 			? { currency: TokenTwo.currency, issuer: TokenTwo.issuer }
 			: { currency: "XRP" },
 		Flags: 1048576, // withdraws both amm assets up to specified amounts. Actual amounts received
-		// maintain balance of assets in the amms pool 0x00100000 tfTwoAsset
+		// maintains balance of assets in the amms pool 0x00100000 tfTwoAsset
 	};
-
-	console.log("withdraw tx ", withdraw);
 
 	return withdraw;
 }

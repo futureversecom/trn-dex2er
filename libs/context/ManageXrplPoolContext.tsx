@@ -55,22 +55,14 @@ export type XrplManagePoolContextType = {
 } & ManageXrplPoolState &
 	Omit<XrplTokenInputs, "setXAmount" | "setYAmount">;
 
-// TODO 711 prune these
 interface ManageXrplPoolState extends XrplTokenInputState {
 	action: "add" | "remove";
-	slippage?: string;
 	tx?: Transaction;
-	tradingFee?: number;
-	yAmountMin?: string;
-	ratio?: string;
 	tag?: ContextTag;
 	explorerUrl?: string;
 	error?: string;
-	feeError?: string;
-	priceDifference?: number;
 	qr?: string;
 	ammExists?: boolean;
-	estimatedFee?: string;
 	position?: XrplPosition;
 }
 

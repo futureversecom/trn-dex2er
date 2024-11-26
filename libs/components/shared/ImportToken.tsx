@@ -120,8 +120,6 @@ export function ImportToken({ open, onClose }: ModalProps) {
 					)}
 				</div>
 			)}
-
-			{/* <div className="flex max-h-[20em] flex-col space-y-2 overflow-y-scroll"></div> */}
 		</Modal>
 	);
 }

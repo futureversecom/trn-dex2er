@@ -12,7 +12,6 @@ import { Currency, dropsToXrp, Transaction } from "xrpl";
 import type { ContextTag, TokenSource, XamanData, XrplCurrency } from "@/libs/types";
 
 import { useWallets, useXrplCurrencies } from ".";
-import { DEFAULT_GAS_TOKEN } from "../constants";
 import { useXrplTokenInputs, XrplTokenInputs, XrplTokenInputState } from "../hooks";
 import {
 	buildCreateAmmTx,
@@ -44,15 +43,12 @@ const AddLiquidityXrplContext = createContext<AddLiquidityXrplContextType>(
 	{} as AddLiquidityXrplContextType
 );
 
-// TODO 711 prune these
 interface AddLiquidityStateXrpl extends XrplTokenInputState {
 	tx?: Transaction;
 	tag?: ContextTag;
 	explorerUrl?: string;
 	error?: string;
-	feeError?: string;
 	estPoolShare?: number;
-	ratioBase: TokenSource;
 	action: "add" | "create";
 	tradingFee?: number;
 	tradingFeeError?: string;
@@ -61,9 +57,6 @@ interface AddLiquidityStateXrpl extends XrplTokenInputState {
 }
 
 const initialState = {
-	slippage: "5",
-	gasToken: DEFAULT_GAS_TOKEN,
-	ratioBase: "x",
 	action: "create",
 } as AddLiquidityStateXrpl;
 

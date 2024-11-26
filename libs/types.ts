@@ -50,8 +50,7 @@ export interface LiquidityPoolRoot {
 	lpTokenSupply?: string;
 }
 
-// TODO 711 rename this to Root
-export type LiquidityPools = Array<LiquidityPoolRoot>;
+export type LiquidityPoolsRoot = Array<LiquidityPoolRoot>;
 
 export type LiquidityPoolXrpl = Omit<LiquidityPoolRoot, "assetId" | "liquidity"> & {
 	currency: string;
