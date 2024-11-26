@@ -28,6 +28,12 @@ export type XrplCurrencyContextType = {
 	positions: XrplPosition[];
 	pools: LiquidityPoolsXrpl;
 	findToken: (currencyCode: string) => XrplCurrency | undefined;
+	updateCurr: (update: XrplCurrency) => void;
+	updateCurrError: string | undefined;
+	openImportModal: (open: boolean) => void;
+	importModalOpen: boolean;
+	setImportSuccess: (success: boolean) => void;
+	importSuccess: boolean;
 };
 
 const XrplCurrencyContext = createContext<XrplCurrencyContextType>({} as XrplCurrencyContextType);
@@ -42,15 +48,26 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 	const { prices } = useUsdPrices();
 	const { address, xrplProvider } = useWallets();
 	const [tokenPairs, setTokenPairs] = useState<Array<AMMInfoRequest>>(initialTokenPairs);
+	const { data: pools, isFetching: isFetchingPools } = useFetchXrplPools(xrplProvider, tokenPairs);
+
+	const [curr, setCurr] = useState<XrplCurrency[]>(currencies);
+	const [updateCurrError, setCurrError] = useState<string>();
+	const [importModalOpen, setImportModalOpen] = useState<boolean>(false);
+	const [importSuccess, setImportSuccess] = useState<boolean>(false);
+
+	const openImportModal = useCallback((open: boolean, error?: string) => {
+		setImportModalOpen(open);
+		setCurrError(error);
+	}, []);
 
 	const currenciesWithPrices = useMemo(() => {
-		if (!prices) return currencies;
+		if (!prices) return curr;
 
-		return currencies.map((currency) => ({
+		return curr.map((currency) => ({
 			...currency,
 			priceInUSD: prices[currency.currency],
 		}));
-	}, [currencies, prices]);
+	}, [curr, prices]);
 
 	const {
 		data: balances,
@@ -81,8 +98,6 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [balances]);
 
-	const { data: pools, isFetching: isFetchingPools } = useFetchXrplPools(xrplProvider, tokenPairs);
-
 	const {
 		data: trustlines,
 		isFetching: isFetchingTrustlines,
@@ -105,14 +120,14 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 
 	const findToken = useCallback(
 		(currencyCode: string): XrplCurrency | undefined => {
-			return Object.values(currencies).find((currency) => {
+			return Object.values(curr).find((currency) => {
 				return (
 					currency.currency === currencyCode ||
 					normalizeCurrencyCode(currency.currency) === currencyCode
 				);
 			});
 		},
-		[currencies]
+		[curr]
 	);
 
 	const checkTrustline = useCallback(
@@ -123,6 +138,45 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 		},
 		[trustlines]
 	);
+
+	const updateCurr = useCallback(
+		(update: XrplCurrency) => {
+			if (curr.includes(update)) {
+				setCurrError("Token already imported");
+				return;
+			}
+			if (update.currency.startsWith("03")) {
+				setCurrError("Cannot import LP tokens");
+				return;
+			}
+
+			if (checkTrustline(update)) {
+				setCurr((prev) => [...prev, update]);
+				setCurrError(undefined);
+				setImportSuccess(true);
+			} else {
+				setCurrError("Trust line not set");
+			}
+		},
+		[checkTrustline, curr]
+	);
+
+	useMemo(() => {
+		if (!trustlines) return;
+		trustlines.map((line) => {
+			// don't want to import lp tokens
+			if (line.currency.startsWith("03")) {
+				return;
+			}
+			const update = {
+				ticker: normalizeCurrencyCode(line.currency),
+				currency: line.currency,
+				issuer: line.account,
+			};
+
+			setCurr((prev) => [...prev, update]);
+		});
+	}, [trustlines]);
 
 	const positions = useMemo(() => {
 		if (!pools) return null;
@@ -163,7 +217,7 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 	return (
 		<XrplCurrencyContext.Provider
 			value={{
-				currencies: currenciesWithPrices ?? currencies,
+				currencies: currenciesWithPrices ?? curr,
 				balances: balances ?? [],
 				trustlines: trustlines ?? [],
 				checkTrustline,
@@ -173,6 +227,12 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 				positions: positions ?? [],
 				pools: pools ?? [],
 				findToken,
+				updateCurr,
+				updateCurrError,
+				openImportModal,
+				importModalOpen,
+				setImportSuccess,
+				importSuccess,
 			}}
 		>
 			{children}

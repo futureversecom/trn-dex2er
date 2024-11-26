@@ -2,7 +2,7 @@ import Slider from "rc-slider";
 import "rc-slider/assets/index.css";
 import { type PropsWithChildren } from "react";
 
-import { useAddLiquidityXrpl } from "@/libs/context";
+import { useAddLiquidityXrpl, useXrplCurrencies } from "@/libs/context";
 import { normalizeCurrencyCode } from "@/libs/utils";
 
 import {
@@ -10,6 +10,7 @@ import {
 	AmountInputs,
 	Box,
 	ConfirmModal,
+	ImportToken,
 	InfoItem,
 	QrModal,
 	Text,
@@ -19,14 +20,26 @@ import {
 
 export function AddLiquidityXrpl({ children }: PropsWithChildren) {
 	const props = useAddLiquidityXrpl();
+	const { openImportModal, importModalOpen } = useXrplCurrencies();
 
 	return (
 		<>
+			<ImportToken
+				open={props.isOpen === false && importModalOpen}
+				onClose={() => {
+					openImportModal(false);
+				}}
+			/>
+
 			<TokenSelect
-				open={props.isOpen !== false}
+				open={props.isOpen !== false && importModalOpen === false}
 				onTokenClick={props.onTokenClick}
 				onClose={() => props.setIsOpen(false)}
 				tokens={Object.values(props.filteredTokens)}
+				onImportTokenClick={() => {
+					props.setIsOpen(false);
+					openImportModal(true);
+				}}
 			/>
 
 			<QrModal

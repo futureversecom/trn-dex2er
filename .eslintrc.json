@@ -6,11 +6,13 @@
     "plugin:react/recommended",
     "plugin:react-hooks/recommended",
     "prettier",
+    "plugin:eslint-plugin-unused-imports",
     "plugin:prettier/recommended",
     "plugin:@next/next/recommended"
   ],
   "rules": {
     "prettier/prettier": ["error"],
+    "unused-imports/no-unused-imports": "error",
     // No need to import React when using Next.js
     "react/react-in-jsx-scope": "off",
     "react/no-unescaped-entities": "off",

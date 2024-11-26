@@ -1,7 +1,7 @@
 import { upperFirst } from "lodash";
 import { useMemo } from "react";
 
-import { useManageXrplPool } from "@/libs/context";
+import { useManageXrplPool, useXrplCurrencies } from "@/libs/context";
 import { normalizeCurrencyCode } from "@/libs/utils";
 
 import {
@@ -10,6 +10,7 @@ import {
 	Box,
 	Button,
 	ConfirmModal,
+	ImportToken,
 	InfoItem,
 	QrModal,
 	Text,
@@ -19,16 +20,28 @@ import {
 
 export function XrplManage() {
 	const props = useManageXrplPool();
+	const { openImportModal, importModalOpen } = useXrplCurrencies();
 
 	const heading = useMemo(() => `${upperFirst(props.action)} liquidity`, [props.action]);
 
 	return (
 		<>
+			<ImportToken
+				open={props.isOpen === false && importModalOpen}
+				onClose={() => {
+					openImportModal(false);
+				}}
+			/>
+
 			<TokenSelect
 				open={props.isOpen !== false}
 				onTokenClick={props.onTokenClick}
 				onClose={() => props.setIsOpen(false)}
 				tokens={Object.values(props.filteredTokens)}
+				onImportTokenClick={() => {
+					props.setIsOpen(false);
+					openImportModal(true);
+				}}
 			/>
 
 			<QrModal

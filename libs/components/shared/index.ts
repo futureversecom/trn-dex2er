@@ -28,3 +28,4 @@ export * from "./InfoItem";
 export * from "./Ratio";
 export * from "./QrModal";
 export * from "./YourPosition";
+export * from "./ImportToken";
