@@ -79,7 +79,7 @@ export function TokenSelect<T extends Token>({
 			</div>
 
 			<div className="flex max-h-[20em] flex-col space-y-2 overflow-y-scroll">
-				{isXrpl && onImportTokenClick ? (
+				{isXrpl ? (
 					<>
 						{(filteredTokens as XrplCurrency[]).map((token) => {
 							const tokenBalance = toHuman(getBalance(token)?.value ?? 0, token);
@@ -107,15 +107,17 @@ export function TokenSelect<T extends Token>({
 								/>
 							);
 						})}
-						{/* <TableRow
-							key="import token"
-							onClick={() => onImportTokenClick()}
-							items={[
-								<div key="import-token" className="text-center">
-									<Text className="font-bold">+ Import Token</Text>
-								</div>,
-							]}
-						/> */}
+						{onImportTokenClick && (
+							<TableRow
+								key="import token"
+								onClick={() => onImportTokenClick()}
+								items={[
+									<div key="import-token" className="text-center">
+										<Text className="font-bold">+ Import Token</Text>
+									</div>,
+								]}
+							/>
+						)}
 					</>
 				) : (
 					(filteredTokens as TrnToken[]).map((token) => {

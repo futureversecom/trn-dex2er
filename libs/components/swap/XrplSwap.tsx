@@ -3,6 +3,7 @@ import {
 	AmountInputs,
 	Box,
 	ConfirmModal,
+	ImportToken,
 	InfoItem,
 	QrModal,
 	Ratio,
@@ -12,12 +13,13 @@ import {
 	TokenImage,
 	TokenSelect,
 } from "@/libs/components/shared";
-import { useXrplSwap, type XrplSwapContextType } from "@/libs/context";
+import { useXrplCurrencies, useXrplSwap, type XrplSwapContextType } from "@/libs/context";
 import { useTokenSymbols } from "@/libs/hooks";
 import { toHuman } from "@/libs/utils";
 
 export function XrplSwap() {
 	const props = useXrplSwap();
+	const { openImportModal, importModalOpen } = useXrplCurrencies();
 
 	const [xTokenSymbol, yTokenSymbol] = useTokenSymbols(props.xToken, props.yToken);
 
@@ -25,11 +27,22 @@ export function XrplSwap() {
 
 	return (
 		<>
+			<ImportToken
+				open={props.isOpen === false && importModalOpen}
+				onClose={() => {
+					openImportModal(false);
+				}}
+			/>
+
 			<TokenSelect
-				tokens={props.filteredTokens}
+				tokens={Object.values(props.filteredTokens)}
 				open={props.isOpen !== false}
 				onTokenClick={props.onTokenClick}
 				onClose={() => props.setIsOpen(false)}
+				onImportTokenClick={() => {
+					props.setIsOpen(false);
+					openImportModal(true);
+				}}
 			/>
 
 			<QrModal

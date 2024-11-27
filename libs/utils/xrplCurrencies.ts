@@ -70,7 +70,40 @@ const mainnet: XrplCurrencies = {
 			issuer: "rUetS7kbVYJZ76za5ywa1DgViNZMgT9Bvq",
 		},
 	],
-	pool: [],
+	pool: [
+		{
+			currency: "BTC",
+			issuer: "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B",
+			decimals: 18,
+		},
+		{
+			currency: "ZRP",
+			issuer: "rZapJ1PZ297QAEXRGu3SZkAiwXbA7BNoe",
+			decimals: 8,
+		},
+		{
+			currency: "XRP",
+			decimals: 6,
+		},
+		{
+			ticker: "ROOT",
+			currency: getCurrencyCode("ROOT"),
+			issuer: "r9MrRER8UKSAumcqvbwCAsyWbUKomz68i3",
+			decimals: 6,
+		},
+		{
+			ticker: "SYLO",
+			currency: getCurrencyCode("SYLO"),
+			issuer: "rNhK8hNWEjsXvfGE4Lzso517ms6odD7dnn",
+			decimals: 18,
+		},
+		{
+			ticker: "ASTO",
+			currency: getCurrencyCode("ASTO"),
+			issuer: "rpFEEHBkoFwK3J9Mzi426PvTzGEMZizEh1",
+			decimals: 18,
+		},
+	],
 	bridge: [
 		{
 			currency: "XRP",
@@ -254,7 +287,6 @@ const devnet: XrplCurrencies = {
 			currency: "USDT",
 			issuer: "rax5V9EiMfTo7fUxyxBrN48PVFwKqTYLPf",
 		},
-
 		{
 			currency: "ETH",
 			decimals: 18,

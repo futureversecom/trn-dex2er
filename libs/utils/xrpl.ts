@@ -9,6 +9,7 @@ import {
 	IssuedCurrency,
 	type Payment,
 	ServerStateResponse,
+	TrustSet,
 	xrpToDrops,
 } from "xrpl";
 import { isIssuedCurrency } from "xrpl/dist/npm/models/transactions/common";
@@ -134,6 +135,18 @@ export function dropToCurrency(currency: string, amount: string) {
 		return Number(dropsToXrp(amount)).toFixed(6);
 	}
 	return Number(amount).toFixed(8);
+}
+
+export function buildCreateTrustLineTx(account: string, token: IssuedCurrency) {
+	const trustSetReq = {
+		Account: account,
+		LimitAmount: { ...token, value: "10000000000" },
+		TransactionType: "TrustSet",
+	} as TrustSet;
+
+	console.log("build trust set tx ", trustSetReq);
+
+	return trustSetReq;
 }
 
 export function buildPaymentTx(

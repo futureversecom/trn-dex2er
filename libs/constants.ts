@@ -18,7 +18,7 @@ export const ROOT_NETWORK = {
 			InWebSocket: process.env.NEXT_PUBLIC_CHAIN_RPC_ENDPOINT ?? "wss://porcini.rootnet.app/ws",
 		},
 		LinkedEthChain: "sepolia",
-		LinkedXrpChain: "testnet",
+		LinkedXrpChain: process.env.NEXT_PUBLIC_LINKED_XRPL_CHAIN ?? "testnet",
 		ExplorerUrl: "https://porcini.rootscan.io",
 		Environment: sdk.ENVIRONMENTS["staging"],
 		Stage: "staging" as sdk.Stage,

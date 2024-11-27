@@ -63,6 +63,7 @@ const initialState = {
 export function AddLiquidityXrplProvider({ children }: PropsWithChildren) {
 	const [state, setState] = useState<AddLiquidityStateXrpl>(initialState);
 	const { address, xrplProvider } = useWallets();
+	const { pools, refetch: refetchBalances } = useXrplCurrencies();
 
 	const updateState = (update: Partial<AddLiquidityStateXrpl>) =>
 		setState((prev) => ({ ...prev, ...update }));
@@ -114,8 +115,6 @@ export function AddLiquidityXrplProvider({ children }: PropsWithChildren) {
 		setXAmount("");
 		setYAmount("");
 	}, [setXAmount, setYAmount]);
-
-	const { pools, refetch: refetchBalances } = useXrplCurrencies();
 
 	const liquidityPool = useMemo(() => {
 		if (!state.xToken || !state.yToken) return;

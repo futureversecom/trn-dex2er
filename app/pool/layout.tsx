@@ -12,7 +12,7 @@ export default async function PageLayout({
 }>) {
 	return (
 		<TrnTokenProvider>
-			<XrplCurrencyProvider currencies={getXrplCurrencies("pool")}>
+			<XrplCurrencyProvider predefinedCurrencies={getXrplCurrencies("pool")}>
 				<Nav />
 				{children}
 			</XrplCurrencyProvider>

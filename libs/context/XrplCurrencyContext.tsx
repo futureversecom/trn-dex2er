@@ -8,11 +8,16 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { AccountLinesTrustline, AMMInfoRequest } from "xrpl";
+import { AccountLinesTrustline, AMMInfoRequest, IssuedCurrency, TrustSet } from "xrpl";
 
 import { useFetchXrplPools } from "../hooks";
-import type { LiquidityPoolsXrpl, XrplBalance, XrplCurrency } from "../types";
-import { getXrplPools, normalizeCurrencyCode } from "../utils";
+import type { ContextTag, LiquidityPoolsXrpl, XrplBalance, XrplCurrency } from "../types";
+import {
+	buildCreateTrustLineTx,
+	getXrplPools,
+	InteractiveTransactionResponse,
+	normalizeCurrencyCode,
+} from "../utils";
 import { XrplPosition } from "./ManageXrplPoolContext";
 import { useUsdPrices } from "./UsdPriceContext";
 import { useWallets } from "./WalletContext";
@@ -28,50 +33,77 @@ export type XrplCurrencyContextType = {
 	positions: XrplPosition[];
 	pools: LiquidityPoolsXrpl;
 	findToken: (currencyCode: string) => XrplCurrency | undefined;
-	updateCurr: (update: XrplCurrency) => void;
-	updateCurrError: string | undefined;
+	error: string | undefined;
 	openImportModal: (open: boolean) => void;
-	importModalOpen: boolean;
-	setImportSuccess: (success: boolean) => void;
-	importSuccess: boolean;
-};
+	buildTrustLineTx: (token: IssuedCurrency) => void;
+	signTransaction: () => Promise<void>;
+	setTag: (tag?: ContextTag) => void;
+	setCurrencyCode: (code?: string) => void;
+	setIssuer: (issuer?: string) => void;
+	resetState: () => void;
+} & XrplCurrencyContextState;
 
 const XrplCurrencyContext = createContext<XrplCurrencyContextType>({} as XrplCurrencyContextType);
 
 interface XrplCurrencyProviderProps extends PropsWithChildren {
-	currencies: XrplCurrency[];
+	predefinedCurrencies: XrplCurrency[];
 }
 
-const initialTokenPairs: Array<AMMInfoRequest> = getXrplPools();
+interface XrplCurrencyContextState {
+	tx?: TrustSet;
+	tag?: ContextTag;
+	error?: string;
+	info?: string;
+	qr?: string;
+	importModalOpen: boolean;
+	currencyCode?: string;
+	issuer?: string;
+}
 
-export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProviderProps) {
+const initialState = {
+	importModalOpen: false,
+} as XrplCurrencyContextState;
+
+const INITIAL_TOKEN_PAIRS: Array<AMMInfoRequest> = getXrplPools();
+
+export function XrplCurrencyProvider({
+	predefinedCurrencies,
+	children,
+}: XrplCurrencyProviderProps) {
 	const { prices } = useUsdPrices();
 	const { address, xrplProvider } = useWallets();
-	const [tokenPairs, setTokenPairs] = useState<Array<AMMInfoRequest>>(initialTokenPairs);
+	const [tokenPairs, setTokenPairs] = useState<Array<AMMInfoRequest>>(INITIAL_TOKEN_PAIRS);
 	const { data: pools, isFetching: isFetchingPools } = useFetchXrplPools(
 		xrplProvider,
 		tokenPairs,
 		prices
 	);
 
-	const [curr, setCurr] = useState<XrplCurrency[]>(currencies);
-	const [updateCurrError, setCurrError] = useState<string>();
-	const [importModalOpen, setImportModalOpen] = useState<boolean>(false);
-	const [importSuccess, setImportSuccess] = useState<boolean>(false);
+	const [state, setState] = useState<XrplCurrencyContextState>({
+		...initialState,
+	});
+
+	const resetState = useCallback(() => {
+		setState(initialState);
+	}, []);
+
+	const updateState = (update: Partial<XrplCurrencyContextState>) =>
+		setState((prev) => ({ ...prev, ...update }));
+
+	const [currencies, setCurrencies] = useState<XrplCurrency[]>(predefinedCurrencies);
 
 	const openImportModal = useCallback((open: boolean, error?: string) => {
-		setImportModalOpen(open);
-		setCurrError(error);
+		updateState({ importModalOpen: open, error: error });
 	}, []);
 
 	const currenciesWithPrices = useMemo(() => {
-		if (!prices) return curr;
+		if (!prices) return currencies;
 
-		return curr.map((currency) => ({
+		return currencies.map((currency) => ({
 			...currency,
 			priceInUSD: prices[currency.currency],
 		}));
-	}, [curr, prices]);
+	}, [currencies, prices]);
 
 	const {
 		data: balances,
@@ -96,7 +128,7 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 				} as AMMInfoRequest;
 			});
 
-		const tokens = initialTokenPairs.concat(userLPTokens);
+		const tokens = INITIAL_TOKEN_PAIRS.concat(userLPTokens);
 
 		setTokenPairs(tokens);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -113,10 +145,67 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 		enabled: !!xrplProvider,
 	});
 
+	const buildTrustLineTx = useCallback(
+		({
+			currencyCode = state[`currencyCode`],
+			issuer = state[`issuer`],
+		}: {
+			currencyCode?: string;
+			issuer?: string;
+		}) => {
+			if (!address) return;
+			const body = { currency: currencyCode, issuer: issuer } as IssuedCurrency;
+			updateState({ tx: buildCreateTrustLineTx(address, body) });
+		},
+		[address, state]
+	);
+
+	const setTag = useCallback((tag?: ContextTag) => updateState({ tag }), []);
+	const setCurrencyCode = useCallback(
+		(code?: string) => {
+			buildTrustLineTx({ currencyCode: code });
+			updateState({ currencyCode: code });
+		},
+		[buildTrustLineTx]
+	);
+	const setIssuer = useCallback(
+		(issuer?: string) => {
+			buildTrustLineTx({ issuer });
+			updateState({ issuer });
+		},
+		[buildTrustLineTx]
+	);
+
+	const signTransaction = useCallback(async () => {
+		if (!state.tx || !xrplProvider) return;
+
+		xrplProvider
+			.signTransaction(state.tx, (response: InteractiveTransactionResponse) => {
+				if (response.status === "pending") {
+					if (response.qrPng) updateState({ qr: response.qrPng });
+					setTag("sign");
+				} else if (response.status === "success") {
+					refetchBalances().then(() => setTag("submitted"));
+					refetchTrustlines();
+					updateState({ info: undefined, error: undefined });
+				} else {
+					setTag("failed");
+				}
+			})
+			.catch((err) => {
+				console.log("could not sign XRPL transaction", err);
+			});
+	}, [state.tx, xrplProvider, setTag, refetchBalances, refetchTrustlines]);
+
 	const getBalance = useCallback(
 		(currency?: XrplCurrency) => {
 			return balances?.find((balance) => {
-				return balance.currency === currency?.currency && balance.issuer === currency?.issuer;
+				return (
+					(balance.currency === currency?.currency ||
+						balance.currency === currency?.ticker ||
+						normalizeCurrencyCode(balance.currency) === currency?.currency) &&
+					balance.issuer === currency?.issuer
+				);
 			});
 		},
 		[balances]
@@ -124,62 +213,74 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 
 	const findToken = useCallback(
 		(currencyCode: string): XrplCurrency | undefined => {
-			return Object.values(currenciesWithPrices).find((currency) => {
+			const trustedTokens = Object.values(currenciesWithPrices).find((currency) => {
 				return (
 					currency.currency === currencyCode ||
 					normalizeCurrencyCode(currency.currency) === currencyCode
 				);
 			});
+			if (!trustedTokens) {
+				return Object.values(predefinedCurrencies).find((currency) => {
+					return (
+						currency.currency === currencyCode ||
+						normalizeCurrencyCode(currency.currency) === currencyCode
+					);
+				});
+			}
+			return trustedTokens;
 		},
-		[currenciesWithPrices]
+		[currenciesWithPrices, predefinedCurrencies]
 	);
 
 	const checkTrustline = useCallback(
 		(currency: XrplCurrency) => {
 			if (currency.currency === "XRP") return true;
 
-			return !!trustlines?.find((trustline) => trustline.currency === currency.currency);
+			return !!trustlines?.find(
+				(trustline) =>
+					trustline.currency === currency.currency || trustline.currency === currency.ticker
+			);
 		},
 		[trustlines]
 	);
 
-	const updateCurr = useCallback(
-		(update: XrplCurrency) => {
-			if (currenciesWithPrices.includes(update)) {
-				setCurrError("Token already imported");
-				return;
-			}
-			if (update.currency.startsWith("03")) {
-				setCurrError("Cannot import LP tokens");
-				return;
-			}
+	useMemo(() => {
+		if (!state.currencyCode || !state.issuer) return;
 
-			if (checkTrustline(update)) {
-				setCurr((prev) => [...prev, update]);
-				setCurrError(undefined);
-				setImportSuccess(true);
-			} else {
-				setCurrError("Trust line not set");
-			}
-		},
-		[checkTrustline, currenciesWithPrices]
-	);
+		const update = {
+			currency: state.currencyCode,
+			issuer: state.issuer,
+			ticker: normalizeCurrencyCode(state.currencyCode),
+		} as XrplCurrency;
+
+		if (update.currency.startsWith("03")) {
+			updateState({ error: "Cannot import LP tokens", info: undefined, tx: undefined });
+			return;
+		}
+		if (checkTrustline(update)) {
+			updateState({ info: "Token already imported", error: undefined, tx: undefined });
+		} else {
+			updateState({ info: "Trust line not set", error: undefined });
+		}
+	}, [checkTrustline, state.currencyCode, state.issuer]);
 
 	useMemo(() => {
 		if (!trustlines) return;
-		trustlines.map((line) => {
-			// don't want to import lp tokens
-			if (line.currency.startsWith("03")) {
-				return;
-			}
-			const update = {
-				ticker: normalizeCurrencyCode(line.currency),
-				currency: line.currency,
-				issuer: line.account,
-			};
+		const update = trustlines
+			.filter((line) => !line.currency.startsWith("03")) // Exclude LP tokens
+			.map(
+				(line) =>
+					({
+						ticker: normalizeCurrencyCode(line.currency),
+						currency: line.currency,
+						issuer: line.account,
+					}) as XrplCurrency
+			);
 
-			setCurr((prev) => [...prev, update]);
-		});
+		update.push({ currency: "XRP", decimals: 6 } as XrplCurrency);
+
+		setCurrencies(update);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [trustlines]);
 
 	const positions = useMemo(() => {
@@ -221,7 +322,7 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 	return (
 		<XrplCurrencyContext.Provider
 			value={{
-				currencies: currenciesWithPrices ?? curr,
+				currencies: currenciesWithPrices ?? currencies,
 				balances: balances ?? [],
 				trustlines: trustlines ?? [],
 				checkTrustline,
@@ -231,12 +332,16 @@ export function XrplCurrencyProvider({ currencies, children }: XrplCurrencyProvi
 				positions: positions ?? [],
 				pools: pools ?? [],
 				findToken,
-				updateCurr,
-				updateCurrError,
 				openImportModal,
-				importModalOpen,
-				setImportSuccess,
-				importSuccess,
+				error: state.error,
+				buildTrustLineTx,
+				resetState,
+				setCurrencyCode,
+				setIssuer,
+				setTag,
+				signTransaction,
+
+				...state,
 			}}
 		>
 			{children}
