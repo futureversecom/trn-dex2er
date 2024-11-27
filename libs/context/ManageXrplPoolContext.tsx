@@ -7,7 +7,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { Balance, Currency, dropsToXrp, Transaction } from "xrpl";
+import { Balance, Currency, Transaction } from "xrpl";
 
 import type { ContextTag, TokenSource, XrplCurrency } from "@/libs/types";
 
@@ -129,8 +129,7 @@ export function ManageXrplPoolProvider({ children }: PropsWithChildren) {
 			x: {
 				balance: {
 					currency: state.xToken.currency,
-					value:
-						state.xToken.currency === "XRP" ? dropsToXrp(xBalance.toFixed(0)) : xBalance.toString(),
+					value: xBalance.toString(),
 				} as Balance,
 				liquidity: {
 					currency: state.xToken.currency,
@@ -140,8 +139,7 @@ export function ManageXrplPoolProvider({ children }: PropsWithChildren) {
 			y: {
 				balance: {
 					currency: state.yToken.currency,
-					value:
-						state.yToken.currency === "XRP" ? dropsToXrp(yBalance.toFixed(0)) : yBalance.toString(),
+					value: yBalance.toString(),
 				} as Balance,
 				liquidity: {
 					currency: state.yToken.currency,
@@ -302,10 +300,8 @@ export function ManageXrplPoolProvider({ children }: PropsWithChildren) {
 			const poolBalances = getPoolBalances();
 			if (!poolBalances) return;
 
-			const tokenLiquidity =
-				token.currency === "XRP" ? dropsToXrp(poolBalances[src]) : poolBalances[src];
-			const otherLiquidity =
-				otherToken.currency === "XRP" ? dropsToXrp(poolBalances[otherSrc]) : poolBalances[otherSrc];
+			const tokenLiquidity = poolBalances[src];
+			const otherLiquidity = poolBalances[otherSrc];
 
 			const otherConverted = +amount * (+otherLiquidity / +tokenLiquidity);
 

@@ -7,7 +7,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { Currency, dropsToXrp, Transaction } from "xrpl";
+import { Currency, Transaction } from "xrpl";
 
 import type { ContextTag, TokenSource, XamanData, XrplCurrency } from "@/libs/types";
 
@@ -221,10 +221,8 @@ export function AddLiquidityXrplProvider({ children }: PropsWithChildren) {
 			const poolBalances = getPoolBalances();
 			if (!poolBalances) return;
 
-			const tokenLiquidity =
-				token.currency === "XRP" ? dropsToXrp(poolBalances[src]) : poolBalances[src];
-			const otherLiquidity =
-				otherToken.currency === "XRP" ? dropsToXrp(poolBalances[otherSrc]) : poolBalances[otherSrc];
+			const tokenLiquidity = poolBalances[src];
+			const otherLiquidity = poolBalances[otherSrc];
 
 			const otherConverted = +amount * (+otherLiquidity / +tokenLiquidity);
 

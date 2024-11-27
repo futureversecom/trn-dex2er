@@ -30,7 +30,9 @@ export function Nav() {
 	return (
 		<>
 			<Buttons
-				activeIndex={networks.indexOf(network)}
+				activeIndex={
+					pathname.split("/")[3] === "root" ? networks.indexOf("root") : networks.indexOf(network)
+				}
 				buttons={networks.map((network) => ({
 					children: `${network} network`,
 					onClick: () => {

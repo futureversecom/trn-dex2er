@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { usePagination } from "react-use-pagination";
-import { dropsToXrp } from "xrpl";
 
 import { useTrnTokens, useXrplCurrencies } from "@/libs/context";
 import type { TrnToken, XrplCurrency } from "@/libs/types";
@@ -113,10 +112,8 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 								// if currencies cannot be found return empty tsx
 								return <></>;
 							}
-							const liquidityPool1 =
-								currency1.currency === "XRP" ? dropsToXrp(pool.liquidity[0]) : pool.liquidity[0];
-							const liquidityPool2 =
-								currency2.currency === "XRP" ? dropsToXrp(pool.liquidity[1]) : pool.liquidity[1];
+							const liquidityPool1 = pool.liquidity[0];
+							const liquidityPool2 = pool.liquidity[1];
 
 							return (
 								<TableRow
