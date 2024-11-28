@@ -352,6 +352,34 @@ export function buildDepositAmmTx(
 
 	return depo as AMMDeposit;
 }
+// https://xrpl.org/docs/references/protocol/transactions/types/ammdeposit#ammdeposit-modes
+export function buildSingleAssetDepositTx(
+	walletAddress: string,
+	TokenOne: Amount,
+	TokenTwo: Amount
+): AMMDeposit {
+	const formatAmount = (token: Amount) =>
+		isIssuedCurrency(token)
+			? { currency: token.currency, issuer: token.issuer, value: token.value }
+			: token;
+
+	const depo: AMMDeposit = {
+		TransactionType: "AMMDeposit",
+		Account: walletAddress,
+		Amount: formatAmount(TokenOne),
+		Asset: isIssuedCurrency(TokenOne)
+			? { currency: TokenOne.currency, issuer: TokenOne.issuer }
+			: { currency: "XRP" },
+		Asset2: isIssuedCurrency(TokenTwo)
+			? { currency: TokenTwo.currency, issuer: TokenTwo.issuer }
+			: { currency: "XRP" },
+		Flags: 524288, // Deposit exactly the specified amount of one asset, and receive an amount of LP Tokens based on the resulting share of the pool (minus fees). 0x00080000 tfSingleAsset
+	};
+
+	console.log("building single asset tx ", depo);
+
+	return depo as AMMDeposit;
+}
 
 // https://xrpl.org/docs/references/protocol/transactions/types/ammwithdraw
 export function buildWithdrawAmmTx(
