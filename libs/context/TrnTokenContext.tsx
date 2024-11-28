@@ -6,7 +6,7 @@ import { Balance } from "@/libs/utils";
 
 import { useFetchTrnPools, useTrnBalanceSubscription } from "../hooks";
 import { useFetchTrnTokens } from "../hooks/useFetchTokens";
-import type { LiquidityPools, TrnToken, TrnTokens } from "../types";
+import type { LiquidityPoolsRoot, TrnToken, TrnTokens } from "../types";
 import { useUsdPrices } from "./UsdPriceContext";
 
 export interface Position {
@@ -19,7 +19,7 @@ export interface Position {
 
 export type TrnTokenContextType = {
 	tokens: TrnTokens;
-	pools: LiquidityPools;
+	pools: LiquidityPoolsRoot;
 	isFetching: boolean;
 	tokenBalances: Record<number, Balance<TrnToken>>;
 	refetchTokenBalances: () => Promise<VoidFn | undefined>;
@@ -80,7 +80,7 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 		return pools
 			.sort((a, b) => (a.assetId > b.assetId ? 1 : -1))
 			.map((pool) => {
-				const lpToken = findToken(pool.assetId, tokens);
+				const lpToken = findToken(pool.assetId as number, tokens);
 				const lpBalance = getTokenBalance(lpToken);
 
 				if (!lpToken || !lpBalance || lpBalance.eq(0)) return null;

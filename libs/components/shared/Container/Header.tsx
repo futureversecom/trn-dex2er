@@ -1,6 +1,6 @@
 import classNames from "@sindresorhus/class-names";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 
 import { useWallets } from "@/libs/context";
@@ -12,17 +12,18 @@ import { ConnectXrplButton } from "./ConnectXrplButton";
 
 const pageMap = {
 	SWAP: "/swap",
-	POOL: "/pool/add",
+	POOL: "/pool/add/root",
 	BRIDGE: "/bridge",
 };
 
 export function Header() {
 	const pathname = usePathname();
+	const router = useRouter();
 	const isMobile = useIsMobile();
 	const { network, setNetwork } = useWallets();
 
 	const isXrplAvailable = useMemo(
-		() => pathname.includes("swap") || pathname.includes("bridge"),
+		() => pathname.includes("swap") || pathname.includes("bridge") || pathname.includes("pool"),
 		[pathname]
 	);
 
@@ -96,7 +97,15 @@ export function Header() {
 					className="px-4 py-2"
 					itemsClassName="w-[22em]"
 					current={network}
-					onSelect={(network) => setNetwork(network as "root" | "xrpl")}
+					onSelect={(network) => {
+						if (pathname.includes("pool")) {
+							let newPath = pathname.split("/");
+							newPath[3] = network;
+							const path = newPath.join("/");
+							router.push(path);
+						}
+						setNetwork(network as "root" | "xrpl");
+					}}
 					options={networks.slice(0, isXrplAvailable ? 2 : 1)}
 				/>
 

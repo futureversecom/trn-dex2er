@@ -2,7 +2,7 @@ import * as sdk from "@futureverse/experience-sdk";
 import { Static, Type } from "@sinclair/typebox";
 import type { NetworkName } from "@therootnetwork/api";
 import type BigNumber from "bignumber.js";
-import type { AccountLinesTrustline, Balance as CurrencyBalance } from "xrpl";
+import type { AccountLinesTrustline, Balance } from "xrpl";
 
 export interface TrnToken {
 	assetId: number;
@@ -36,19 +36,28 @@ export interface XrplNetworkDetails {
 	ApiUrl: {
 		InWebSocket: string;
 	};
-	ExplorerUrl: string | { Bridge: string; Swap: string };
+	ExplorerUrl: string | { Bridge: string; Swap: string; Pool: string };
 }
 
 export type LiquidityPoolKey = `${string}-${string}`;
 
-export interface LiquidityPool {
+export interface LiquidityPoolRoot {
 	assetId: number;
 	poolKey: LiquidityPoolKey;
 	liquidity: [number, number];
 	liquidityInUSD?: BigNumber;
+	lpTokenIssuer?: string;
+	lpTokenSupply?: string;
 }
 
-export type LiquidityPools = Array<LiquidityPool>;
+export type LiquidityPoolsRoot = Array<LiquidityPoolRoot>;
+
+export type LiquidityPoolXrpl = Omit<LiquidityPoolRoot, "assetId" | "liquidity"> & {
+	currency: string;
+	liquidity: [string, string];
+};
+
+export type LiquidityPoolsXrpl = Array<LiquidityPoolXrpl>;
 
 export interface XamanData {
 	qrCodeImg?: string;
@@ -69,7 +78,7 @@ export const XrplCurrency = Type.Object({
 });
 export type XrplCurrency = Static<typeof XrplCurrency>;
 
-export type XrplBalance = CurrencyBalance & {
+export type XrplBalance = Balance & {
 	trustline?: AccountLinesTrustline;
 };
 

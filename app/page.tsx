@@ -15,7 +15,7 @@ export default function Home() {
 
 			<div className="font-mikrobe grid h-[15rem] w-full grid-cols-3 text-[96px] text-primary-700">
 				<PageButton page="SWAP" href="/swap" />
-				<PageButton page="POOL" href="/pool/add" />
+				<PageButton page="POOL" href="/pool/add/root" />
 				<PageButton page="BRIDGE" href="/bridge" />
 			</div>
 		</>

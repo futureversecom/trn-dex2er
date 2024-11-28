@@ -3,7 +3,7 @@ import type { Option, u32 } from "@polkadot/types";
 import { useQuery } from "@tanstack/react-query";
 import BigNumber from "bignumber.js";
 
-import type { LiquidityPoolKey, LiquidityPools, TrnTokens } from "../types";
+import type { LiquidityPoolKey, LiquidityPoolsRoot, TrnTokens } from "../types";
 import { Balance, humanToNumber } from "../utils";
 
 export function useFetchTrnPools(tokens?: TrnTokens | undefined) {
@@ -11,7 +11,7 @@ export function useFetchTrnPools(tokens?: TrnTokens | undefined) {
 
 	return useQuery({
 		queryKey: ["trnLiquidityPools"],
-		queryFn: async (): Promise<LiquidityPools | undefined> => {
+		queryFn: async (): Promise<LiquidityPoolsRoot | undefined> => {
 			if (!trnApi?.isReady || !tokens) return;
 
 			const entries = await trnApi.query.dex.liquidityPool.entries();

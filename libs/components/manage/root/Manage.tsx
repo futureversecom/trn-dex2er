@@ -17,7 +17,7 @@ import {
 	Text,
 	TokenImage,
 	TokenSelect,
-} from "../shared";
+} from "../../shared";
 import { PercentButtons } from "./PercentButtons";
 
 export function Manage() {

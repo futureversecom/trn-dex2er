@@ -13,6 +13,7 @@ export * from "./toHuman";
 export * from "./getMinAmount";
 export * from "./XrplWalletProvider";
 export * from "./xrplCurrencies";
+export * from "./xrplPools";
 export * from "./isXrplCurrency";
 export * from "./xrpl";
 export * from "./toDollarValue";

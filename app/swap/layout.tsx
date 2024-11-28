@@ -1,5 +1,3 @@
-import { use } from "react";
-
 import {
 	TrnSwapProvider,
 	TrnTokenProvider,
@@ -19,9 +17,8 @@ export default async function PageLayout({
 
 	return (
 		<TrnTokenProvider trnTokens={trnTokens}>
-			{/* <TrnTokenProvider> */}
 			<TrnSwapProvider>
-				<XrplCurrencyProvider currencies={getXrplCurrencies("swap")}>
+				<XrplCurrencyProvider predefinedCurrencies={getXrplCurrencies("swap")}>
 					<XrplSwapProvider>{children}</XrplSwapProvider>
 				</XrplCurrencyProvider>
 			</TrnSwapProvider>

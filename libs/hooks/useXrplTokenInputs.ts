@@ -1,5 +1,6 @@
 import { usePathname } from "next/navigation";
 import { type Dispatch, type SetStateAction, useCallback, useMemo, useState } from "react";
+import { Balance } from "xrpl";
 
 import { useXrplCurrencies } from "../context";
 import type { IsTokenOpen, TokenSource, XrplCurrency } from "../types";
@@ -35,7 +36,13 @@ export type XrplTokenInputState = Pick<XrplTokenInputs, "xToken" | "yToken">;
 
 export function useXrplTokenInputs<T extends XrplTokenInputState>(
 	state: T,
-	setToken: (props: { src: TokenSource; token: XrplCurrency }) => void
+	setToken: (props: { src: TokenSource; token: XrplCurrency }) => void,
+	poolBalances?:
+		| {
+				x: Balance;
+				y: Balance;
+		  }
+		| undefined
 ): XrplTokenInputs {
 	const pathname = usePathname();
 	const { currencies, getBalance } = useXrplCurrencies();
@@ -46,13 +53,13 @@ export function useXrplTokenInputs<T extends XrplTokenInputState>(
 		amount: xAmount,
 		setAmount: setXAmount,
 		error: xTokenError,
-	} = useAmountInput(state.xToken);
+	} = useAmountInput(state.xToken, poolBalances?.x ?? undefined);
 
 	const {
 		amount: yAmount,
 		setAmount: setYAmount,
 		error: yTokenBalanceError,
-	} = useAmountInput(state.yToken);
+	} = useAmountInput(state.yToken, poolBalances?.y ?? undefined);
 
 	// 'yToken' doesn't need a balance to be swapped to
 	const yTokenError = useMemo(() => {

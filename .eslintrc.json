@@ -1,3 +1,33 @@
 {
-  "extends": "next/core-web-vitals"
+  "plugins": ["unused-imports"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@next/next/recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "plugin:react-hooks/recommended",
+    "prettier",
+    "plugin:prettier/recommended",
+    "plugin:@next/next/recommended"
+  ],
+  "rules": {
+    "prettier/prettier": ["error"],
+    "unused-imports/no-unused-imports": "error",
+    // No need to import React when using Next.js
+    "react/react-in-jsx-scope": "off",
+    "react/no-unescaped-entities": "off",
+    "react-hooks/rules-of-hooks": "warn",
+    "react/prop-types": "off",
+    "no-empty-pattern": "warn",
+    "@typescript-eslint/no-unused-vars": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/ban-ts-ignore": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.ts", "**/*.tsx"],
+      "parser": "@typescript-eslint/parser"
+    }
+  ]
 }

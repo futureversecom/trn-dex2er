@@ -40,7 +40,7 @@ export function useAmountInput(
 
 		if (isXrplCurrency(token)) {
 			const xrplPoolBalance = poolBalance as XrplBalance;
-			const balance = xrplPoolBalance ? +xrplPoolBalance : +(getBalance(token)?.value ?? 0);
+			const balance = xrplPoolBalance ? +xrplPoolBalance.value : +(getBalance(token)?.value ?? 0);
 			isInsufficientBalance = balance < +amount;
 		} else {
 			const tokenPoolBalance = poolBalance as Balance<TrnToken>;

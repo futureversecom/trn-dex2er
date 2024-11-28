@@ -17,9 +17,7 @@ import {
 	TokenSelect,
 } from "../shared";
 
-interface AddLiquidityProps extends PropsWithChildren {}
-
-export function AddLiquidity({ children }: AddLiquidityProps) {
+export function AddLiquidity({ children }: PropsWithChildren) {
 	const props = useAddLiquidity();
 
 	const infoItems = getInfoItems(props);
