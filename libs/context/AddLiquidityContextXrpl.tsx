@@ -16,6 +16,7 @@ import { useXrplTokenInputs, XrplTokenInputs, XrplTokenInputState } from "../hoo
 import {
 	buildCreateAmmTx,
 	buildDepositAmmTx,
+	buildSingleAssetDepositTx,
 	checkAmmExists,
 	formatTxInput,
 	getAmmcost,
@@ -36,6 +37,7 @@ export type AddLiquidityXrplContextType = {
 	xamanData?: XamanData;
 	setTradingFee: (fee: string) => void;
 	tradingFee?: number;
+	toggleSingleAssetDeposit: () => void;
 } & AddLiquidityStateXrpl &
 	Omit<XrplTokenInputs, "setXAmount" | "setYAmount">;
 
@@ -49,7 +51,7 @@ interface AddLiquidityStateXrpl extends XrplTokenInputState {
 	explorerUrl?: string;
 	error?: string;
 	estPoolShare?: number;
-	action: "add" | "create";
+	action: "add" | "addSingle" | "create";
 	tradingFee?: number;
 	tradingFeeError?: string;
 	qr?: string;
@@ -82,12 +84,18 @@ export function AddLiquidityXrplProvider({ children }: PropsWithChildren) {
 		enabled: !!xrplProvider,
 	});
 
+	const toggleSingleAssetDeposit = useCallback(() => {
+		return state.action === "add"
+			? updateState({ action: "addSingle" })
+			: updateState({ action: "add" });
+	}, [state.action]);
+
 	const {
 		setXAmount,
 		setYAmount,
 		isDisabled: isTokenDisabled,
 		...tokenInputs
-	} = useXrplTokenInputs(state, setToken);
+	} = useXrplTokenInputs(state, setToken, undefined, state.action === "addSingle");
 
 	useMemo(() => {
 		void (async () => {
@@ -174,6 +182,14 @@ export function AddLiquidityXrplProvider({ children }: PropsWithChildren) {
 						formatTxInput(yToken, yAmount),
 						state.tradingFee,
 						ammCost
+					),
+				});
+			} else if (state.action === "addSingle") {
+				return updateState({
+					tx: buildSingleAssetDepositTx(
+						address,
+						formatTxInput(xToken, xAmount),
+						formatTxInput(yToken, yAmount)
 					),
 				});
 			}
@@ -273,6 +289,7 @@ export function AddLiquidityXrplProvider({ children }: PropsWithChildren) {
 				signTransaction,
 				isDisabled,
 				setTradingFee,
+				toggleSingleAssetDeposit,
 				...state,
 				...tokenInputs,
 			}}

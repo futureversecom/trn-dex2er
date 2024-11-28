@@ -42,7 +42,8 @@ export function useXrplTokenInputs<T extends XrplTokenInputState>(
 				x: Balance;
 				y: Balance;
 		  }
-		| undefined
+		| undefined,
+	singleSidedDeposit: boolean = false
 ): XrplTokenInputs {
 	const pathname = usePathname();
 	const { currencies, getBalance } = useXrplCurrencies();
@@ -118,12 +119,14 @@ export function useXrplTokenInputs<T extends XrplTokenInputState>(
 	const isDisabled = useMemo(() => {
 		if (!state.xToken || !state.yToken) return true;
 
-		if (!xAmount || !yAmount) return true;
+		if (!xAmount || (!singleSidedDeposit && !yAmount)) {
+			return true;
+		}
 
 		if (xTokenError || yTokenError) return true;
 
 		return false;
-	}, [state, xAmount, yAmount, xTokenError, yTokenError]);
+	}, [state, xAmount, yAmount, xTokenError, yTokenError, singleSidedDeposit]);
 
 	const xTokenUSD = useMemo(() => {
 		if (!xAmount || !state.xToken?.priceInUSD) return;

@@ -9,6 +9,7 @@ import {
 	ActionButton,
 	AmountInputs,
 	Box,
+	Button,
 	ConfirmModal,
 	ImportToken,
 	InfoItem,
@@ -53,7 +54,11 @@ export function AddLiquidityXrpl({ children }: PropsWithChildren) {
 					tag={props.tag}
 					onClose={() => props.setTag(undefined)}
 					onConfirm={props.signTransaction}
-					title={props.action === "add" ? "Confirm Added liquidity" : "Confirm Create Pair"}
+					title={
+						props.action === "add" || props.action === "addSingle"
+							? "Confirm Added liquidity"
+							: "Confirm Create Pair"
+					}
 					description=""
 					explorerUrl={props.explorerUrl}
 					error={props.error}
@@ -76,23 +81,25 @@ export function AddLiquidityXrpl({ children }: PropsWithChildren) {
 						}
 					/>
 
-					<InfoItem
-						heading={
-							<span className="flex items-center gap-2">
-								<TokenImage
-									symbol={props.yToken.ticker || normalizeCurrencyCode(props.yToken.currency)}
-								/>
-								<Text size="md" className="!text-neutral-600">
-									{props.yToken.ticker || normalizeCurrencyCode(props.yToken.currency)} deposit
-								</Text>
-							</span>
-						}
-						value={
-							props.yTokenUSD
-								? `${props.yAmount} ($${props.yTokenUSD.toLocaleString("en-US")})`
-								: props.yAmount
-						}
-					/>
+					{props.action != "addSingle" && (
+						<InfoItem
+							heading={
+								<span className="flex items-center gap-2">
+									<TokenImage
+										symbol={props.yToken.ticker || normalizeCurrencyCode(props.yToken.currency)}
+									/>
+									<Text size="md" className="!text-neutral-600">
+										{props.yToken.ticker || normalizeCurrencyCode(props.yToken.currency)} deposit
+									</Text>
+								</span>
+							}
+							value={
+								props.yTokenUSD
+									? `${props.yAmount} ($${props.yTokenUSD.toLocaleString("en-US")})`
+									: props.yAmount
+							}
+						/>
+					)}
 
 					<div className="py-2">
 						<hr className="border-neutral-600" />
@@ -100,13 +107,30 @@ export function AddLiquidityXrpl({ children }: PropsWithChildren) {
 				</ConfirmModal>
 			)}
 
-			<Box heading={props.action === "add" ? "add liquidity" : "create pair"}>
+			<Box
+				heading={
+					props.action === "add" || props.action === "addSingle" ? "add liquidity" : "create pair"
+				}
+			>
 				{children}
+
+				{props.action != "create" && (
+					<Button
+						variant={props.action === "add" ? "secondary" : "primary"}
+						size="sm"
+						onClick={() => props.toggleSingleAssetDeposit()}
+					>
+						Single Asset Deposit:{" "}
+						{props.xToken?.ticker ?? normalizeCurrencyCode(props.xToken?.currency ?? "?")} -{" "}
+						{props.yToken?.ticker ?? normalizeCurrencyCode(props.yToken?.currency ?? "?")}
+					</Button>
+				)}
 
 				<AmountInputs
 					{...{
 						plusIcon: true,
 						labels: ["Deposit", "Deposit"],
+						singleSidedDeposit: props.action === "addSingle",
 						...props,
 					}}
 				/>
@@ -178,7 +202,7 @@ export function AddLiquidityXrpl({ children }: PropsWithChildren) {
 				<ActionButton
 					disabled={props.isDisabled}
 					onClick={() => props.setTag("review")}
-					text={props.action === "add" ? "add liquidity" : "create"}
+					text={props.action === "add" || props.action === "addSingle" ? "add liquidity" : "create"}
 				/>
 			</Box>
 		</>

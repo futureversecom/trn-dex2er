@@ -9,7 +9,7 @@ import {
 	AmountInputs,
 	Box,
 	Button,
-	ConfirmModal, // ImportToken,
+	ConfirmModal,
 	InfoItem,
 	QrModal,
 	Text,
@@ -19,19 +19,12 @@ import {
 
 export function XrplManage() {
 	const props = useManageXrplPool();
-	const { openImportModal, importModalOpen } = useXrplCurrencies();
+	const { openImportModal } = useXrplCurrencies();
 
 	const heading = useMemo(() => `${upperFirst(props.action)} liquidity`, [props.action]);
 
 	return (
 		<>
-			{/* <ImportToken
-				open={props.isOpen === false && importModalOpen}
-				onClose={() => {
-					openImportModal(false);
-				}}
-			/> */}
-
 			<TokenSelect
 				open={props.isOpen !== false}
 				onTokenClick={props.onTokenClick}

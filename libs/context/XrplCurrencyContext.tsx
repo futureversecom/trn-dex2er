@@ -101,7 +101,7 @@ export function XrplCurrencyProvider({
 
 		return currencies.map((currency) => ({
 			...currency,
-			priceInUSD: prices[currency.currency],
+			priceInUSD: prices[normalizeCurrencyCode(currency.currency)],
 		}));
 	}, [currencies, prices]);
 

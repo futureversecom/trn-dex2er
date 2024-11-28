@@ -22,6 +22,8 @@ interface AmountInputsProps {
 	xTokenError?: string;
 	yTokenError?: string;
 
+	singleSidedDeposit?: boolean;
+
 	labels: [string, string];
 	plusIcon?: boolean;
 	between?: JSX.Element;
@@ -45,6 +47,8 @@ export function AmountInputs({
 
 	xTokenError,
 	yTokenError,
+
+	singleSidedDeposit = false,
 
 	labels,
 	plusIcon,
@@ -99,47 +103,50 @@ export function AmountInputs({
 				</Button>
 			</AmountInput>
 
-			{between
-				? between
-				: plusIcon && <div className="flex h-6 items-center justify-center text-lg">+</div>}
+			{!singleSidedDeposit &&
+				(between
+					? between
+					: plusIcon && <div className="flex h-6 items-center justify-center text-lg">+</div>)}
 
-			<AmountInput
-				token={yToken}
-				amount={yAmount}
-				label={labels[1]}
-				error={yTokenError}
-				setAmount={(amount) => setAmount({ src: "y", amount })}
-				tokenBalance={yTokenBalance}
-				tokenUSD={yTokenUSD}
-			>
-				{yToken && (
-					<Button
-						variant="secondary"
-						size="sm"
-						className="text-neutral-700"
-						onClick={() => {
-							if (!yTokenBalance) return setAmount({ src: "y", amount: "" });
-
-							setAmount({
-								src: "y",
-								amount: yTokenBalance.toString(),
-							});
-						}}
-					>
-						max
-					</Button>
-				)}
-				<Button
-					chevron
-					size="sm"
-					onClick={() => setIsOpen("yToken")}
-					variant={yToken ? "secondary" : "primary"}
-					className={classNames(yToken && "text-neutral-700")}
-					icon={ySymbol ? <TokenImage symbol={ySymbol} /> : undefined}
+			{!singleSidedDeposit && (
+				<AmountInput
+					token={yToken}
+					amount={yAmount}
+					label={labels[1]}
+					error={yTokenError}
+					setAmount={(amount) => setAmount({ src: "y", amount })}
+					tokenBalance={yTokenBalance}
+					tokenUSD={yTokenUSD}
 				>
-					{ySymbol ? ySymbol : "select token"}
-				</Button>
-			</AmountInput>
+					{yToken && (
+						<Button
+							variant="secondary"
+							size="sm"
+							className="text-neutral-700"
+							onClick={() => {
+								if (!yTokenBalance) return setAmount({ src: "y", amount: "" });
+
+								setAmount({
+									src: "y",
+									amount: yTokenBalance.toString(),
+								});
+							}}
+						>
+							max
+						</Button>
+					)}
+					<Button
+						chevron
+						size="sm"
+						onClick={() => setIsOpen("yToken")}
+						variant={yToken ? "secondary" : "primary"}
+						className={classNames(yToken && "text-neutral-700")}
+						icon={ySymbol ? <TokenImage symbol={ySymbol} /> : undefined}
+					>
+						{ySymbol ? ySymbol : "select token"}
+					</Button>
+				</AmountInput>
+			)}
 		</>
 	);
 }
