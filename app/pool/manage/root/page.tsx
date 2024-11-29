@@ -12,7 +12,7 @@ export default function Home() {
 	if (!xToken && !yToken)
 		return (
 			<Box heading="manage positions" className="relative" isLoading={isFetching}>
-				{!pools?.length ? (
+				{pools?.length > 0 ? (
 					<Positions />
 				) : (
 					<Text>
