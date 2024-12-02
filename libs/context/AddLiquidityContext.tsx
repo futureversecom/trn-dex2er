@@ -73,7 +73,9 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 
 	const pathname = usePathname();
 	useEffect(() => {
-		updateState({ action: pathname.split("pool/")[1] as AddLiquidityState["action"] });
+		updateState({
+			action: pathname.split("pool/")[1].split("/")[0] as AddLiquidityState["action"],
+		});
 	}, [pathname]);
 
 	const setTag = useCallback((tag?: ContextTag) => updateState({ tag }), []);
