@@ -22,7 +22,7 @@ import { isXrplCurrency } from "@/libs/utils";
 import { TxHistory } from "./TxHistory";
 
 export function Bridge() {
-	const { currencies, checkTrustline } = useXrplCurrencies();
+	const { checkTrustline, findToken } = useXrplCurrencies();
 	const { network, rAddress, futurepass, setIsXrplWalletSelectOpen, trnLogin } = useWallets();
 
 	const props = useBridge();
@@ -41,11 +41,11 @@ export function Bridge() {
 	const hasTrustline = useMemo(() => {
 		if (network === "xrpl" || !rAddress || !tokenSymbol) return true;
 
-		const currency = currencies.find((c) => tokenSymbol === c.ticker || tokenSymbol === c.currency);
+		const currency = findToken(tokenSymbol);
 		if (!currency) throw new Error(`Currency not found for ${tokenSymbol}`);
 
 		return checkTrustline(currency);
-	}, [network, rAddress, tokenSymbol, currencies, checkTrustline]);
+	}, [network, rAddress, tokenSymbol, findToken, checkTrustline]);
 
 	const buttonText = useMemo(() => {
 		if (!rAddress || !futurepass) return `Connect ${rAddress ? "Root" : "XRPL"} Wallet`;
@@ -85,9 +85,9 @@ export function Bridge() {
 			/>
 
 			<QrModal
-				qr={props.xamanData?.qrCodeImg}
+				qr={props.qr}
 				onClose={() => props.setTag(undefined)}
-				open={!!props.xamanData && props.tag === "sign"}
+				open={!!props.qr && props.tag === "sign"}
 			/>
 
 			{props.token && (
@@ -110,7 +110,11 @@ export function Bridge() {
 								</Text>
 							</span>
 						}
-						value={props.amount ?? ""}
+						value={
+							props.tokenUSD
+								? `${props.amount} ($${props.tokenUSD.toLocaleString("en-US")})`
+								: props.amount
+						}
 					/>
 
 					<div className="py-2">
