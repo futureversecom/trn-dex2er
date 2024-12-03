@@ -34,13 +34,6 @@ export function useExtrinsic({
 	const dispatcher = useMemo(() => {
 		try {
 			if (!futurePassAccount || !signer || !senderAddress) return;
-			// I don't think we need to throw an error here - signer starts off undefined and will always throw.
-			// An error is thrown if dispatcher nullish later on, so that can be handled there.
-			// throw new Error(
-			// 	`${
-			// 		!futurePassAccount ? "futurePassAccount" : !signer ? "signer" : "senderAddress"
-			// 	} was undefined`
-			// );
 
 			return createTrnDispatcher({
 				wrapWithFuturePass: sdk.addressEquals(senderAddress, futurePassAccount),

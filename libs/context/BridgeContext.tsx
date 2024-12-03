@@ -324,7 +324,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		[bridgeTokenInput, destination, buildTransaction]
 	);
 
-	// Adding useEffect to track network changes and reset token and amount when network changes
+	// Adding useMemo to track network changes and reset token and amount when network changes
 	useMemo(() => {
 		if (networkState !== network) {
 			doSetToken(undefined);
