@@ -4,7 +4,44 @@ import { ROOT_NETWORK } from "../constants";
 
 type XrplPools = Array<AMMInfoRequest>;
 
-const mainnet: XrplPools = [];
+const mainnet: XrplPools = [
+	{
+		command: "amm_info",
+		amm_account: "rEPnfqUepQBqgSGe1KdhyehydCdCdyb5ZS", // sylo root
+	},
+	{
+		command: "amm_info",
+		amm_account: "rHDpKsf4dbtta4AWktFiCaQS5zskWbhpC9", // asto root
+	},
+	{
+		command: "amm_info",
+		amm_account: "rHDpKsf4dbtta4AWktFiCaQS5zskWbhpC9", // xrp root
+	},
+	{
+		command: "amm_info",
+		amm_account: "rsUqtLEUi9Yu6V3wJHe1YsmsTxDCUT7o3C", // xrp zrp
+	},
+	{
+		command: "amm_info",
+		amm_account: "rDJi8avQiXSDr1EkUMTp6kNY47vY5h2Hmu", // root zrp
+	},
+	{
+		command: "amm_info",
+		amm_account: "rGHt6LT5v9DVaEAmFzj5ciuxuj41ZjLofs", // xrp usdc
+	},
+	{
+		command: "amm_info",
+		amm_account: "rQBeAghWHEwWvKShryBSa5yR3VRX9oyQ5T", // xrp btc
+	},
+	{
+		command: "amm_info",
+		amm_account: "rEDFZUyyikyUbjNoMsSgmXfZNN53rwLLZv", // xrp eth
+	},
+	{
+		command: "amm_info",
+		amm_account: "rNXadcJukgtWKyMewxkDdz3CAYj7gG5nkY", // xrp usdt
+	},
+];
 
 const devnet: XrplPools = [
 	{

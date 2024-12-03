@@ -99,7 +99,7 @@ export function Header() {
 					current={network}
 					onSelect={(network) => {
 						if (pathname.includes("pool")) {
-							let newPath = pathname.split("/");
+							const newPath = pathname.split("/");
 							newPath[3] = network;
 							const path = newPath.join("/");
 							router.push(path);
