@@ -343,9 +343,9 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		[destinationError, bridgeTokenInput, state]
 	);
 
-	useEffect(() => {
-		if (hasTrustline) return;
-	}, [hasTrustline]);
+	// useEffect(() => {
+	// 	if (hasTrustline) return;
+	// }, [hasTrustline]);
 
 	return (
 		<BridgeContext.Provider

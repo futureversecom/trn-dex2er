@@ -76,10 +76,11 @@ const devnet: XrplPools = [
 		command: "amm_info",
 		amm_account: "rntY2g4vDae8298kK1DkxocjB4RSZxu1Jj", // eth usdt
 	},
-	{
-		command: "amm_info",
-		amm_account: "r9fAAcBBSjk5bcznLUkMoft598oTfYpTvG", // xrp doge
-	},
+	// This is handy for testing so leaving here for now
+	// {
+	// 	command: "amm_info",
+	// 	amm_account: "r9fAAcBBSjk5bcznLUkMoft598oTfYpTvG", // xrp doge
+	// },
 ];
 
 const testnet: XrplPools = [
