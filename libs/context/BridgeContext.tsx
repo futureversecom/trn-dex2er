@@ -33,6 +33,7 @@ import {
 	formatRootscanId,
 	getXrplExplorerUrl,
 	type InteractiveTransactionResponse,
+	isXrplCurrency,
 	type IXrplWalletProvider,
 } from "../utils";
 import { useWallets } from "./WalletContext";
@@ -52,6 +53,7 @@ export type BridgeContextType = {
 	setDestination: (destination: string) => void;
 	destinationError?: string;
 	hasTrustline: boolean;
+	tokenSymbol: string;
 } & BridgeState &
 	BridgeTokenInput;
 
@@ -91,6 +93,20 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 	const { isDisabled: isTokenDisabled, ...bridgeTokenInput } = useBridgeTokenInput();
 	const { error: destinationError, destination, setDestination } = useBridgeDestinationInput();
+
+	useMemo(() => {
+		bridgeTokenInput.setToken(undefined);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [network]);
+
+	const tokenSymbol = useMemo(() => {
+		const token = bridgeTokenInput.token;
+		if (!token) return "";
+
+		if (isXrplCurrency(token)) return token.ticker || token.currency;
+
+		return token.symbol;
+	}, [bridgeTokenInput.token]);
 
 	// Default to paying fee with the token selected to bridge
 	useEffect(() => {
@@ -239,23 +255,22 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	);
 
 	const hasTrustline = useMemo(() => {
-		if (network === "xrpl" || !xrplProvider || !bridgeTokenInput.token) return true;
+		if (network === "xrpl" || !xrplProvider || !tokenSymbol) return true;
 
-		const token = bridgeTokenInput.token as TrnToken;
-		const currency = findToken(token.symbol);
-		if (!currency) throw new Error(`Currency not found for ${token.symbol}`);
+		const currency = findToken(tokenSymbol);
+		// TODO : handle this error
+		if (!currency) throw new Error(`Currency not found for ${tokenSymbol}`);
 
 		return checkTrustline(currency);
-	}, [network, xrplProvider, bridgeTokenInput.token, findToken, checkTrustline]);
+	}, [network, xrplProvider, findToken, tokenSymbol, checkTrustline]);
 
 	const signTransaction = useCallback(async () => {
 		if (network === "root" && hasTrustline) return signRootTransaction();
 
 		let trustSet: TrustSet | undefined;
 		if (!hasTrustline) {
-			const token = bridgeTokenInput.token as TrnToken;
-			const currency = findToken(token.symbol);
-			if (!currency) throw new Error(`Currency not found for ${token.symbol}`);
+			const currency = findToken(tokenSymbol);
+			if (!currency) throw new Error(`Currency not found for ${tokenSymbol}`);
 
 			trustSet = {
 				TransactionType: "TrustSet",
@@ -274,8 +289,8 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		signRootTransaction,
 		signXrplTransaction,
 		xrplProvider,
-		bridgeTokenInput.token,
 		findToken,
+		tokenSymbol,
 	]);
 
 	useEffect(() => {
@@ -357,6 +372,8 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 				setToken: doSetToken,
 				setAmount: doSetAmount,
+
+				tokenSymbol,
 
 				error,
 			}}
