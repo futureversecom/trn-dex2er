@@ -128,7 +128,11 @@ export function XrplCurrencyProvider({
 				} as AMMInfoRequest;
 			});
 
-		const tokens = INITIAL_TOKEN_PAIRS.concat(userLPTokens);
+		const dupsRemoved = INITIAL_TOKEN_PAIRS.filter((t) => {
+			return !userLPTokens.some((v) => t.amm_account === v.amm_account);
+		});
+
+		const tokens = dupsRemoved.concat(userLPTokens);
 
 		setTokenPairs(tokens);
 		// eslint-disable-next-line react-hooks/exhaustive-deps

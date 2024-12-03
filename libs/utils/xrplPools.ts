@@ -15,7 +15,7 @@ const mainnet: XrplPools = [
 	},
 	{
 		command: "amm_info",
-		amm_account: "rHDpKsf4dbtta4AWktFiCaQS5zskWbhpC9", // xrp root
+		amm_account: "rL6wADSrdjdQgMNUWB6CuCzmPok9uaNdiN", // xrp root
 	},
 	{
 		command: "amm_info",
@@ -27,19 +27,31 @@ const mainnet: XrplPools = [
 	},
 	{
 		command: "amm_info",
+		amm_account: "rQBeAghWHEwWvKShryBSa5yR3VRX9oyQ5T", // xrp btc x
+	},
+	{
+		command: "amm_info",
+		amm_account: "rEDFZUyyikyUbjNoMsSgmXfZNN53rwLLZv", // xrp eth x
+	},
+	{
+		command: "amm_info",
 		amm_account: "rGHt6LT5v9DVaEAmFzj5ciuxuj41ZjLofs", // xrp usdc
 	},
 	{
 		command: "amm_info",
-		amm_account: "rQBeAghWHEwWvKShryBSa5yR3VRX9oyQ5T", // xrp btc
-	},
-	{
-		command: "amm_info",
-		amm_account: "rEDFZUyyikyUbjNoMsSgmXfZNN53rwLLZv", // xrp eth
-	},
-	{
-		command: "amm_info",
 		amm_account: "rNXadcJukgtWKyMewxkDdz3CAYj7gG5nkY", // xrp usdt
+	},
+	{
+		command: "amm_info",
+		amm_account: "rprDM9hEWv7ACi1y9ZXrtRyySoWVLuU5zs", // xrp xlm
+	},
+	{
+		command: "amm_info",
+		amm_account: "r9ZKrNu1RJQg1UoqJ24pn5ZqynJg7rifGY", // xrp flr
+	},
+	{
+		command: "amm_info",
+		amm_account: "rJph4hcDHXEyyoe2CYM18McydukdTLvBhs", // xrp zrpy
 	},
 ];
 
@@ -63,6 +75,10 @@ const devnet: XrplPools = [
 	{
 		command: "amm_info",
 		amm_account: "rntY2g4vDae8298kK1DkxocjB4RSZxu1Jj", // eth usdt
+	},
+	{
+		command: "amm_info",
+		amm_account: "r9fAAcBBSjk5bcznLUkMoft598oTfYpTvG", // xrp doge
 	},
 ];
 

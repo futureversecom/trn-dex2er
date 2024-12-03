@@ -86,6 +86,39 @@ const mainnet: XrplCurrencies = {
 			decimals: 6,
 		},
 		{
+			ticker: "ETH",
+			currency: getCurrencyCode("ETH"),
+			issuer: "rcA8X3TVMST1n3CJeAdGk1RdRCHii7N2h",
+			decimals: 6,
+		},
+		{
+			ticker: "USDC",
+			currency: getCurrencyCode("USDC"),
+			issuer: "rcEGREd8NmkKRE8GE424sksyt1tJVFZwu",
+			decimals: 6,
+		},
+		{
+			ticker: "USDT",
+			currency: getCurrencyCode("USDT"),
+			issuer: "rcvxE9PS9YBwxtGg1qNeewV6ZB3wGubZq",
+			decimals: 6,
+		},
+		{
+			ticker: "XLM",
+			currency: getCurrencyCode("XLM"),
+			issuer: "rKiCet8SdvWxPXnAgYarFUXMh1zCPz432Y",
+		},
+		{
+			ticker: "FLR",
+			currency: getCurrencyCode("FLR"),
+			issuer: "rcxJwVnftZzXqyH9YheB8TgeiZUhNo1Eu",
+		},
+		{
+			ticker: "ZRPY",
+			currency: getCurrencyCode("ZRPY"),
+			issuer: "rsxkrpsYaeTUdciSFJwvto7MKSrgGnvYvA",
+		},
+		{
 			ticker: "ROOT",
 			currency: getCurrencyCode("ROOT"),
 			issuer: "r9MrRER8UKSAumcqvbwCAsyWbUKomz68i3",

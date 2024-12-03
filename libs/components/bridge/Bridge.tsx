@@ -15,13 +15,12 @@ import {
 	TokenImage,
 	TokenSelect,
 } from "@/libs/components/shared";
-import { type BridgeContextType, useBridge, useWallets, useXrplCurrencies } from "@/libs/context";
+import { type BridgeContextType, useBridge, useWallets } from "@/libs/context";
 import type { TrnToken, XrplCurrency } from "@/libs/types";
 
 import { TxHistory } from "./TxHistory";
 
 export function Bridge() {
-	const { checkTrustline, findToken } = useXrplCurrencies();
 	const { network, rAddress, futurepass, setIsXrplWalletSelectOpen, trnLogin } = useWallets();
 
 	const props = useBridge();
