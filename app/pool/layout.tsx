@@ -1,7 +1,7 @@
 import { Nav } from "@/libs/components/pool";
 import { TrnTokenProvider } from "@/libs/context";
 import { XrplCurrencyProvider } from "@/libs/context";
-import { getXrplCurrencies } from "@/libs/utils";
+import { fetchTrnTokens, getXrplCurrencies } from "@/libs/utils";
 
 const dynamic = "force-dynamic";
 
@@ -10,8 +10,10 @@ export default async function PageLayout({
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
+	const trnTokens = await fetchTrnTokens();
+
 	return (
-		<TrnTokenProvider>
+		<TrnTokenProvider trnTokens={trnTokens}>
 			<XrplCurrencyProvider predefinedCurrencies={getXrplCurrencies("pool")}>
 				<Nav />
 				{children}

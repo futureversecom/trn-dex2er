@@ -57,10 +57,10 @@ export function WalletProvider({ children }: PropsWithChildren) {
 	}, [network, userSession, xrplAddress]);
 
 	const isConnected = useMemo(() => {
-		if (network === "root") return isTrnConnected;
+		if (network) return isTrnConnected && !!userSession;
 
 		return !!xrplAddress;
-	}, [network, isTrnConnected, xrplAddress]);
+	}, [network, isTrnConnected, userSession, xrplAddress]);
 
 	const trnLogin = useCallback(() => {
 		saveRedirectLocation();

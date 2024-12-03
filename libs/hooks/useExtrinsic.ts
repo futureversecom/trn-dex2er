@@ -1,9 +1,5 @@
 import * as sdk from "@futureverse/experience-sdk";
-import {
-	useAuthenticationMethod,
-	useFuturePassAccountAddress,
-	useTrnApi,
-} from "@futureverse/react";
+import { useAuthenticationMethod, useFutureverse, useTrnApi } from "@futureverse/react";
 import { BN, hexToU8a } from "@polkadot/util";
 import { useCallback, useMemo, useState } from "react";
 import { useSigner } from "wagmi";
@@ -27,7 +23,8 @@ export function useExtrinsic({
 	const { refetchTokenBalances } = useTrnTokens();
 	const { trnApi, createTrnDispatcher } = useTrnApi();
 	const authenticationMethod = useAuthenticationMethod();
-	const { data: futurePassAccount } = useFuturePassAccountAddress();
+	const { userSession } = useFutureverse();
+	const futurePassAccount = userSession?.futurepass;
 
 	const [xamanData, setXamanData] = useState<XamanData>();
 
@@ -36,12 +33,7 @@ export function useExtrinsic({
 
 	const dispatcher = useMemo(() => {
 		try {
-			if (!futurePassAccount || !signer || !senderAddress)
-				throw new Error(
-					`${
-						!futurePassAccount ? "futurePassAccount" : !signer ? "signer" : "senderAddress"
-					} was undefined`
-				);
+			if (!futurePassAccount || !signer || !senderAddress) return;
 
 			return createTrnDispatcher({
 				wrapWithFuturePass: sdk.addressEquals(senderAddress, futurePassAccount),

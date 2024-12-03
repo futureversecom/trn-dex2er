@@ -5,8 +5,9 @@ import { dropsToXrp } from "xrpl";
 
 import { Hyperlink, TableRow, Text, TokenImage } from "@/libs/components/shared";
 import { ROOT_NETWORK } from "@/libs/constants";
-import { useWallets, useXrplCurrencies } from "@/libs/context";
+import { useWallets } from "@/libs/context";
 import { useBridgeHistory } from "@/libs/hooks";
+import { getXrplCurrencies } from "@/libs/utils";
 import { formatRootscanId, formatTime, getXrplExplorerUrl, shortenAddress } from "@/libs/utils";
 
 const statusMap = {
@@ -21,7 +22,7 @@ export function TxHistory() {
 	const { network } = useWallets();
 	const history = useBridgeHistory();
 
-	const { currencies } = useXrplCurrencies();
+	const bridgeCurrencies = getXrplCurrencies("bridge");
 
 	const transactions = useMemo(() => {
 		if (!history) return;
@@ -34,7 +35,7 @@ export function TxHistory() {
 
 			const { tokenName } = tx.xrpValue;
 
-			const xrplCurrency = currencies.find(
+			const xrplCurrency = bridgeCurrencies.find(
 				(currency) =>
 					currency.currency ===
 					(tokenName.length === 3
@@ -67,7 +68,7 @@ export function TxHistory() {
 				token: typeof amount === "string" ? "XRP" : amount.currency,
 			};
 		});
-	}, [history, network, currencies]);
+	}, [history, network, bridgeCurrencies]);
 
 	return (
 		<div className="pt-6">

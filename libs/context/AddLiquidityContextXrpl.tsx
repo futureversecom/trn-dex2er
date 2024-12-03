@@ -9,7 +9,7 @@ import {
 } from "react";
 import { Currency, Transaction } from "xrpl";
 
-import type { ContextTag, TokenSource, XamanData, XrplCurrency } from "@/libs/types";
+import type { ContextTag, TokenSource, XrplCurrency } from "@/libs/types";
 
 import { useWallets, useXrplCurrencies } from ".";
 import { useXrplTokenInputs, XrplTokenInputs, XrplTokenInputState } from "../hooks";
@@ -34,7 +34,6 @@ export type AddLiquidityXrplContextType = {
 	setToken: (args: { src: TokenSource; token: XrplCurrency }) => void;
 	signTransaction: () => void;
 	setTag: (tag?: ContextTag) => void;
-	xamanData?: XamanData;
 	setTradingFee: (fee: string) => void;
 	tradingFee?: number;
 	toggleSingleAssetDeposit: () => void;

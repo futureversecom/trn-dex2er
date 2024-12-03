@@ -15,55 +15,35 @@ import {
 	TokenImage,
 	TokenSelect,
 } from "@/libs/components/shared";
-import { type BridgeContextType, useBridge, useWallets, useXrplCurrencies } from "@/libs/context";
+import { type BridgeContextType, useBridge, useWallets } from "@/libs/context";
 import type { TrnToken, XrplCurrency } from "@/libs/types";
-import { isXrplCurrency } from "@/libs/utils";
 
 import { TxHistory } from "./TxHistory";
 
 export function Bridge() {
-	const { currencies, checkTrustline } = useXrplCurrencies();
 	const { network, rAddress, futurepass, setIsXrplWalletSelectOpen, trnLogin } = useWallets();
 
 	const props = useBridge();
 
 	const infoItems = getInfoItems(props);
 
-	const tokenSymbol = useMemo(() => {
-		const token = props.token;
-		if (!token) return "";
-
-		if (isXrplCurrency(token)) return token.ticker || token.currency;
-
-		return token.symbol;
-	}, [props.token]);
-
-	const hasTrustline = useMemo(() => {
-		if (network === "xrpl" || !rAddress || !tokenSymbol) return true;
-
-		const currency = currencies.find((c) => tokenSymbol === c.ticker || tokenSymbol === c.currency);
-		if (!currency) throw new Error(`Currency not found for ${tokenSymbol}`);
-
-		return checkTrustline(currency);
-	}, [network, rAddress, tokenSymbol, currencies, checkTrustline]);
-
 	const buttonText = useMemo(() => {
 		if (!rAddress || !futurepass) return `Connect ${rAddress ? "Root" : "XRPL"} Wallet`;
 
-		if (!hasTrustline) return "Create Trustline";
+		if (!props.hasTrustline) return "Create Trustline";
 
 		return "Bridge";
-	}, [rAddress, futurepass, hasTrustline]);
+	}, [rAddress, futurepass, props.hasTrustline]);
 
 	const onButtonClick = useCallback(() => {
 		if (!rAddress) return setIsXrplWalletSelectOpen(true);
 
 		if (!futurepass) return trnLogin();
 
-		if (!hasTrustline) return props.signTransaction();
+		if (!props.hasTrustline) return props.signTransaction();
 
 		props.setTag("review");
-	}, [rAddress, futurepass, props, setIsXrplWalletSelectOpen, trnLogin, hasTrustline]);
+	}, [rAddress, futurepass, props, setIsXrplWalletSelectOpen, trnLogin]);
 
 	const isDisabled = useMemo(() => {
 		if (!rAddress || !futurepass) return false;
@@ -85,9 +65,9 @@ export function Bridge() {
 			/>
 
 			<QrModal
-				qr={props.xamanData?.qrCodeImg}
+				qr={props.qr}
 				onClose={() => props.setTag(undefined)}
-				open={!!props.xamanData && props.tag === "sign"}
+				open={!!props.qr && props.tag === "sign"}
 			/>
 
 			{props.token && (
@@ -104,13 +84,17 @@ export function Bridge() {
 					<InfoItem
 						heading={
 							<span className="flex items-center gap-2">
-								<TokenImage symbol={tokenSymbol} />
+								<TokenImage symbol={props.tokenSymbol} />
 								<Text size="md" className="!text-neutral-600">
-									{tokenSymbol} to bridge
+									{props.tokenSymbol} to bridge
 								</Text>
 							</span>
 						}
-						value={props.amount ?? ""}
+						value={
+							props.tokenUSD
+								? `${props.amount} ($${props.tokenUSD.toLocaleString("en-US")})`
+								: props.amount
+						}
 					/>
 
 					<div className="py-2">
@@ -141,9 +125,9 @@ export function Bridge() {
 						onClick={() => props.setIsOpen(true)}
 						variant={props.token ? "secondary" : "primary"}
 						className={classNames(props.token && "text-neutral-700")}
-						icon={tokenSymbol ? <TokenImage symbol={tokenSymbol} /> : undefined}
+						icon={props.tokenSymbol ? <TokenImage symbol={props.tokenSymbol} /> : undefined}
 					>
-						{tokenSymbol ? tokenSymbol : "select token"}
+						{props.tokenSymbol ? props.tokenSymbol : "select token"}
 					</Button>
 				</AmountInput>
 
@@ -158,7 +142,7 @@ export function Bridge() {
 					</Text>
 				</div>
 
-				{tokenSymbol && network === "root" && (
+				{props.tokenSymbol && network === "root" && (
 					<>
 						<div className="flex items-center justify-end px-2">
 							<SettingsButton {...props} xToken={props.token} />
@@ -172,7 +156,7 @@ export function Bridge() {
 
 				<ActionButton
 					text={buttonText}
-					disabled={hasTrustline ? isDisabled : false}
+					disabled={props.hasTrustline ? isDisabled : false}
 					onClick={onButtonClick}
 				/>
 

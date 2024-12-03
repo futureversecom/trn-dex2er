@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { usePagination } from "react-use-pagination";
 
-import { useTrnTokens, useXrplCurrencies } from "@/libs/context";
+import { useTrnTokens, useWallets, useXrplCurrencies } from "@/libs/context";
 import type { TrnToken, XrplCurrency } from "@/libs/types";
 import { Balance, normalizeCurrencyCode } from "@/libs/utils";
 
@@ -23,6 +23,7 @@ type PoolProps<T extends "XRP" | "ROOT"> = T extends "XRP"
 	: PoolComponentProps<TrnToken>;
 
 export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
+	const { isConnected } = useWallets();
 	const { pools: trnPools, tokens: trnTokens } = useTrnTokens();
 	const { pools: xrplPools, findToken } = useXrplCurrencies();
 	const { onPoolClick, network } = props;
@@ -63,7 +64,9 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 
 	return (
 		<>
-			<Text>To add liquidity, select a pool below.</Text>
+			<Text>
+				To add liquidity, {isConnected ? "select a pool below" : "please connect your wallet"}.
+			</Text>
 
 			{!!validPools?.length && (
 				<div>
@@ -79,7 +82,7 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 
 							return (
 								<TableRow
-									key={pool.poolKey}
+									key={`${pool.poolKey}-${pool.lpTokenIssuer}`}
 									onClick={() => onPoolClick(token1 as any, token2 as any)}
 									className="[&>div]:flex [&>div]:min-w-[12em] [&>div]:flex-col [&>div]:items-center"
 									items={[
@@ -117,7 +120,7 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 
 							return (
 								<TableRow
-									key={pool.poolKey}
+									key={`${pool.poolKey}-${pool.lpTokenIssuer}`}
 									onClick={() => onPoolClick(currency1 as any, currency2 as any)}
 									className="[&>div]:flex [&>div]:min-w-[12em] [&>div]:flex-col [&>div]:items-center"
 									items={[

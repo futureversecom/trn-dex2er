@@ -74,6 +74,6 @@ export const useFetchXrplPools = (
 	return useQuery({
 		queryKey: ["poolData"],
 		queryFn: () => fetchPoolData(xrplProvider, tokenPairs, currencyPrices),
-		refetchInterval: 6000,
+		refetchInterval: 3000,
 	});
 };

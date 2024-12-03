@@ -1,6 +1,5 @@
 import * as sdk from "@futureverse/experience-sdk";
 import { useAuthenticationMethod, useTrnApi } from "@futureverse/react";
-import { Transaction } from "ethers";
 import {
 	createContext,
 	type PropsWithChildren,
@@ -12,7 +11,6 @@ import {
 } from "react";
 import {
 	type Amount,
-	BaseTransaction,
 	convertStringToHex,
 	decodeAccountID,
 	type Payment,
@@ -35,6 +33,7 @@ import {
 	formatRootscanId,
 	getXrplExplorerUrl,
 	type InteractiveTransactionResponse,
+	isXrplCurrency,
 	type IXrplWalletProvider,
 } from "../utils";
 import { useWallets } from "./WalletContext";
@@ -54,6 +53,7 @@ export type BridgeContextType = {
 	setDestination: (destination: string) => void;
 	destinationError?: string;
 	hasTrustline: boolean;
+	tokenSymbol: string;
 } & BridgeState &
 	BridgeTokenInput;
 
@@ -79,6 +79,9 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	const [state, setState] = useState<BridgeState>(initialState);
 	const [estimatedFee, setEstimatedFee] = useState<string>();
 
+	//Adding network state to track network changes
+	const [networkState, setNetworkState] = useState<"root" | "xrpl" | undefined>(undefined);
+
 	const updateState = (update: Partial<BridgeState>) =>
 		setState((prev) => ({ ...prev, ...update }));
 
@@ -89,10 +92,19 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken }), []);
 
 	const { network, xrplProvider } = useWallets();
-	const { currencies, checkTrustline, refetch: refetchXrplBalances } = useXrplCurrencies();
+	const { checkTrustline, refetch: refetchXrplBalances, findToken } = useXrplCurrencies();
 
 	const { isDisabled: isTokenDisabled, ...bridgeTokenInput } = useBridgeTokenInput();
 	const { error: destinationError, destination, setDestination } = useBridgeDestinationInput();
+
+	const tokenSymbol = useMemo(() => {
+		const token = bridgeTokenInput.token;
+		if (!token) return "";
+
+		if (isXrplCurrency(token)) return token.ticker || token.currency;
+
+		return token.symbol;
+	}, [bridgeTokenInput.token]);
 
 	// Default to paying fee with the token selected to bridge
 	useEffect(() => {
@@ -241,27 +253,22 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	);
 
 	const hasTrustline = useMemo(() => {
-		if (network === "xrpl" || !xrplProvider || !bridgeTokenInput.token) return true;
+		if (network === "xrpl" || !xrplProvider || !tokenSymbol) return true;
 
-		const token = bridgeTokenInput.token as TrnToken;
-		const currency = currencies.find(
-			(c) => token.symbol === c.ticker || token.symbol === c.currency
-		);
-		if (!currency) throw new Error(`Currency not found for ${token.symbol}`);
+		const currency = findToken(tokenSymbol);
+		// TODO : handle this error
+		if (!currency) throw new Error(`Currency not found for ${tokenSymbol}`);
 
 		return checkTrustline(currency);
-	}, [network, xrplProvider, currencies, checkTrustline, bridgeTokenInput.token]);
+	}, [network, xrplProvider, findToken, tokenSymbol, checkTrustline]);
 
 	const signTransaction = useCallback(async () => {
 		if (network === "root" && hasTrustline) return signRootTransaction();
 
 		let trustSet: TrustSet | undefined;
 		if (!hasTrustline) {
-			const token = bridgeTokenInput.token as TrnToken;
-			const currency = currencies.find(
-				(c) => token.symbol === c.ticker || token.symbol === c.currency
-			);
-			if (!currency) throw new Error(`Currency not found for ${token.symbol}`);
+			const currency = findToken(tokenSymbol);
+			if (!currency) throw new Error(`Currency not found for ${tokenSymbol}`);
 
 			trustSet = {
 				TransactionType: "TrustSet",
@@ -276,12 +283,12 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		await signXrplTransaction(xrplProvider, trustSet);
 	}, [
 		network,
-		xrplProvider,
+		hasTrustline,
 		signRootTransaction,
 		signXrplTransaction,
-		bridgeTokenInput.token,
-		currencies,
-		hasTrustline,
+		xrplProvider,
+		findToken,
+		tokenSymbol,
 	]);
 
 	useEffect(() => {
@@ -317,6 +324,16 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		[bridgeTokenInput, destination, buildTransaction]
 	);
 
+	// Adding useMemo to track network changes and reset token and amount when network changes
+	useMemo(() => {
+		if (networkState !== network) {
+			doSetToken(undefined);
+			doSetAmount("");
+			setNetworkState(network);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [network]);
+
 	const doSetDestination = useCallback(
 		(destination: string) => {
 			setDestination(destination);
@@ -334,9 +351,9 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		[destinationError, bridgeTokenInput, state]
 	);
 
-	useEffect(() => {
-		if (hasTrustline) return;
-	}, [hasTrustline]);
+	// useEffect(() => {
+	// 	if (hasTrustline) return;
+	// }, [hasTrustline]);
 
 	return (
 		<BridgeContext.Provider
@@ -363,6 +380,8 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 				setToken: doSetToken,
 				setAmount: doSetAmount,
+
+				tokenSymbol,
 
 				error,
 			}}

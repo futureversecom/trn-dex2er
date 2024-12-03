@@ -73,11 +73,11 @@ export function XrplCurrencyProvider({
 	const { prices } = useUsdPrices();
 	const { address, xrplProvider } = useWallets();
 	const [tokenPairs, setTokenPairs] = useState<Array<AMMInfoRequest>>(INITIAL_TOKEN_PAIRS);
-	const { data: pools, isFetching: isFetchingPools } = useFetchXrplPools(
-		xrplProvider,
-		tokenPairs,
-		prices
-	);
+	const {
+		data: pools,
+		isFetching: isFetchingPools,
+		refetch: refetchXrplPools,
+	} = useFetchXrplPools(xrplProvider, tokenPairs, prices);
 
 	const [state, setState] = useState<XrplCurrencyContextState>({
 		...initialState,
@@ -117,6 +117,11 @@ export function XrplCurrencyProvider({
 	});
 
 	useMemo(() => {
+		if (balances) refetchXrplPools();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [balances]);
+
+	useMemo(() => {
 		if (!balances) return;
 
 		const userLPTokens = balances
@@ -128,7 +133,11 @@ export function XrplCurrencyProvider({
 				} as AMMInfoRequest;
 			});
 
-		const tokens = INITIAL_TOKEN_PAIRS.concat(userLPTokens);
+		const dupsRemoved = INITIAL_TOKEN_PAIRS.filter((t) => {
+			return !userLPTokens.some((v) => t.amm_account === v.amm_account);
+		});
+
+		const tokens = dupsRemoved.concat(userLPTokens);
 
 		setTokenPairs(tokens);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
