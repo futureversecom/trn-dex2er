@@ -31,11 +31,23 @@ const mainnet: XrplPools = [
 	},
 	{
 		command: "amm_info",
+		amm_account: "rJvuDNFkb25GybpHvqCmQzEMjycqBn3uTi", // xrp btc x (2)
+	},
+	{
+		command: "amm_info",
 		amm_account: "rEDFZUyyikyUbjNoMsSgmXfZNN53rwLLZv", // xrp eth x
 	},
 	{
 		command: "amm_info",
 		amm_account: "rGHt6LT5v9DVaEAmFzj5ciuxuj41ZjLofs", // xrp usdc
+	},
+	{
+		command: "amm_info",
+		amm_account: "rHUpaqUPbwzKZdzQ8ZQCme18FrgW9pB4am", // xrp usd
+	},
+	{
+		command: "amm_info",
+		amm_account: "rs9ineLqrCzeAGS1bxsrW8x2n3bRJYAh3Q", // xrp usd (2)
 	},
 	{
 		command: "amm_info",
@@ -52,6 +64,10 @@ const mainnet: XrplPools = [
 	{
 		command: "amm_info",
 		amm_account: "rJph4hcDHXEyyoe2CYM18McydukdTLvBhs", // xrp zrpy
+	},
+	{
+		command: "amm_info",
+		amm_account: "r9X1AcqrCvd8ruYLX94vYDj9FTHH4xZeAa", // xrp zrp
 	},
 ];
 

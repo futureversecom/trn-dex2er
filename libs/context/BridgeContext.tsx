@@ -79,6 +79,9 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	const [state, setState] = useState<BridgeState>(initialState);
 	const [estimatedFee, setEstimatedFee] = useState<string>();
 
+	//Adding network state to track network changes
+	const [networkState, setNetworkState] = useState<"root" | "xrpl" | undefined>(undefined);
+
 	const updateState = (update: Partial<BridgeState>) =>
 		setState((prev) => ({ ...prev, ...update }));
 
@@ -93,11 +96,6 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 	const { isDisabled: isTokenDisabled, ...bridgeTokenInput } = useBridgeTokenInput();
 	const { error: destinationError, destination, setDestination } = useBridgeDestinationInput();
-
-	useMemo(() => {
-		bridgeTokenInput.setToken(undefined);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [network]);
 
 	const tokenSymbol = useMemo(() => {
 		const token = bridgeTokenInput.token;
@@ -325,6 +323,16 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		},
 		[bridgeTokenInput, destination, buildTransaction]
 	);
+
+	// Adding useEffect to track network changes and reset token and amount when network changes
+	useMemo(() => {
+		if (networkState !== network) {
+			doSetToken(undefined);
+			doSetAmount("");
+			setNetworkState(network);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [network]);
 
 	const doSetDestination = useCallback(
 		(destination: string) => {
