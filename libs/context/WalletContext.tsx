@@ -57,7 +57,7 @@ export function WalletProvider({ children }: PropsWithChildren) {
 	}, [network, userSession, xrplAddress]);
 
 	const isConnected = useMemo(() => {
-		if (network) return isTrnConnected && !!userSession;
+		if (network === "root") return isTrnConnected && !!userSession;
 
 		return !!xrplAddress;
 	}, [network, isTrnConnected, userSession, xrplAddress]);
