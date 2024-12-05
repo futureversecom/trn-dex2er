@@ -41,6 +41,7 @@ export function useTrnBalanceSubscription(
 
 				const free = new Balance(rootRes.data.free.toString(), rootToken);
 				const frozen = new Balance(
+					// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 					// @ts-ignore
 					rootRes.data[specVersion < 55 ? "miscFrozen" : "frozen"].toString(),
 					rootToken

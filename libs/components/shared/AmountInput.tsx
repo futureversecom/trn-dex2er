@@ -1,8 +1,10 @@
 import classNames from "@sindresorhus/class-names";
 import { type PropsWithChildren } from "react";
 
-import type { Token, TrnToken } from "@/libs/types";
+import { useTrnTokens, useXrplCurrencies } from "@/libs/context";
+import { type Token, type TrnToken } from "@/libs/types";
 import { Balance, toHuman } from "@/libs/utils";
+import { isXrplCurrency } from "@/libs/utils";
 
 import { Text } from "./";
 
@@ -26,6 +28,10 @@ export function AmountInput({
 	tokenUSD,
 	children,
 }: AmountInputProps) {
+	const { getBalance } = useXrplCurrencies();
+	const { getTokenBalance } = useTrnTokens();
+	const isXrpl = isXrplCurrency(token);
+
 	return (
 		<div className="flex space-x-4">
 			<div className="flex h-28 w-full min-w-[50em] flex-col justify-center space-y-2 rounded bg-neutral-400 px-6">
@@ -36,7 +42,12 @@ export function AmountInput({
 						</label>
 					)}
 					{token && tokenBalance && (
-						<p className="text-neutral-500">Balance: {toHuman(tokenBalance.toString(), token)}</p>
+						<p className="text-neutral-500">
+							Balance:{" "}
+							{isXrpl
+								? toHuman(getBalance(token)?.value ?? 0, token)
+								: (getTokenBalance(token)?.toHuman() ?? 0)}
+						</p>
 					)}
 				</span>
 
