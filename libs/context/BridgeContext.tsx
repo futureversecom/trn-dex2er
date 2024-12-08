@@ -20,7 +20,7 @@ import {
 
 import { ContextTag, Token, TrnToken, XamanData, XrplCurrency } from "@/libs/types";
 
-import { DEFAULT_GAS_TOKEN, ROOT_NETWORK, XRPL_BRIDGE_ADDRESS } from "../constants";
+import { DEFAULT_GAS_TOKEN, ROOT_NETWORK, TRN_GAS_MARGIN, XRPL_BRIDGE_ADDRESS } from "../constants";
 import {
 	type BridgeTokenInput,
 	type TrnTokenInputState,
@@ -128,28 +128,28 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		},
 	});
 
-	useEffect(() => {
-		if (network !== "root" || !state.tx) return;
-
-		estimateFee()
-			.then((gasFee) => setEstimatedFee(new Balance(gasFee, state.gasToken).toHuman()))
-			.catch(({ cause }: Error) => {
-				if (!cause) return;
-
-				updateState({
-					gasToken: DEFAULT_GAS_TOKEN,
-				});
-			});
-	}, [state.tx, state.gasToken, estimateFee, network]);
-
 	const buildTransaction = useCallback(
-		({ token, amount, toAddress }: { token?: Token; amount?: string; toAddress?: string }) => {
+		({
+			token,
+			amount,
+			toAddress,
+			gasFee,
+		}: {
+			token?: Token;
+			amount?: string;
+			toAddress?: string;
+			gasFee?: string;
+		}) => {
 			if (!token || !amount || !toAddress) return updateState({ tx: undefined });
 
 			if (network === "root") {
 				if (!trnApi) return;
 
 				const bridgeToken = token as TrnToken;
+
+				if (gasFee) {
+					amount = (+amount - +gasFee * TRN_GAS_MARGIN).toString();
+				}
 
 				const bridgeBalance = new Balance(amount, bridgeToken, false);
 
@@ -202,6 +202,38 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		[trnApi, xrplProvider, network]
 	);
 
+	useEffect(() => {
+		if (network !== "root" || !state.tx) return;
+
+		estimateFee()
+			.then((gasFee) => {
+				const gas = new Balance(gasFee, state.gasToken).toHuman();
+				setEstimatedFee(gas);
+				buildTransaction({
+					amount: bridgeTokenInput.amount,
+					token: bridgeTokenInput.token,
+					toAddress: destination,
+					gasFee: gas,
+				});
+			})
+			.catch(({ cause }: Error) => {
+				if (!cause) return;
+
+				updateState({
+					gasToken: DEFAULT_GAS_TOKEN,
+				});
+			});
+	}, [
+		state.tx,
+		state.gasToken,
+		estimateFee,
+		network,
+		buildTransaction,
+		bridgeTokenInput.amount,
+		bridgeTokenInput.token,
+		destination,
+	]);
+
 	const signRootTransaction = useCallback(async () => {
 		if (!state.tx) return;
 
@@ -253,14 +285,14 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	);
 
 	const hasTrustline = useMemo(() => {
-		if (network === "xrpl" || !xrplProvider || !tokenSymbol) return true;
+		if (network === "xrpl" || !tokenSymbol) return true;
 
 		const currency = findToken(tokenSymbol);
 		// TODO : handle this error
 		if (!currency) throw new Error(`Currency not found for ${tokenSymbol}`);
 
 		return checkTrustline(currency);
-	}, [network, xrplProvider, findToken, tokenSymbol, checkTrustline]);
+	}, [network, findToken, tokenSymbol, checkTrustline]);
 
 	const signTransaction = useCallback(async () => {
 		if (network === "root" && hasTrustline) return signRootTransaction();
@@ -310,6 +342,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 	const doSetToken = useCallback(
 		(token?: Token) => {
+			updateState({ error: undefined });
 			bridgeTokenInput.setToken(token);
 			buildTransaction({ token, amount: bridgeTokenInput.amount, toAddress: destination });
 		},
@@ -318,6 +351,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 	const doSetAmount = useCallback(
 		(amount: string) => {
+			updateState({ error: undefined });
 			bridgeTokenInput.setAmount(amount);
 			buildTransaction({ amount, token: bridgeTokenInput.token, toAddress: destination });
 		},
@@ -347,13 +381,9 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	);
 
 	const error = useMemo(
-		() => destinationError || bridgeTokenInput.tokenError || state.feeError,
+		() => destinationError || bridgeTokenInput.tokenError || state.feeError || state.error,
 		[destinationError, bridgeTokenInput, state]
 	);
-
-	// useEffect(() => {
-	// 	if (hasTrustline) return;
-	// }, [hasTrustline]);
 
 	return (
 		<BridgeContext.Provider
