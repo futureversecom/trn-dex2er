@@ -109,3 +109,5 @@ export const XRPL_BRIDGE_TOKENS = (process.env.NEXT_PUBLIC_XRPL_BRIDGE_TOKENS ??
 export const MONGO_API_URL = process.env.MONGO_API_URL ?? "";
 
 export const MONGO_API_KEY = process.env.MONGO_API_KEY ?? "";
+
+export const TRN_GAS_MARGIN = 1.5; // Temporary fix as I expect updating the futureverse SDK's will solve this issue
