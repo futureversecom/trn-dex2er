@@ -147,7 +147,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 				const bridgeToken = token as TrnToken;
 
-				if (gasFee) {
+				if (gasFee && state.gasToken.symbol === bridgeToken.symbol) {
 					amount = (+amount - +gasFee * TRN_GAS_MARGIN).toString();
 				}
 
@@ -199,7 +199,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 				updateState({ tx });
 			}
 		},
-		[trnApi, xrplProvider, network]
+		[network, xrplProvider, trnApi, state.gasToken.symbol]
 	);
 
 	useEffect(() => {
