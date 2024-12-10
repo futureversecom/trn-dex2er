@@ -1,5 +1,5 @@
 import * as sdk from "@futureverse/experience-sdk";
-import { useAuthenticationMethod, useTrnApi } from "@futureverse/react";
+import { useTrnApi } from "@futureverse/transact-react";
 import {
 	createContext,
 	type PropsWithChildren,
@@ -20,6 +20,7 @@ import {
 	useExtrinsic,
 	useTrnTokenInputs,
 } from "../hooks";
+import { useAuthenticationMethod } from "../hooks";
 import { Balance, formatRootscanId, parseSlippage, toFixed } from "../utils";
 import { useTrnTokens } from "./TrnTokenContext";
 import { useWallets } from "./WalletContext";

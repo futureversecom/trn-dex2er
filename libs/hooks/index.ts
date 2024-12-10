@@ -15,3 +15,4 @@ export * from "./useBridgeTokenInput";
 export * from "./useBridgeDestinationInput";
 export * from "./useBridgeHistory";
 export * from "./useFetchXrplPools";
+export * from "./useAuthenticationMethod";
