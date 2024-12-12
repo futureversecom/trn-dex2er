@@ -112,19 +112,29 @@ export function useTrnTokenInputs<T extends TrnTokenInputState>(
 
 			if (isOpen === "xToken") {
 				setToken({ src: "x", token });
-				if (xToken && yToken && token.symbol === yToken.symbol)
+				setXAmount("");
+				if (xToken && yToken && token.symbol === yToken.symbol) {
 					setToken({ src: "y", token: xToken });
+					const x = xAmount;
+					setXAmount(yAmount);
+					setYAmount(x);
+				}
 			}
 
 			if (isOpen === "yToken") {
 				setToken({ src: "y", token });
-				if (xToken && yToken && token.symbol === xToken.symbol)
+				setYAmount("");
+				if (xToken && yToken && token.symbol === xToken.symbol) {
 					setToken({ src: "x", token: yToken });
+					const y = yAmount;
+					setYAmount(xAmount);
+					setXAmount(y);
+				}
 			}
 
 			setIsOpen(false);
 		},
-		[isOpen, setToken, state]
+		[isOpen, setToken, setXAmount, setYAmount, state, xAmount, yAmount]
 	);
 
 	const isDisabled = useMemo(() => {

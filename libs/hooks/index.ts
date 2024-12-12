@@ -5,7 +5,6 @@ export * from "./useTrnTokenInputs";
 export * from "./useTrnApiSubscription";
 export * from "./useTrnBalanceSubscription";
 export * from "./useFetchTrnPools";
-export * from "./useExtrinsic";
 export * from "./useIsMounted";
 export * from "./useCheckValidPool";
 export * from "./useXrplTokenInputs";

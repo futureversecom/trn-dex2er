@@ -10,6 +10,8 @@ interface AmountInputsProps {
 	xToken?: Token;
 	yToken?: Token;
 
+	setSrc?: (src: "x" | "y") => void;
+
 	xAmount: string;
 	yAmount: string;
 
@@ -35,6 +37,8 @@ interface AmountInputsProps {
 export function AmountInputs({
 	xToken,
 	yToken,
+
+	setSrc,
 
 	xAmount,
 	yAmount,
@@ -67,6 +71,7 @@ export function AmountInputs({
 				label={labels[0]}
 				error={xTokenError}
 				setAmount={(amount) => setAmount({ src: "x", amount })}
+				onClick={() => (setSrc ? setSrc("x") : {})}
 				tokenBalance={xTokenBalance}
 				tokenUSD={xTokenUSD}
 			>
@@ -115,6 +120,7 @@ export function AmountInputs({
 					label={labels[1]}
 					error={yTokenError}
 					setAmount={(amount) => setAmount({ src: "y", amount })}
+					onClick={() => (setSrc ? setSrc("y") : {})}
 					tokenBalance={yTokenBalance}
 					tokenUSD={yTokenUSD}
 				>

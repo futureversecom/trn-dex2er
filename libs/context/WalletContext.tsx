@@ -1,5 +1,5 @@
 import { type UserSession } from "@futureverse/auth";
-import { useAuth, useConnector } from "@futureverse/auth-react";
+import { useAuth } from "@futureverse/auth-react";
 import { useAuthUi } from "@futureverse/auth-ui";
 import { upperFirst } from "lodash";
 import Image from "next/image";
@@ -18,7 +18,7 @@ import { useAccount } from "wagmi";
 import { Xumm } from "xumm";
 
 import { Button, Hyperlink, Modal, Text } from "../components/shared";
-import { XRPL_NETWORK } from "../constants";
+import { XAMAN_API_KEY } from "../constants";
 import {
 	type IXrplWalletProvider,
 	type ProviderName,
@@ -49,7 +49,6 @@ export function WalletProvider({ children }: PropsWithChildren) {
 	const { isConnected: isTrnConnected } = useAccount();
 	const { signOut: fpLogout, userSession } = useAuth();
 	const { openLogin: fpLogin } = useAuthUi();
-	const { connector } = useConnector();
 
 	const [xrplAddress, setXrplAddress] = useState<string>();
 	const [network, setNetwork] = useState<"root" | "xrpl">("root");
@@ -73,29 +72,21 @@ export function WalletProvider({ children }: PropsWithChildren) {
 		fpLogin();
 	}, [fpLogin]);
 
-	const xrplConnect = useCallback(
-		async (wallet: ProviderName) => {
-			try {
-				// TODO 768 marginal
-				const client = (await connector?.getProvider({
-					chainId: XRPL_NETWORK.ChainId.InDec,
-				})) as Xumm;
+	const xrplConnect = useCallback(async (wallet: ProviderName) => {
+		try {
+			const provider = new XrplWalletProvider().detectProvider(
+				wallet === "xaman" ? new Xumm(XAMAN_API_KEY) : undefined
+			);
 
-				const provider = new XrplWalletProvider().detectProvider(
-					wallet === "xaman" ? client : undefined // TODO 768
-				);
+			await provider.connect();
 
-				await provider.connect();
-
-				setXrplAddress(provider.getAccount());
-				setXrplProvider(provider);
-				setIsXrplWalletSelectOpen(false);
-			} catch (err) {
-				console.warn("Failed to connect to XRPL wallet", err);
-			}
-		},
-		[connector]
-	);
+			setXrplAddress(provider.getAccount());
+			setXrplProvider(provider);
+			setIsXrplWalletSelectOpen(false);
+		} catch (err) {
+			console.warn("Failed to connect to XRPL wallet", err);
+		}
+	}, []);
 
 	const connect = useCallback(
 		(xrplWallet?: ProviderName) => {

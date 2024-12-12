@@ -1,5 +1,6 @@
-import * as sdk from "@futureverse/experience-sdk";
-import { useAuthenticationMethod, useTrnApi } from "@futureverse/react";
+import { useFutureverseSigner } from "@futureverse/auth-react";
+import { CustomExtrinsicBuilder, TransactionBuilder } from "@futureverse/transact";
+import { useTrnApi } from "@futureverse/transact-react";
 import {
 	createContext,
 	type PropsWithChildren,
@@ -7,6 +8,7 @@ import {
 	useContext,
 	useEffect,
 	useMemo,
+	useRef,
 	useState,
 } from "react";
 import {
@@ -20,22 +22,22 @@ import {
 
 import { ContextTag, Token, TrnToken, XamanData, XrplCurrency } from "@/libs/types";
 
-import { DEFAULT_GAS_TOKEN, ROOT_NETWORK, XRPL_BRIDGE_ADDRESS } from "../constants";
+import { DEFAULT_GAS_TOKEN, XRPL_BRIDGE_ADDRESS } from "../constants";
+import { ROOT_NETWORK } from "../constants";
 import {
 	type BridgeTokenInput,
 	type TrnTokenInputState,
 	useBridgeDestinationInput,
 	useBridgeTokenInput,
-	useExtrinsic,
 } from "../hooks";
 import {
 	Balance,
-	formatRootscanId,
 	getXrplExplorerUrl,
 	type InteractiveTransactionResponse,
 	isXrplCurrency,
 	type IXrplWalletProvider,
 } from "../utils";
+import { formatRootscanId } from "../utils";
 import { useWallets } from "./WalletContext";
 import { useXrplCurrencies } from "./XrplCurrencyContext";
 
@@ -60,13 +62,13 @@ export type BridgeContextType = {
 const BridgeContext = createContext<BridgeContextType>({} as BridgeContextType);
 
 interface BridgeState extends TrnTokenInputState {
-	tx?: sdk.Extrinsic | Payment;
+	builder?: CustomExtrinsicBuilder;
+	tx?: Payment;
 	gasToken: TrnToken;
 	slippage: string;
 	tag?: ContextTag;
 	explorerUrl?: string;
 	error?: string;
-	feeError?: string;
 	qr?: string;
 }
 
@@ -78,6 +80,8 @@ const initialState = {
 export function BridgeProvider({ children }: PropsWithChildren) {
 	const [state, setState] = useState<BridgeState>(initialState);
 	const [estimatedFee, setEstimatedFee] = useState<string>();
+	const [canPayForGas, setCanPayForGas] = useState<boolean>();
+	const builtTx = useRef<CustomExtrinsicBuilder>();
 
 	//Adding network state to track network changes
 	const [networkState, setNetworkState] = useState<"root" | "xrpl" | undefined>(undefined);
@@ -90,6 +94,8 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	const setTag = useCallback((tag?: ContextTag) => updateState({ tag }), []);
 
 	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken }), []);
+
+	const setBuilder = useCallback((builder: CustomExtrinsicBuilder) => updateState({ builder }), []);
 
 	const { network, xrplProvider } = useWallets();
 	const { checkTrustline, refetch: refetchXrplBalances, findToken } = useXrplCurrencies();
@@ -114,37 +120,78 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	}, [bridgeTokenInput.token, network, setGasToken]);
 
 	const { trnApi } = useTrnApi();
+	const signer = useFutureverseSigner();
 	const { userSession } = useWallets();
-	const authenticationMethod = useAuthenticationMethod();
 
-	const futurepass = userSession?.futurepass as string | undefined;
+	useMemo(() => {
+		const execute = async () => {
+			if (!state.builder || !userSession || network != "root") return;
+			if (state.gasToken.assetId === DEFAULT_GAS_TOKEN.assetId) {
+				// TODO 768 why doesn't this work ?
+				try {
+					await state.builder.addFuturePass(userSession.futurepass);
+				} catch (err: any) {
+					console.info(err);
+				}
+			} else {
+				try {
+					await state.builder.addFuturePassAndFeeProxy({
+						futurePass: userSession.futurepass,
+						assetId: state.gasToken.assetId,
+						slippage: +state.slippage,
+					});
+				} catch (err: any) {
+					console.info(err);
+				}
+			}
 
-	const { estimateFee, submitExtrinsic, xamanData } = useExtrinsic({
-		extrinsic: state.tx as sdk.Extrinsic,
-		senderAddress: futurepass,
-		feeOptions: {
-			assetId: state.gasToken.assetId,
-			slippage: +state.slippage / 100,
-		},
-	});
+			builtTx.current = state.builder;
 
-	useEffect(() => {
-		if (network !== "root" || !state.tx) return;
+			const { gasString } = await state.builder.getGasFees();
+			const [gas] = gasString.split(" ");
+			setEstimatedFee(gas);
 
-		estimateFee()
-			.then((gasFee) => setEstimatedFee(new Balance(gasFee, state.gasToken).toHuman()))
-			.catch(({ cause }: Error) => {
-				if (!cause) return;
-
-				updateState({
-					gasToken: DEFAULT_GAS_TOKEN,
-				});
+			const gasBalance = await state.builder.checkBalance({
+				walletAddress: userSession.futurepass,
+				assetId: state.gasToken.assetId,
 			});
-	}, [state.tx, state.gasToken, estimateFee, network]);
+			const gasTokenBalance = new Balance(+gasBalance.balance, gasBalance);
+
+			let canPay: boolean | undefined;
+
+			// XRP ASSET ID
+			if (state.gasToken.assetId === DEFAULT_GAS_TOKEN.assetId) {
+				const total =
+					(bridgeTokenInput.token as TrnToken).assetId === DEFAULT_GAS_TOKEN.assetId
+						? +gas + +bridgeTokenInput.amount
+						: 0;
+				canPay = +gasTokenBalance.toUnit() > total;
+			}
+
+			// ROOT ASSET ID
+			if (state.gasToken.assetId === 1) {
+				const total =
+					(bridgeTokenInput.token as TrnToken).assetId === 1 ? +gas + +bridgeTokenInput.amount : 0;
+				canPay = +gasTokenBalance.toUnit() > total;
+			}
+
+			if (canPay === false) {
+				updateState({ error: `Insufficient ${state.gasToken.symbol} balance for gas fee` });
+			} else {
+				updateState({ error: undefined });
+			}
+
+			setCanPayForGas(canPay);
+		};
+
+		execute();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [state.builder, userSession, state.gasToken]);
 
 	const buildTransaction = useCallback(
 		({ token, amount, toAddress }: { token?: Token; amount?: string; toAddress?: string }) => {
-			if (!token || !amount || !toAddress) return updateState({ tx: undefined });
+			if (!token || !amount || !toAddress || !signer || !userSession)
+				return updateState({ builder: undefined, tx: undefined });
 
 			if (network === "root") {
 				if (!trnApi) return;
@@ -164,7 +211,10 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 					null
 				);
 
-				updateState({ tx });
+				const builder = TransactionBuilder.custom(trnApi, signer, userSession.eoa);
+				const fromEx = builder.fromExtrinsic(tx);
+
+				setBuilder(fromEx);
 			}
 
 			if (network === "xrpl" && xrplProvider) {
@@ -199,19 +249,22 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 				updateState({ tx });
 			}
 		},
-		[trnApi, xrplProvider, network]
+		[signer, userSession, network, xrplProvider, trnApi, setBuilder]
 	);
 
 	const signRootTransaction = useCallback(async () => {
-		if (!state.tx) return;
+		if (!builtTx.current) return;
+
+		const onSend = () => {
+			setTag("submitted");
+		};
 
 		try {
-			const res = await submitExtrinsic(state.tx as sdk.Extrinsic);
-			if (!res) return setTag(undefined);
+			const result = await builtTx.current.signAndSend({ onSend });
+			if (!result) return setTag(undefined);
 
-			setTag("submitted");
 			updateState({
-				explorerUrl: `${ROOT_NETWORK.ExplorerUrl}/extrinsic/${formatRootscanId(res.extrinsicId)}`,
+				explorerUrl: `${ROOT_NETWORK.ExplorerUrl}/extrinsic/${formatRootscanId(result.extrinsicId)}`,
 			});
 		} catch (err: any) {
 			setTag("failed");
@@ -219,7 +272,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 				error: err.message ?? err,
 			});
 		}
-	}, [state.tx, setTag, submitExtrinsic]);
+	}, [setTag]);
 
 	const signXrplTransaction = useCallback(
 		async (
@@ -291,21 +344,12 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		tokenSymbol,
 	]);
 
-	useEffect(() => {
-		switch (xamanData?.progress) {
-			case "onCreated":
-				return setTag("sign");
-			case "onSignatureSuccess":
-				return setTag("submit");
-		}
-	}, [authenticationMethod?.method, xamanData?.progress, setTag]);
-
 	const isDisabled = useMemo(
 		() =>
 			!hasTrustline
 				? false
-				: !!state.error || isTokenDisabled || !!destinationError || !!state.feeError,
-		[state.error, isTokenDisabled, destinationError, state.feeError, hasTrustline]
+				: !!state.error || isTokenDisabled || !!destinationError || canPayForGas === false,
+		[state.error, isTokenDisabled, destinationError, hasTrustline, canPayForGas]
 	);
 
 	const doSetToken = useCallback(
@@ -346,15 +390,6 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		[bridgeTokenInput, setDestination, buildTransaction]
 	);
 
-	const error = useMemo(
-		() => destinationError || bridgeTokenInput.tokenError || state.feeError,
-		[destinationError, bridgeTokenInput, state]
-	);
-
-	// useEffect(() => {
-	// 	if (hasTrustline) return;
-	// }, [hasTrustline]);
-
 	return (
 		<BridgeContext.Provider
 			value={{
@@ -362,7 +397,6 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 				setTag,
 				setGasToken,
 
-				xamanData,
 				signTransaction,
 
 				estimatedFee,
@@ -382,8 +416,6 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 				setAmount: doSetAmount,
 
 				tokenSymbol,
-
-				error,
 			}}
 		>
 			{children}

@@ -14,6 +14,7 @@ interface AmountInputProps extends PropsWithChildren {
 	tokenBalance?: Balance<TrnToken> | string;
 	error?: string;
 	tokenUSD?: number;
+	onClick?: () => void;
 }
 
 export function AmountInput({
@@ -24,6 +25,7 @@ export function AmountInput({
 	token,
 	error,
 	tokenUSD,
+	onClick,
 	children,
 }: AmountInputProps) {
 	return (
@@ -52,6 +54,7 @@ export function AmountInput({
 						placeholder="0.0"
 						id={`amount-${label}`}
 						onChange={(e) => setAmount(e.target.value)}
+						onClick={() => (onClick ? onClick() : {})}
 						className="bg-transparent text-xl font-semibold focus:outline-none"
 					/>
 					<Text

@@ -28,7 +28,6 @@ const authClient = new FutureverseAuthClient({
 	clientId: FV_CLIENT_ID,
 	redirectUri: `${typeof window !== "undefined" ? `${window.location.origin}/login` : ""}`,
 	environment: ROOT_NETWORK.Stage,
-	signInFlow: "popup",
 });
 
 const queryClient = new QueryClient();
@@ -39,6 +38,7 @@ export const getWagmiConfig = async () => {
 		xamanAPIKey: XAMAN_API_KEY,
 		authClient,
 		chains: [root, porcini],
+		ssr: true, // TODO 768
 	});
 };
 

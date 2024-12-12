@@ -144,6 +144,12 @@ export function Bridge() {
 
 				{props.tokenSymbol && network === "root" && (
 					<>
+						{props.error && (
+							<Text className="text-red-300" size="md">
+								{props.error}
+							</Text>
+						)}
+
 						<div className="flex items-center justify-end px-2">
 							<SettingsButton {...props} xToken={props.token} />
 						</div>

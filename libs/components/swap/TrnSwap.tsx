@@ -4,7 +4,6 @@ import {
 	Box,
 	ConfirmModal,
 	InfoItem,
-	QrModal,
 	Ratio,
 	SettingsButton,
 	SwitchButton,
@@ -28,12 +27,6 @@ export function TrnSwap() {
 				onTokenClick={props.onTokenClick}
 				onClose={() => props.setIsOpen(false)}
 				tokens={Object.values(props.filteredTokens)}
-			/>
-
-			<QrModal
-				qr={props.xamanData?.qrCodeImg}
-				onClose={() => props.setTag(undefined)}
-				open={!!props.xamanData && props.tag === "sign"}
 			/>
 
 			{props.xToken && props.yToken && (
