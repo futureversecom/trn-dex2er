@@ -15,3 +15,4 @@ export * from "./useBridgeDestinationInput";
 export * from "./useBridgeHistory";
 export * from "./useFetchXrplPools";
 export * from "./useAuthenticationMethod";
+export * from "./useCustomExtrinsicBuilder";

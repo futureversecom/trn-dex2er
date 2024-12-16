@@ -221,7 +221,7 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 	}, [state.builder, userSession, state.gasToken]);
 
 	const buildTransaction = useCallback(
-		({
+		async ({
 			xAmount = tokenInputs.xAmount,
 			yAmount = tokenInputs.yAmount,
 			slippage = state.slippage,

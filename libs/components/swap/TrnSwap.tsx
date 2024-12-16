@@ -101,22 +101,26 @@ export function TrnSwap() {
 					</Text>
 				)}
 
-				{props.xToken && props.yToken && props.ratio && (
-					<>
-						<div className="flex items-center justify-between px-2">
-							<Ratio
-								xToken={props.xToken}
-								yToken={props.yToken}
-								ratio={props.ratio}
-								priceDifference={props.priceDifference}
-							/>
+				{props.xToken &&
+					props.yToken &&
+					props.ratio &&
+					props.xAmount != "" &&
+					props.yAmount != "" && (
+						<>
+							<div className="flex items-center justify-between px-2">
+								<Ratio
+									xToken={props.xToken}
+									yToken={props.yToken}
+									ratio={props.ratio}
+									priceDifference={props.priceDifference}
+								/>
 
-							<SettingsButton {...props} />
-						</div>
+								<SettingsButton {...props} />
+							</div>
 
-						<div className="space-y-2 rounded-lg bg-neutral-400 p-6">{infoItems}</div>
-					</>
-				)}
+							<div className="space-y-2 rounded-lg bg-neutral-400 p-6">{infoItems}</div>
+						</>
+					)}
 
 				<ActionButton
 					text="swap"

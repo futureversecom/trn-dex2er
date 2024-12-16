@@ -1,7 +1,8 @@
 import { useFutureverseSigner } from "@futureverse/auth-react";
-import { CustomExtrinsicBuilder, TransactionBuilder } from "@futureverse/transact";
+import { CustomExtrinsicBuilder } from "@futureverse/transact";
 import { useTrnApi } from "@futureverse/transact-react";
 import { parseJsonRpcResult } from "@therootnetwork/extrinsic";
+import BigNumber from "bignumber.js";
 import {
 	createContext,
 	type PropsWithChildren,
@@ -17,14 +18,17 @@ import type { ContextTag, TokenSource, TrnToken } from "@/libs/types";
 
 import { ROOT_NETWORK } from "../constants";
 import { DEFAULT_GAS_TOKEN } from "../constants";
+import { useCustomExtrinsicBuilder } from "../hooks";
 import {
 	type TrnTokenInputs,
 	type TrnTokenInputState,
 	useCheckValidPool,
 	useTrnTokenInputs,
 } from "../hooks";
+import { getNetworkFee, getSwapFee } from "../utils";
 import { formatRootscanId } from "../utils";
 import { Balance, parseSlippage, toFixed } from "../utils";
+import { createBuilder } from "../utils/createBuilder";
 import { useTrnTokens } from "./TrnTokenContext";
 import { useWallets } from "./WalletContext";
 
@@ -36,8 +40,9 @@ export type TrnSwapContextType = {
 	setTag: (tag?: ContextTag) => void;
 	setSlippage: (slippage: string) => void;
 	setGasToken: (gasToken: TrnToken) => void;
-	setAmount: (args: { src: TokenSource; amount: string }) => void;
 	setToken: (args: { src: TokenSource; token: TrnToken }) => void;
+	setAmount: (args: { src: TokenSource; amount: string }) => void;
+	ratioAmounts: (args: { amount?: string }) => void;
 	estimatedFee?: string;
 	ratio?: string;
 } & TrnSwapState &
@@ -46,7 +51,6 @@ export type TrnSwapContextType = {
 const TrnSwapContext = createContext<TrnSwapContextType>({} as TrnSwapContextType);
 
 interface TrnSwapState extends TrnTokenInputState {
-	builder?: CustomExtrinsicBuilder;
 	gasToken: TrnToken;
 	slippage: string;
 	yAmountMin?: string;
@@ -56,7 +60,6 @@ interface TrnSwapState extends TrnTokenInputState {
 	error?: string;
 	feeError?: string;
 	priceDifference?: number;
-	src: "x" | "y";
 }
 
 const initialState = {
@@ -64,7 +67,6 @@ const initialState = {
 	xAmount: "",
 	yAmount: "",
 	gasToken: DEFAULT_GAS_TOKEN,
-	src: "x",
 } as TrnSwapState;
 
 export function TrnSwapProvider({ children }: PropsWithChildren) {
@@ -72,31 +74,31 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 	const [estimatedFee, setEstimatedFee] = useState<string>();
 	const [canPayForGas, setCanPayForGas] = useState<boolean>();
 	const builtTx = useRef<CustomExtrinsicBuilder>();
+	const dexAmounts = useRef<{
+		calculatedFromBalance: Balance<TrnToken>;
+		calculatedToBalance: Balance<TrnToken>;
+		toAmountMin: Balance<TrnToken>;
+	}>();
+	const source = useRef<"x" | "y">("x");
 
 	const updateState = (update: Partial<TrnSwapState>) =>
 		setState((prev) => ({ ...prev, ...update }));
 
 	const resetState = () => setState(initialState);
 
-	const setSrc = useCallback((src: "x" | "y") => updateState({ src }), []);
-
 	const setTag = useCallback((tag?: ContextTag) => updateState({ tag }), []);
-
+	const setSrc = useCallback((src: "x" | "y") => (source.current = src), []);
 	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken }), []);
-
 	const setToken = useCallback(({ src, token }: { src: TokenSource; token: TrnToken }) => {
 		if (src === "x")
 			return updateState({
 				xToken: token,
-				gasToken: token,
 			});
 
 		updateState({
 			yToken: token,
 		});
 	}, []);
-
-	const setBuilder = useCallback((builder: CustomExtrinsicBuilder) => updateState({ builder }), []);
 
 	const {
 		setXAmount,
@@ -106,104 +108,36 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 	} = useTrnTokenInputs(state, setToken);
 
 	const { trnApi } = useTrnApi();
-	const signer = useFutureverseSigner();
 	const { userSession } = useWallets();
 	const { getTokenBalance } = useTrnTokens();
+	const signer = useFutureverseSigner();
+	const customEx = useCustomExtrinsicBuilder({
+		trnApi,
+		walletAddress: userSession?.eoa ?? "",
+		signer,
+	});
 
-	useMemo(() => {
-		const execute = async () => {
-			if (!state.builder || !userSession) return;
-			if (state.gasToken.assetId === DEFAULT_GAS_TOKEN.assetId) {
-				// TODO 768 why doesn't this work ?
-				try {
-					await state.builder.addFuturePass(userSession.futurepass);
-				} catch (err: any) {
-					console.info(err);
-				}
-			} else {
-				try {
-					await state.builder.addFuturePassAndFeeProxy({
-						futurePass: userSession.futurepass,
-						assetId: state.gasToken.assetId,
-						slippage: +state.slippage,
-					});
-				} catch (err: any) {
-					console.info(err);
-				}
-			}
+	const ratioAmounts = useCallback(
+		async ({ amount = tokenInputs[`${source.current}Amount`] }: { amount?: string }) => {
+			if (!trnApi || !state.xToken || !state.yToken || !source.current) return;
 
-			builtTx.current = state.builder;
-
-			const { gasString } = await state.builder.getGasFees();
-			const [gas] = gasString.split(" ");
-			setEstimatedFee(gas);
-
-			const gasBalance = await state.builder.checkBalance({
-				walletAddress: userSession.futurepass,
-				assetId: state.gasToken.assetId,
-			});
-			const gasTokenBalance = new Balance(+gasBalance.balance, gasBalance);
-
-			let canPay: boolean | undefined;
-
-			// XRP ASSET ID
-			if (state.gasToken.assetId === DEFAULT_GAS_TOKEN.assetId) {
-				const total =
-					state.xToken?.assetId === DEFAULT_GAS_TOKEN.assetId
-						? +gas + +tokenInputs.xAmount
-						: state.yToken?.assetId === DEFAULT_GAS_TOKEN.assetId
-							? +gas + +tokenInputs.yAmount
-							: 0;
-				canPay = +gasTokenBalance.toUnit() > total;
-			}
-
-			// ROOT ASSET ID
-			if (state.gasToken.assetId === 1) {
-				const total =
-					state.xToken?.assetId === 1
-						? +gas + +tokenInputs.xAmount
-						: state.yToken?.assetId === 1
-							? +gas + +tokenInputs.yAmount
-							: 0;
-				canPay = +gasTokenBalance.toUnit() > total;
-			}
-
-			if (canPay === false) {
-				updateState({ error: `Insufficient ${state.gasToken.symbol} balance for gas fee` });
-			}
-			setCanPayForGas(canPay);
-		};
-
-		execute();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [state.builder, userSession, state.gasToken]);
-
-	const buildTransaction = useCallback(
-		async ({
-			src = state[`src`],
-			amount = tokenInputs[`${src}Amount`],
-			slippage = state.slippage,
-		}: {
-			src?: TokenSource;
-			amount?: string;
-			slippage?: string;
-		}) => {
-			if (!trnApi || !state.xToken || !state.yToken || !signer || !userSession) return;
-
-			const fromToken = state[`${src}Token`]!;
-			const toToken = state[`${src === "x" ? "y" : "x"}Token`]!;
+			const fromToken = state[`${source.current}Token`]!;
+			const toToken = state[`${source.current === "x" ? "y" : "x"}Token`]!;
 
 			const fromBalance = new Balance(amount, fromToken, false);
 
-			if (fromBalance.eq(0))
-				return updateState({
-					builder: undefined,
+			if (fromBalance.eq(0)) {
+				setXAmount("");
+				setYAmount("");
+				updateState({
 					ratio: undefined,
 					yAmountMin: "",
 				});
+				return;
+			}
 
 			const result = parseJsonRpcResult<[number, number]>(
-				await trnApi.rpc.dex[src === "y" ? "getAmountsIn" : "getAmountsOut"](
+				await trnApi.rpc.dex[source.current === "y" ? "getAmountsIn" : "getAmountsOut"](
 					fromBalance.toPlanckString(),
 					[state.xToken.assetId, state.yToken.assetId]
 				)
@@ -216,46 +150,129 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 			const calculatedFromBalance = new Balance(calculatedFrom, fromToken);
 			const toBalance = new Balance(calculatedTo, toToken);
 
-			const otherBalance = src === "x" ? toBalance : calculatedFromBalance;
+			const otherBalance = source.current === "x" ? toBalance : calculatedFromBalance;
 
-			const toAmountMin = otherBalance.multipliedBy(1 - +slippage / 100).integerValue();
+			const toAmountMin = otherBalance.multipliedBy(1 - +state.slippage / 100).integerValue();
+			dexAmounts.current = { calculatedFromBalance, calculatedToBalance: toBalance, toAmountMin };
 
-			const tx = trnApi.tx.dex.swapWithExactSupply(
-				calculatedFromBalance.toPlanckString(),
-				toAmountMin.toPlanckString(),
-				[state.xToken.assetId, state.yToken.assetId],
-				null,
-				null
-			);
+			if (source.current === "x") setYAmount(otherBalance.toUnit().toString());
+			else setXAmount(otherBalance.toUnit().toString());
 
 			const ratio = toFixed(
 				toBalance.toUnit().dividedBy(calculatedFromBalance.toUnit()).toNumber()
 			);
-
-			if (src === "x") setYAmount(otherBalance.toUnit().toString());
-			else setXAmount(otherBalance.toUnit().toString());
-
-			const builder = TransactionBuilder.custom(trnApi, signer, userSession.eoa);
-			const fromEx = builder.fromExtrinsic(tx);
-
-			setBuilder(fromEx);
 
 			updateState({
 				ratio,
 				yAmountMin: toAmountMin.toHuman(),
 			});
 		},
-		[tokenInputs, state, trnApi, signer, userSession, setYAmount, setXAmount, setBuilder]
+		[trnApi, state, tokenInputs, setYAmount, setXAmount]
 	);
 
-	const setAmount = useCallback(
-		({ src, amount }: { src: TokenSource; amount: string }) => {
-			if (src === "x") setXAmount(amount);
-			else setYAmount(amount);
+	const buildTransaction = useCallback(async () => {
+		if (
+			!trnApi ||
+			!state.xToken ||
+			!state.yToken ||
+			!signer ||
+			!userSession ||
+			!dexAmounts.current ||
+			!customEx
+		)
+			return;
 
-			buildTransaction({ src, amount });
+		let tx = trnApi.tx.dex.swapWithExactSupply(
+			dexAmounts.current.calculatedFromBalance.toPlanckString(),
+			dexAmounts.current.toAmountMin.toPlanckString(),
+			[state.xToken.assetId, state.yToken.assetId],
+			null,
+			null
+		);
+
+		let builder = await createBuilder(
+			userSession,
+			state.gasToken.assetId,
+			state.slippage,
+			customEx,
+			tx
+		);
+
+		const { gasString } = await builder.getGasFees();
+		const [gas] = gasString.split(" ");
+		setEstimatedFee(gas);
+
+		const gasBalance = await builder.checkBalance({
+			walletAddress: userSession.futurepass,
+			assetId: state.gasToken.assetId,
+		});
+
+		let canPay: boolean | undefined;
+		let amountWithoutGas: Balance<TrnToken>;
+		if (
+			state.xToken.assetId === DEFAULT_GAS_TOKEN.assetId &&
+			state.gasToken.assetId === DEFAULT_GAS_TOKEN.assetId
+		) {
+			const exchangeFees = getNetworkFee(dexAmounts.current.calculatedFromBalance.toNumber())
+				.plus(getSwapFee(dexAmounts.current.calculatedFromBalance.toNumber()))
+				.plus(+gas);
+			amountWithoutGas = dexAmounts.current.calculatedFromBalance.minus(
+				exchangeFees.pow(new BigNumber(10).times(state.gasToken.decimals))
+			);
+			canPay = amountWithoutGas.toUnit().toNumber() >= 0 ? true : false;
+		} else {
+			amountWithoutGas = dexAmounts.current.calculatedFromBalance;
+			canPay = new Balance(+gasBalance.balance, gasBalance).toUnit().toNumber() - +gas >= 0;
+		}
+
+		setCanPayForGas(canPay);
+		if (canPay === false) {
+			return updateState({ error: `Insufficient ${state.gasToken.symbol} balance for gas fee` });
+		}
+
+		tx = trnApi.tx.dex.swapWithExactSupply(
+			amountWithoutGas.toPlanckString().split(".")[0],
+			dexAmounts.current.toAmountMin.toPlanckString(),
+			[state.xToken.assetId, state.yToken.assetId],
+			null,
+			null
+		);
+
+		builder = await createBuilder(
+			userSession,
+			state.gasToken.assetId,
+			state.slippage,
+			customEx,
+			tx
+		);
+
+		builtTx.current = builder;
+	}, [trnApi, state, signer, userSession, customEx]);
+
+	useMemo(async () => {
+		await ratioAmounts({});
+		buildTransaction();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [state.xToken, state.yToken, state.gasToken]);
+
+	const setAmount = useCallback(
+		async ({ src, amount }: { src: TokenSource; amount: string }) => {
+			if (src === "x") {
+				if (amount === "") {
+					setYAmount("");
+				}
+				setXAmount(amount);
+			} else {
+				if (amount === "") {
+					setXAmount("");
+				}
+				setYAmount(amount);
+			}
+
+			await ratioAmounts({ amount });
+			buildTransaction();
 		},
-		[setXAmount, setYAmount, buildTransaction]
+		[setXAmount, setYAmount, buildTransaction, ratioAmounts]
 	);
 
 	const setSlippage = useCallback(
@@ -265,9 +282,8 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 			if (typeof parsed !== "string") return;
 
 			updateState({ slippage: parsed });
-			buildTransaction({
-				slippage: parsed,
-			});
+
+			buildTransaction();
 		},
 		[buildTransaction]
 	);
@@ -278,22 +294,22 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 			yToken: state.xToken,
 			gasToken: state.yToken ?? state.gasToken,
 			ratio: undefined,
-			builder: undefined,
 		});
 
-		setXAmount("");
-		setYAmount("");
-	}, [state, setXAmount, setYAmount]);
+		const y = tokenInputs.yAmount;
+		setXAmount(y);
+		setYAmount(tokenInputs.xAmount);
+	}, [state, setXAmount, setYAmount, tokenInputs]);
 
 	const signTransaction = useCallback(async () => {
 		if (!builtTx.current) return;
 
-		const onSend = () => {
-			setTag("submitted");
-		};
-
 		try {
-			const result = await builtTx.current.signAndSend({ onSend });
+			const result = await builtTx.current.signAndSend({
+				onSend: () => {
+					setTag("submitted");
+				},
+			});
 			if (!result) return setTag(undefined);
 
 			updateState({
@@ -321,11 +337,11 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 		if (!state.xToken || !state.yToken || !tokenInputs.xAmount) return;
 
 		checkValidPool([state.xToken.assetId, state.yToken.assetId]).then((isValid) => {
-			let error = "";
+			let error = undefined;
 
 			if (!isValid) error = "This pair is not valid yet. Choose another token to swap";
 
-			updateState({ error });
+			updateState({ error: error });
 		});
 	}, [
 		state.xToken,
@@ -340,20 +356,18 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 	return (
 		<TrnSwapContext.Provider
 			value={{
-				resetState,
-				setAmount,
-				setToken,
 				setTag,
-				setSlippage,
-				switchTokens,
-				setGasToken,
 				setSrc,
-
-				signTransaction,
-
+				setToken,
+				setAmount,
 				isDisabled,
-
+				resetState,
+				setSlippage,
+				setGasToken,
+				ratioAmounts,
+				switchTokens,
 				estimatedFee,
+				signTransaction,
 
 				...state,
 				...tokenInputs,

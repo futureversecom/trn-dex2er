@@ -20,6 +20,7 @@
     "@futureverse/auth-react": "^4.0.1",
     "@futureverse/auth-ui": "^0.6.3",
     "@futureverse/component-library": "^0.2.4",
+    "@futureverse/signer": "^1.5.0",
     "@futureverse/transact": "^0.5.1",
     "@futureverse/transact-react": "^0.1.3",
     "@headlessui/react": "^2.1.2",

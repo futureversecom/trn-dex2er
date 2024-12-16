@@ -81,6 +81,9 @@ export function AmountInputs({
 						size="sm"
 						className="text-neutral-700"
 						onClick={() => {
+							if (setSrc) {
+								setSrc("x");
+							}
 							if (!xTokenBalance)
 								return setAmount({
 									src: "x",
@@ -130,6 +133,9 @@ export function AmountInputs({
 							size="sm"
 							className="text-neutral-700"
 							onClick={() => {
+								if (setSrc) {
+									setSrc("y");
+								}
 								if (!yTokenBalance) return setAmount({ src: "y", amount: "" });
 
 								setAmount({
