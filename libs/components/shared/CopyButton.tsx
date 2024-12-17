@@ -24,7 +24,7 @@ export const CopyButton: FC<PropsWithChildren<CopyButtonProps>> = ({ children, v
 
 	return (
 		<Button variant="ghost" size="sm" onClick={() => copyAddress()}>
-			<ContentCopyIcon color={copying ? "success" : "primary"} />
+			<ContentCopyIcon color={copying ? "success" : "inherit"} />
 			{children}
 		</Button>
 	);

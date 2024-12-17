@@ -345,12 +345,15 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 	const signTransaction = useCallback(async () => {
 		if (!state.builder) return;
 
-		const onSend = () => {
-			setTag("submitted");
-		};
-
 		try {
-			const result = await state.builder.signAndSend({ onSend });
+			const result = await state.builder.signAndSend({
+				onSign: () => {
+					setTag("submit");
+				},
+				onSend: () => {
+					setTag("submitted");
+				},
+			});
 			if (!result) return setTag(undefined);
 
 			updateState({

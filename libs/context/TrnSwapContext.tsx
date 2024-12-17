@@ -42,7 +42,6 @@ export type TrnSwapContextType = {
 	setGasToken: (gasToken: TrnToken) => void;
 	setToken: (args: { src: TokenSource; token: TrnToken }) => void;
 	setAmount: (args: { src: TokenSource; amount: string }) => void;
-	ratioAmounts: (args: { amount?: string }) => void;
 	estimatedFee?: string;
 	ratio?: string;
 } & TrnSwapState &
@@ -313,6 +312,9 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 
 		try {
 			const result = await builtTx.current.signAndSend({
+				onSign: () => {
+					setTag("submit");
+				},
 				onSend: () => {
 					setTag("submitted");
 				},
@@ -371,7 +373,6 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 				resetState,
 				setSlippage,
 				setGasToken,
-				ratioAmounts,
 				switchTokens,
 				estimatedFee,
 				signTransaction,

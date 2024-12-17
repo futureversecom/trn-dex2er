@@ -63,11 +63,11 @@ export default function WalletProfileModal({
 	}, [auth]);
 
 	return (
-		<div className="flex h-full w-full flex-1 flex-col justify-between rounded-lg border border-solid bg-slate-950 px-4 py-6 md:w-[258px]">
+		<div className="flex h-full w-full flex-1 flex-col justify-between rounded-lg border border-solid bg-[#1d1e20] px-4 py-6 md:w-[258px]">
 			<div className="flex flex-col gap-4">
 				<div className="flex flex-col gap-2">
-					<Text variant="heading" size="sm" color="textSecondary">
-						Your futurepass address
+					<Text variant="body" size="sm" color="textSecondary">
+						YOUR FUTUREPASS ADDRESS
 					</Text>
 					<CopyButton
 						value={futurePassAddress}
@@ -80,8 +80,8 @@ export default function WalletProfileModal({
 			{accountInfo != null && (
 				<div className="flex flex-col gap-4">
 					<div className="flex flex-col gap-2">
-						<Text variant="heading" size="sm" color="textSecondary">
-							{`Signed in with ${accountInfo.title}`}
+						<Text variant="body" size="sm" color="textSecondary">
+							{`SIGNED IN WITH ${accountInfo.title}`}
 						</Text>
 						{accountInfo.copiable ? (
 							<CopyButton

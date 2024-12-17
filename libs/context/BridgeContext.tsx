@@ -257,12 +257,15 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	const signRootTransaction = useCallback(async () => {
 		if (!state.builder) return;
 
-		const onSend = () => {
-			setTag("submitted");
-		};
-
 		try {
-			const result = await state.builder.signAndSend({ onSend });
+			const result = await state.builder.signAndSend({
+				onSign: () => {
+					setTag("submit");
+				},
+				onSend: () => {
+					setTag("submitted");
+				},
+			});
 			if (!result) return setTag(undefined);
 
 			updateState({
