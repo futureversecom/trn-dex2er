@@ -15,9 +15,12 @@ export function Footer() {
 			)}
 		>
 			<span>
-				<b>NEED HELP?</b>&nbsp;Get in touch for&nbsp;
-				<Hyperlink className="underline" href={"mailto:support@therootnetwork.com"} target="_blank">
-					support
+				<Hyperlink
+					className="underline"
+					href={"https://support.therootnetwork.com/en/collections/11128260-dexter"}
+					target="_blank"
+				>
+					SUPPORT
 				</Hyperlink>
 			</span>
 
