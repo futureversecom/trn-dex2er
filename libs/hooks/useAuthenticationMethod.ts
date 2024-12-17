@@ -2,6 +2,27 @@ import { useAuth } from "@futureverse/auth-react";
 import { deriveAddressPair } from "@therootnetwork/extrinsic";
 import { useMemo } from "react";
 
+export type UserAuthenticationMethod =
+	| {
+			method: "wagmi";
+			eoa: `0x${string}`;
+			rAddress?: undefined;
+			email?: undefined;
+	  }
+	| {
+			method: "xaman";
+			rAddress: string;
+			eoa?: `0x${string}`;
+			email?: undefined;
+	  }
+	| {
+			method: "fv:email";
+			email: string;
+			eoa?: `0x${string}`;
+			rAddress?: undefined;
+	  }
+	| null;
+
 export function useAuthenticationMethod() {
 	const { userSession } = useAuth();
 

@@ -1,5 +1,5 @@
 import { useAuth } from "@futureverse/auth-react";
-import { ReverseColorModeProvider, WalletProfileModal } from "@futureverse/component-library";
+// import { ReverseColorModeProvider } from "@futureverse/component-library";
 import { useState } from "react";
 
 import { useWallets } from "@/libs/context";
@@ -7,6 +7,7 @@ import { useAuthenticationMethod } from "@/libs/hooks";
 import { shortenAddress } from "@/libs/utils";
 
 import { Blockie, Button, Text } from "../";
+import WalletProfileModal from "../WalletProfileModal";
 
 export function ConnectTrnButton() {
 	const auth = useAuthenticationMethod();
@@ -27,14 +28,12 @@ export function ConnectTrnButton() {
 		<>
 			{isWalletOpen && userSession?.futurepass && auth && (
 				<div className="absolute right-6 top-14 z-10 text-neutral-100">
-					<ReverseColorModeProvider>
-						<WalletProfileModal
-							auth={auth}
-							handleLogout={disconnect}
-							handleClose={() => setIsWalletOpen(false)}
-							futurePassAddress={userSession.futurepass as `0x${string}`}
-						/>
-					</ReverseColorModeProvider>
+					<WalletProfileModal
+						auth={auth}
+						handleLogout={disconnect}
+						// handleClose={() => setIsWalletOpen(false)}
+						futurePassAddress={userSession.futurepass}
+					/>
 				</div>
 			)}
 
