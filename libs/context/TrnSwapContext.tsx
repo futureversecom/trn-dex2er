@@ -84,8 +84,6 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 	const updateState = (update: Partial<TrnSwapState>) =>
 		setState((prev) => ({ ...prev, ...update }));
 
-	const resetState = () => setState(initialState);
-
 	const setTag = useCallback((tag?: ContextTag) => updateState({ tag }), []);
 	const setSrc = useCallback((src: "x" | "y") => (source.current = src), []);
 	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken }), []);
@@ -106,6 +104,12 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 		isDisabled: isTokenDisabled,
 		...tokenInputs
 	} = useTrnTokenInputs(state, setToken);
+
+	const resetState = useCallback(() => {
+		setState(initialState);
+		setXAmount("");
+		setYAmount("");
+	}, [setXAmount, setYAmount]);
 
 	const { trnApi } = useTrnApi();
 	const { userSession } = useWallets();
@@ -219,7 +223,7 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 			amountWithoutGas = dexAmounts.current.calculatedFromBalance.minus(
 				exchangeFees.pow(new BigNumber(10).times(state.gasToken.decimals))
 			);
-			canPay = amountWithoutGas.toUnit().toNumber() >= 0 ? true : false;
+			canPay = amountWithoutGas.toUnit().toNumber() >= 0 ? true : false; // TODO 768
 		} else {
 			amountWithoutGas = dexAmounts.current.calculatedFromBalance;
 			canPay = new Balance(+gasBalance.balance, gasBalance).toUnit().toNumber() - +gas >= 0;
@@ -249,6 +253,9 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 		builtTx.current = builder;
 	}, [trnApi, state, signer, userSession, customEx]);
 
+	// This accounts for the situation when a user
+	// inputs an amount without a second token selected.
+	// This will ratio the amounts on token select.
 	useMemo(async () => {
 		await ratioAmounts({});
 		buildTransaction();

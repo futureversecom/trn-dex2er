@@ -1,14 +1,12 @@
 import { useFutureverseSigner } from "@futureverse/auth-react";
-import { CustomExtrinsicBuilder, TransactionBuilder } from "@futureverse/transact";
+import { CustomExtrinsicBuilder } from "@futureverse/transact";
 import { useTrnApi } from "@futureverse/transact-react";
 import {
 	createContext,
 	type PropsWithChildren,
 	useCallback,
 	useContext,
-	useEffect,
 	useMemo,
-	useRef,
 	useState,
 } from "react";
 import {
@@ -24,6 +22,7 @@ import { ContextTag, Token, TrnToken, XamanData, XrplCurrency } from "@/libs/typ
 
 import { DEFAULT_GAS_TOKEN, XRPL_BRIDGE_ADDRESS } from "../constants";
 import { ROOT_NETWORK } from "../constants";
+import { useCustomExtrinsicBuilder } from "../hooks";
 import {
 	type BridgeTokenInput,
 	type TrnTokenInputState,
@@ -38,6 +37,7 @@ import {
 	type IXrplWalletProvider,
 } from "../utils";
 import { formatRootscanId } from "../utils";
+import { createBuilder } from "../utils/createBuilder";
 import { useWallets } from "./WalletContext";
 import { useXrplCurrencies } from "./XrplCurrencyContext";
 
@@ -81,10 +81,8 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	const [state, setState] = useState<BridgeState>(initialState);
 	const [estimatedFee, setEstimatedFee] = useState<string>();
 	const [canPayForGas, setCanPayForGas] = useState<boolean>();
-	const builtTx = useRef<CustomExtrinsicBuilder>();
-
-	//Adding network state to track network changes
 	const [networkState, setNetworkState] = useState<"root" | "xrpl" | undefined>(undefined);
+	// const builtTx = useRef<CustomExtrinsicBuilder>();
 
 	const updateState = (update: Partial<BridgeState>) =>
 		setState((prev) => ({ ...prev, ...update }));
@@ -92,9 +90,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	const resetState = () => setState(initialState);
 
 	const setTag = useCallback((tag?: ContextTag) => updateState({ tag }), []);
-
 	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken }), []);
-
 	const setBuilder = useCallback((builder: CustomExtrinsicBuilder) => updateState({ builder }), []);
 
 	const { network, xrplProvider } = useWallets();
@@ -102,6 +98,15 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 	const { isDisabled: isTokenDisabled, ...bridgeTokenInput } = useBridgeTokenInput();
 	const { error: destinationError, destination, setDestination } = useBridgeDestinationInput();
+
+	const { trnApi } = useTrnApi();
+	const { userSession } = useWallets();
+	const signer = useFutureverseSigner();
+	const customEx = useCustomExtrinsicBuilder({
+		trnApi,
+		walletAddress: userSession?.eoa ?? "",
+		signer,
+	});
 
 	const tokenSymbol = useMemo(() => {
 		const token = bridgeTokenInput.token;
@@ -113,108 +118,94 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	}, [bridgeTokenInput.token]);
 
 	// Default to paying fee with the token selected to bridge
-	useEffect(() => {
+	useMemo(() => {
 		if (network !== "root" || !bridgeTokenInput.token) return;
 
 		setGasToken(bridgeTokenInput.token as TrnToken);
 	}, [bridgeTokenInput.token, network, setGasToken]);
 
-	const { trnApi } = useTrnApi();
-	const signer = useFutureverseSigner();
-	const { userSession } = useWallets();
-
-	useMemo(() => {
-		const execute = async () => {
-			if (!state.builder || !userSession || network != "root") return;
-			if (state.gasToken.assetId === DEFAULT_GAS_TOKEN.assetId) {
-				// TODO 768 why doesn't this work ?
-				try {
-					await state.builder.addFuturePass(userSession.futurepass);
-				} catch (err: any) {
-					console.info(err);
-				}
-			} else {
-				try {
-					await state.builder.addFuturePassAndFeeProxy({
-						futurePass: userSession.futurepass,
-						assetId: state.gasToken.assetId,
-						slippage: +state.slippage,
-					});
-				} catch (err: any) {
-					console.info(err);
-				}
-			}
-
-			builtTx.current = state.builder;
-
-			const { gasString } = await state.builder.getGasFees();
-			const [gas] = gasString.split(" ");
-			setEstimatedFee(gas);
-
-			const gasBalance = await state.builder.checkBalance({
-				walletAddress: userSession.futurepass,
-				assetId: state.gasToken.assetId,
-			});
-			const gasTokenBalance = new Balance(+gasBalance.balance, gasBalance);
-
-			let canPay: boolean | undefined;
-
-			// XRP ASSET ID
-			if (state.gasToken.assetId === DEFAULT_GAS_TOKEN.assetId) {
-				const total =
-					(bridgeTokenInput.token as TrnToken).assetId === DEFAULT_GAS_TOKEN.assetId
-						? +gas + +bridgeTokenInput.amount
-						: 0;
-				canPay = +gasTokenBalance.toUnit() > total;
-			}
-
-			// ROOT ASSET ID
-			if (state.gasToken.assetId === 1) {
-				const total =
-					(bridgeTokenInput.token as TrnToken).assetId === 1 ? +gas + +bridgeTokenInput.amount : 0;
-				canPay = +gasTokenBalance.toUnit() > total;
-			}
-
-			if (canPay === false) {
-				updateState({ error: `Insufficient ${state.gasToken.symbol} balance for gas fee` });
-			} else {
-				updateState({ error: undefined });
-			}
-
-			setCanPayForGas(canPay);
-		};
-
-		execute();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [state.builder, userSession, state.gasToken]);
-
 	const buildTransaction = useCallback(
-		({ token, amount, toAddress }: { token?: Token; amount?: string; toAddress?: string }) => {
+		async ({
+			token,
+			amount,
+			toAddress,
+		}: {
+			token?: Token;
+			amount?: string;
+			toAddress?: string;
+		}) => {
 			if (!token || !amount || !toAddress || !signer || !userSession)
 				return updateState({ builder: undefined, tx: undefined });
 
 			if (network === "root") {
-				if (!trnApi) return;
+				if (!trnApi || !customEx) return;
 
 				const bridgeToken = token as TrnToken;
-
 				const bridgeBalance = new Balance(amount, bridgeToken, false);
-
 				const decoded = decodeAccountID(toAddress.trim());
-
 				const decodedToAddress = `0x${convertStringToHex(decoded as any)}`;
 
-				const tx = trnApi.tx.xrplBridge.withdraw(
+				let tx = trnApi.tx.xrplBridge.withdraw(
 					bridgeToken.assetId,
 					bridgeBalance.toPlanckString(),
 					decodedToAddress,
 					null
 				);
 
-				const builder = TransactionBuilder.custom(trnApi, signer, userSession.eoa);
-				const fromEx = builder.fromExtrinsic(tx);
+				let builder = await createBuilder(
+					userSession,
+					state.gasToken.assetId,
+					state.slippage,
+					customEx,
+					tx
+				);
 
-				setBuilder(fromEx);
+				const { gasString, gasFee } = await builder.getGasFees();
+				const [gas] = gasString.split(" ");
+				setEstimatedFee(gas);
+
+				const gasBalance = await builder.checkBalance({
+					walletAddress: userSession.futurepass,
+					assetId: state.gasToken.assetId,
+				});
+
+				let canPay: boolean | undefined;
+				let amountWithoutGas: Balance<TrnToken> = bridgeBalance;
+				if (
+					bridgeToken.assetId === DEFAULT_GAS_TOKEN.assetId &&
+					state.gasToken.assetId === DEFAULT_GAS_TOKEN.assetId
+				) {
+					amountWithoutGas = bridgeBalance.toPlanck().minus(+gasFee * 2); // Safety margin for gas
+					canPay = amountWithoutGas.toUnit().toNumber() >= 0 ? true : false; // TODO 768
+				} else {
+					canPay = new Balance(+gasBalance.balance, gasBalance).toUnit().toNumber() - +gas >= 0;
+				}
+
+				console.log("can pay for gas");
+
+				setCanPayForGas(canPay);
+				if (canPay === false) {
+					return updateState({
+						error: `Insufficient ${state.gasToken.symbol} balance for gas fee`,
+					});
+				}
+
+				tx = trnApi.tx.xrplBridge.withdraw(
+					bridgeToken.assetId,
+					amountWithoutGas.toPlanckString(),
+					decodedToAddress,
+					null
+				);
+
+				builder = await createBuilder(
+					userSession,
+					state.gasToken.assetId,
+					state.slippage,
+					customEx,
+					tx
+				);
+
+				setBuilder(builder);
 			}
 
 			if (network === "xrpl" && xrplProvider) {
@@ -249,18 +240,29 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 				updateState({ tx });
 			}
 		},
-		[signer, userSession, network, xrplProvider, trnApi, setBuilder]
+		[
+			signer,
+			userSession,
+			network,
+			xrplProvider,
+			trnApi,
+			customEx,
+			state.gasToken.assetId,
+			state.gasToken.symbol,
+			state.slippage,
+			setBuilder,
+		]
 	);
 
 	const signRootTransaction = useCallback(async () => {
-		if (!builtTx.current) return;
+		if (!state.builder) return;
 
 		const onSend = () => {
 			setTag("submitted");
 		};
 
 		try {
-			const result = await builtTx.current.signAndSend({ onSend });
+			const result = await state.builder.signAndSend({ onSend });
 			if (!result) return setTag(undefined);
 
 			updateState({
@@ -272,7 +274,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 				error: err.message ?? err,
 			});
 		}
-	}, [setTag]);
+	}, [setTag, state.builder]);
 
 	const signXrplTransaction = useCallback(
 		async (
