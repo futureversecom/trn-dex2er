@@ -2,7 +2,6 @@ import { useFutureverseSigner } from "@futureverse/auth-react";
 import { CustomExtrinsicBuilder } from "@futureverse/transact";
 import { useTrnApi } from "@futureverse/transact-react";
 import { parseJsonRpcResult } from "@therootnetwork/extrinsic";
-import BigNumber from "bignumber.js";
 import {
 	createContext,
 	type PropsWithChildren,
@@ -219,9 +218,8 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 			const exchangeFees = getNetworkFee(dexAmounts.current.calculatedFromBalance.toNumber())
 				.plus(getSwapFee(dexAmounts.current.calculatedFromBalance.toNumber()))
 				.plus(+gas);
-			amountWithoutGas = dexAmounts.current.calculatedFromBalance.minus(
-				exchangeFees.pow(new BigNumber(10).times(state.gasToken.decimals))
-			);
+			amountWithoutGas = dexAmounts.current.calculatedFromBalance.minus(exchangeFees);
+
 			canPay = amountWithoutGas.toUnit().toNumber() >= 0 ? true : false; // TODO 768
 		} else {
 			amountWithoutGas = dexAmounts.current.calculatedFromBalance;
