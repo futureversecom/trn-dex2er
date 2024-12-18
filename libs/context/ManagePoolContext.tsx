@@ -317,18 +317,19 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 				tx
 			);
 
-			const { gasString, gasFee } = await builder.getGasFees();
+			const { gasString } = await builder.getGasFees();
 			const [gas] = gasString.split(" ");
 			setEstimatedFee(gas);
 
-			const gasBalance = await builder.checkBalance({
+			const gasTokenBalance = await builder.checkBalance({
 				walletAddress: userSession.futurepass,
 				assetId: state.gasToken.assetId,
 			});
+			const gasBalance = new Balance(+gasTokenBalance.balance, gasTokenBalance).toUnit().toNumber();
 
 			let canPay: boolean | undefined;
-			let xAmountWithoutGas: Balance<TrnToken> = xBalance;
-			let yAmountWithoutGas: Balance<TrnToken> = yBalance;
+			let xAmountWithoutGas: number = xBalance.toNumber();
+			let yAmountWithoutGas: number = yBalance.toNumber();
 			if (
 				(state.xToken.assetId === DEFAULT_GAS_TOKEN.assetId ||
 					state.yToken.assetId === DEFAULT_GAS_TOKEN.assetId) &&
@@ -336,18 +337,18 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 			) {
 				xAmountWithoutGas =
 					state.xToken.assetId === DEFAULT_GAS_TOKEN.assetId
-						? xBalance.toPlanck().minus(+gasFee * 1.5) // Safety margin for gas
-						: xBalance;
+						? +xAmount - +gas * 1.5 // Safety margin for gas
+						: xBalance.toNumber();
 				yAmountWithoutGas =
 					state.yToken.assetId === DEFAULT_GAS_TOKEN.assetId
-						? yBalance.toPlanck().minus(+gasFee * 1.5) // Safety margin for gas
-						: yBalance;
+						? +yAmount - +gas * 1.5 // Safety margin for gas
+						: yBalance.toNumber();
 				canPay =
 					state.xToken.assetId === DEFAULT_GAS_TOKEN.assetId
-						? xAmountWithoutGas.gte(0)
-						: yAmountWithoutGas.gte(0);
+						? gasBalance >= xAmountWithoutGas
+						: gasBalance >= yAmountWithoutGas;
 			} else {
-				canPay = new Balance(+gasBalance.balance, gasBalance).toUnit().toNumber() - +gas >= 0;
+				canPay = gasBalance - +gas >= 0;
 			}
 
 			setCanPayForGas(canPay);
