@@ -30,3 +30,4 @@ export * from "./QrModal";
 export * from "./YourPosition";
 export * from "./ImportToken";
 export * from "./CopyButton";
+export * from "./SearchBar";

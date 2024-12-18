@@ -6,6 +6,7 @@ import type { TrnToken, XrplCurrency } from "@/libs/types";
 import { Balance, normalizeCurrencyCode } from "@/libs/utils";
 
 import { LPTokens, Pagination, TableRow, Text } from "../../shared";
+import { SearchBar } from "../../shared";
 import { Liquidity } from "./Liquidity";
 import { TokenBalance } from "./TokenBalance";
 
@@ -24,8 +25,18 @@ type PoolProps<T extends "XRP" | "ROOT"> = T extends "XRP"
 
 export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 	const { isConnected } = useWallets();
-	const { pools: trnPools, tokens: trnTokens } = useTrnTokens();
-	const { pools: xrplPools, findToken } = useXrplCurrencies();
+	const {
+		pools: trnPools,
+		tokens: trnTokens,
+		setFilter: setTrnPoolFilter,
+		filter: trnPoolFilter,
+	} = useTrnTokens();
+	const {
+		pools: xrplPools,
+		findToken,
+		setFilter: setXrplPoolFilter,
+		filter: xrplPoolFilter,
+	} = useXrplCurrencies();
 	const { onPoolClick, network } = props;
 
 	const pools = network === "ROOT" ? trnPools : xrplPools;
@@ -67,6 +78,13 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 			<Text>
 				To add liquidity, {isConnected ? "select a pool below" : "please connect your wallet"}.
 			</Text>
+			<div className="absolute right-0 top-0 mr-6">
+				{network === "ROOT" ? (
+					<SearchBar setSearchQuery={setTrnPoolFilter} query={trnPoolFilter} />
+				) : (
+					<SearchBar setSearchQuery={setXrplPoolFilter} query={xrplPoolFilter} />
+				)}
+			</div>
 
 			{!!validPools?.length && (
 				<div>
