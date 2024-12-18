@@ -25,7 +25,6 @@ export default function WalletProfileModal({
 	auth,
 	handleLogout,
 }: WalletProfileModalProps): JSX.Element {
-	console.log("futurePassAddress ", futurePassAddress);
 	const accountInfo = useMemo<AccountInfo | undefined>(() => {
 		if (!auth) return;
 		switch (auth.method) {
