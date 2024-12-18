@@ -314,6 +314,8 @@ export function XrplCurrencyProvider({
 					return line.issuer === pool.lpTokenIssuer;
 				});
 
+				if (!userLPTokenBalance) return null;
+
 				let poolShare: number = 0;
 				if (userLPTokenBalance && pool.lpTokenSupply) {
 					poolShare = (parseFloat(userLPTokenBalance.value) / parseFloat(pool.lpTokenSupply)) * 100;

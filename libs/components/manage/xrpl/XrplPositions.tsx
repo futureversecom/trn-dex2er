@@ -4,24 +4,18 @@ import { LPTokens, Pagination, TableRow, Text } from "@/libs/components/shared";
 import { useManageXrplPool, useXrplCurrencies } from "@/libs/context";
 import { normalizeCurrencyCode, toFixed } from "@/libs/utils";
 
-export function XrplPositions({ hasBalance }: { hasBalance: boolean }) {
+export function XrplPositions() {
 	const { onPoolClick } = useManageXrplPool();
-	let { positions: allPools } = useXrplCurrencies();
+	const { positions } = useXrplCurrencies();
 
 	const { startIndex, endIndex, ...paginationProps } = usePagination({
-		totalItems: allPools?.length ?? 0,
-		initialPageSize: 5,
+		totalItems: positions?.length ?? 0,
+		initialPageSize: 10,
 	});
-
-	if (!allPools?.length) return null;
-
-	if (hasBalance) {
-		allPools = allPools.filter((pool) => !!pool.lpBalance);
-	}
 
 	return (
 		<>
-			{allPools.slice(startIndex, endIndex + 1).map((pool) => {
+			{positions.slice(startIndex, endIndex + 1).map((pool) => {
 				return (
 					<TableRow
 						key={pool.currency}

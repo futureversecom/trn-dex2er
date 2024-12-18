@@ -70,7 +70,7 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 
 	const { startIndex, endIndex, ...paginationProps } = usePagination({
 		totalItems: validPools.length,
-		initialPageSize: 5,
+		initialPageSize: 10,
 	});
 
 	return (

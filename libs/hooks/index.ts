@@ -16,3 +16,4 @@ export * from "./useBridgeHistory";
 export * from "./useFetchXrplPools";
 export * from "./useAuthenticationMethod";
 export * from "./useCustomExtrinsicBuilder";
+export * from "./useDebouncedValue";
