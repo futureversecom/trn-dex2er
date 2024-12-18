@@ -95,8 +95,14 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 							const token1 = trnTokens[+asset1];
 							const token2 = trnTokens[+asset2];
 
-							const balance1 = new Balance(pool.liquidity[0], token1 as TrnToken).toUnit();
-							const balance2 = new Balance(pool.liquidity[1], token2 as TrnToken).toUnit();
+							const balance1 = new Balance(pool.liquidity[0], token1 as TrnToken)
+								.toUnit()
+								.toNumber()
+								.toLocaleString("fullwide", { minimumFractionDigits: 6 });
+							const balance2 = new Balance(pool.liquidity[1], token2 as TrnToken)
+								.toUnit()
+								.toNumber()
+								.toLocaleString("fullwide", { minimumFractionDigits: 6 });
 
 							return (
 								<TableRow
