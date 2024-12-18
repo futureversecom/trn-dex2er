@@ -31,7 +31,7 @@ export type TrnTokenContextType = {
 	tokenBalances: Record<number, Balance<TrnToken>>;
 	refetchTokenBalances: () => Promise<VoidFn | undefined>;
 	getTokenBalance: (token?: TrnToken) => Balance<TrnToken> | undefined;
-	position: Position[];
+	positions: Position[];
 	setFilter: (filter: string) => void;
 	filter: string;
 };
@@ -151,7 +151,7 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 				pools: filteredPools ?? [],
 				tokens: tokensWithPrices ?? tokens ?? {},
 				isFetching: isFetchingPools,
-				position: positions ?? [],
+				positions: positions ?? [],
 				setFilter: filterPool,
 				filter,
 			}}
