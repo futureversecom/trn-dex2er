@@ -71,7 +71,7 @@ export function AmountInputs({
 				label={labels[0]}
 				error={xTokenError}
 				setAmount={(amount) => setAmount({ src: "x", amount })}
-				onClick={() => (setSrc ? setSrc("x") : {})}
+				onClick={() => setSrc?.("x")}
 				tokenBalance={xTokenBalance}
 				tokenUSD={xTokenUSD}
 			>
@@ -123,7 +123,7 @@ export function AmountInputs({
 					label={labels[1]}
 					error={yTokenError}
 					setAmount={(amount) => setAmount({ src: "y", amount })}
-					onClick={() => (setSrc ? setSrc("y") : {})}
+					onClick={() => setSrc?.("y")}
 					tokenBalance={yTokenBalance}
 					tokenUSD={yTokenUSD}
 				>

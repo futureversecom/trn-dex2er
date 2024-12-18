@@ -6,6 +6,7 @@ import {
 	type PropsWithChildren,
 	useCallback,
 	useContext,
+	useEffect,
 	useMemo,
 	useState,
 } from "react";
@@ -118,7 +119,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	}, [bridgeTokenInput.token]);
 
 	// Default to paying fee with the token selected to bridge
-	useMemo(() => {
+	useEffect(() => {
 		if (network !== "root" || !bridgeTokenInput.token) return;
 
 		setGasToken(bridgeTokenInput.token as TrnToken);

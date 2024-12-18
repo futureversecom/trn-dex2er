@@ -54,7 +54,7 @@ export function AmountInput({
 						placeholder="0.0"
 						id={`amount-${label}`}
 						onChange={(e) => setAmount(e.target.value)}
-						onClick={() => (onClick ? onClick() : {})}
+						onClick={() => onClick?.()}
 						className="bg-transparent text-xl font-semibold focus:outline-none"
 					/>
 					<Text
