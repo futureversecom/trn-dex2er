@@ -73,7 +73,6 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 	const builtTx = useRef<CustomExtrinsicBuilder>();
 	const dexAmounts = useRef<{
 		calculatedFromBalance: Balance<TrnToken>;
-		calculatedToBalance: Balance<TrnToken>;
 		toAmountMin: Balance<TrnToken>;
 	}>();
 	const source = useRef<"x" | "y">("x");
@@ -119,8 +118,8 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 		signer,
 	});
 
-	const ratioAmounts = useCallback(
-		async ({ amount = tokenInputs[`${source.current}Amount`] }: { amount?: string }) => {
+	const getAmountsIn = useCallback(
+		async (amount: string) => {
 			if (!trnApi || !state.xToken || !state.yToken || !source.current) return;
 
 			const fromToken = state[`${source.current}Token`]!;
@@ -155,21 +154,43 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 			const otherBalance = source.current === "x" ? toBalance : calculatedFromBalance;
 
 			const toAmountMin = otherBalance.multipliedBy(1 - +state.slippage / 100).integerValue();
-			dexAmounts.current = { calculatedFromBalance, calculatedToBalance: toBalance, toAmountMin };
 
-			if (source.current === "x") setYAmount(otherBalance.toUnit().toString());
-			else setXAmount(otherBalance.toUnit().toString());
+			return {
+				toAmountMin,
+				calculatedFromBalance,
+				otherBalance,
+				toBalance,
+				amount,
+			};
+		},
+		[setXAmount, setYAmount, state, trnApi]
+	);
+
+	const ratioAmounts = useCallback(
+		async ({ amount = tokenInputs[`${source.current}Amount`] }: { amount?: string }) => {
+			if (!trnApi || !state.xToken || !state.yToken || !source.current) return;
+
+			const amountsIn = await getAmountsIn(amount);
+			if (!amountsIn) return;
+
+			dexAmounts.current = {
+				calculatedFromBalance: amountsIn.calculatedFromBalance,
+				toAmountMin: amountsIn.toAmountMin,
+			};
+
+			if (source.current === "x") setYAmount(amountsIn.otherBalance.toUnit().toString());
+			else setXAmount(amountsIn.otherBalance.toUnit().toString());
 
 			const ratio = toFixed(
-				toBalance.toUnit().dividedBy(calculatedFromBalance.toUnit()).toNumber()
+				amountsIn.toBalance.toUnit().dividedBy(amountsIn.calculatedFromBalance.toUnit()).toNumber()
 			);
 
 			updateState({
 				ratio,
-				yAmountMin: toAmountMin.toHuman(),
+				yAmountMin: amountsIn.toAmountMin.toHuman(),
 			});
 		},
-		[trnApi, state, tokenInputs, setYAmount, setXAmount]
+		[trnApi, state, tokenInputs, setYAmount, setXAmount, getAmountsIn]
 	);
 
 	const buildTransaction = useCallback(async () => {
@@ -209,24 +230,30 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 			assetId: state.gasToken.assetId,
 		});
 
-		let canPay: boolean | undefined;
 		let amountWithoutGas: Balance<TrnToken>;
 		if (state.xToken.assetId === state.gasToken.assetId) {
 			amountWithoutGas = dexAmounts.current.calculatedFromBalance.minus(+gasFee * 1.5);
-			canPay = amountWithoutGas.toUnit().toNumber() >= 0 ? true : false; // TODO 768
 		} else {
 			amountWithoutGas = dexAmounts.current.calculatedFromBalance;
-			canPay = new Balance(+gasBalance.balance, gasBalance).toUnit().toNumber() - +gas >= 0;
 		}
+
+		const canPay = new Balance(+gasBalance.balance, gasBalance).toUnit().toNumber() - +gas >= 0;
 
 		setCanPayForGas(canPay);
 		if (canPay === false) {
 			return updateState({ error: `Insufficient ${state.gasToken.symbol} balance for gas fee` });
 		}
 
+		const amountsIn = await getAmountsIn(
+			amountWithoutGas.toUnit().toNumber() < 0
+				? dexAmounts.current.calculatedFromBalance.toUnit().toString()
+				: amountWithoutGas.toUnit().toNumber().toString()
+		);
+		if (!amountsIn) return;
+
 		tx = trnApi.tx.dex.swapWithExactSupply(
-			amountWithoutGas.toPlanckString().split(".")[0],
-			dexAmounts.current.toAmountMin.toPlanckString(),
+			amountsIn.calculatedFromBalance.toPlanckString(),
+			amountsIn.toAmountMin.toPlanckString(),
 			[state.xToken.assetId, state.yToken.assetId],
 			null,
 			null
@@ -241,7 +268,7 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 		);
 
 		builtTx.current = builder;
-	}, [trnApi, state, signer, userSession, customEx]);
+	}, [trnApi, state, signer, userSession, customEx, getAmountsIn]);
 
 	// This accounts for the situation when a user
 	// inputs an amount without a second token selected.
