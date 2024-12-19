@@ -6,6 +6,7 @@ import type { TrnToken, XrplCurrency } from "@/libs/types";
 import { Balance, normalizeCurrencyCode } from "@/libs/utils";
 
 import { LPTokens, Pagination, TableRow, Text } from "../../shared";
+import { SearchBar } from "../../shared";
 import { Liquidity } from "./Liquidity";
 import { TokenBalance } from "./TokenBalance";
 
@@ -24,8 +25,18 @@ type PoolProps<T extends "XRP" | "ROOT"> = T extends "XRP"
 
 export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 	const { isConnected } = useWallets();
-	const { pools: trnPools, tokens: trnTokens } = useTrnTokens();
-	const { pools: xrplPools, findToken } = useXrplCurrencies();
+	const {
+		pools: trnPools,
+		tokens: trnTokens,
+		setFilter: setTrnPoolFilter,
+		filter: trnPoolFilter,
+	} = useTrnTokens();
+	const {
+		pools: xrplPools,
+		findToken,
+		setFilter: setXrplPoolFilter,
+		filter: xrplPoolFilter,
+	} = useXrplCurrencies();
 	const { onPoolClick, network } = props;
 
 	const pools = network === "ROOT" ? trnPools : xrplPools;
@@ -59,7 +70,7 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 
 	const { startIndex, endIndex, ...paginationProps } = usePagination({
 		totalItems: validPools.length,
-		initialPageSize: 5,
+		initialPageSize: 10,
 	});
 
 	return (
@@ -67,6 +78,13 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 			<Text>
 				To add liquidity, {isConnected ? "select a pool below" : "please connect your wallet"}.
 			</Text>
+			<div className="absolute right-0 top-0 mr-6">
+				{network === "ROOT" ? (
+					<SearchBar setSearchQuery={setTrnPoolFilter} query={trnPoolFilter} />
+				) : (
+					<SearchBar setSearchQuery={setXrplPoolFilter} query={xrplPoolFilter} />
+				)}
+			</div>
 
 			{!!validPools?.length && (
 				<div>
@@ -77,8 +95,14 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 							const token1 = trnTokens[+asset1];
 							const token2 = trnTokens[+asset2];
 
-							const balance1 = new Balance(pool.liquidity[0], token1 as TrnToken).toUnit();
-							const balance2 = new Balance(pool.liquidity[1], token2 as TrnToken).toUnit();
+							const balance1 = new Balance(pool.liquidity[0], token1 as TrnToken)
+								.toUnit()
+								.toNumber()
+								.toLocaleString("fullwide", { minimumFractionDigits: 6 });
+							const balance2 = new Balance(pool.liquidity[1], token2 as TrnToken)
+								.toUnit()
+								.toNumber()
+								.toLocaleString("fullwide", { minimumFractionDigits: 6 });
 
 							return (
 								<TableRow
@@ -128,6 +152,18 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 											tokens={[
 												currency1.ticker || normalizeCurrencyCode(currency1.currency),
 												currency2.ticker || normalizeCurrencyCode(currency2.currency),
+											]}
+											issuers={[
+												currency1.issuer
+													? currency1.issuer
+													: normalizeCurrencyCode(currency1.currency) === "XRP"
+														? "XRP"
+														: "unknown",
+												currency2.issuer
+													? currency2.issuer
+													: normalizeCurrencyCode(currency2.currency) === "XRP"
+														? "XRP"
+														: "unknown",
 											]}
 											key="LP Tokens"
 										/>,

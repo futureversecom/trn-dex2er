@@ -1,6 +1,13 @@
 import type { VoidFn } from "@polkadot/api/types";
 import type { BigNumber } from "bignumber.js";
-import { createContext, type PropsWithChildren, useCallback, useContext, useMemo } from "react";
+import {
+	createContext,
+	type PropsWithChildren,
+	useCallback,
+	useContext,
+	useMemo,
+	useState,
+} from "react";
 
 import { Balance } from "@/libs/utils";
 
@@ -24,7 +31,9 @@ export type TrnTokenContextType = {
 	tokenBalances: Record<number, Balance<TrnToken>>;
 	refetchTokenBalances: () => Promise<VoidFn | undefined>;
 	getTokenBalance: (token?: TrnToken) => Balance<TrnToken> | undefined;
-	position: Position[];
+	positions: Position[];
+	setFilter: (filter: string) => void;
+	filter: string;
 };
 
 const TrnTokenContext = createContext<TrnTokenContextType>({} as TrnTokenContextType);
@@ -34,6 +43,10 @@ interface TrnTokenProviderProps extends PropsWithChildren {
 }
 
 export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps) {
+	const [filter, setFilter] = useState("");
+
+	const filterPool = useCallback((f: string) => setFilter(f), []);
+
 	const { prices } = useUsdPrices();
 	const { data: tokens } = useFetchTrnTokens(trnTokens);
 
@@ -104,16 +117,43 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 			.filter((pool): pool is Position => !!pool);
 	}, [pools, tokens, getTokenBalance, isFetchingPools]);
 
+	const filteredPools = useMemo(() => {
+		if (!pools || !tokens) return;
+		if (!filter) return pools;
+
+		const findToken = (assetId: number, tokens: TrnTokens): TrnToken | undefined => {
+			return Object.values(tokens).find((token) => token.assetId === assetId);
+		};
+
+		return pools.filter((pool) => {
+			const poolKey = pool.poolKey.split("-");
+
+			const xToken = findToken(+poolKey[0], tokens);
+			const yToken = findToken(+poolKey[1], tokens);
+
+			if (!xToken || !yToken) return false;
+
+			if (xToken?.symbol.toLowerCase().includes(filter.toLowerCase())) {
+				return true;
+			}
+			if (yToken?.symbol.toLowerCase().includes(filter.toLowerCase())) {
+				return true;
+			}
+		});
+	}, [filter, pools, tokens]);
+
 	return (
 		<TrnTokenContext.Provider
 			value={{
 				tokenBalances,
 				getTokenBalance,
 				refetchTokenBalances,
-				pools: pools ?? [],
+				pools: filteredPools ?? [],
 				tokens: tokensWithPrices ?? tokens ?? {},
 				isFetching: isFetchingPools,
-				position: positions ?? [],
+				positions: positions ?? [],
+				setFilter: filterPool,
+				filter,
 			}}
 		>
 			{children}

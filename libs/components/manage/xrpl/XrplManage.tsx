@@ -57,6 +57,7 @@ export function XrplManage() {
 							<span className="flex items-center gap-2">
 								<TokenImage
 									symbol={props.xToken.ticker || normalizeCurrencyCode(props.xToken.currency)}
+									issuer={props.xToken.issuer}
 								/>
 								<Text size="md" className="!text-neutral-600">
 									{props.xToken.ticker || normalizeCurrencyCode(props.xToken.currency)}{" "}
@@ -76,6 +77,7 @@ export function XrplManage() {
 							<span className="flex items-center gap-2">
 								<TokenImage
 									symbol={props.yToken.ticker || normalizeCurrencyCode(props.yToken.currency)}
+									issuer={props.yToken.issuer}
 								/>
 								<Text size="md" className="!text-neutral-600">
 									{props.yToken.ticker || normalizeCurrencyCode(props.yToken.currency)}{" "}

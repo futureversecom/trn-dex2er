@@ -91,6 +91,7 @@ export function TokenSelect<T extends Token>({
 									items={[
 										<TokenImage
 											symbol={token.ticker || normalizeCurrencyCode(token.currency)}
+											issuer={token.issuer}
 											size={28}
 											key="token"
 										/>,

@@ -7,11 +7,11 @@ import { Text } from "./Text";
 import { Tokens } from "./Tokens";
 
 export function YourPosition() {
-	const { position } = useTrnTokens();
+	const { positions } = useTrnTokens();
 	const props = useManagePool();
 	const [xSymbol, ySymbol] = useTokenSymbols(props.xToken, props.yToken);
 
-	const currentPosition = position.find(
+	const currentPosition = positions.find(
 		(p) => p.xToken === props.xToken && p.yToken === props.yToken
 	);
 
