@@ -153,6 +153,18 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 												currency1.ticker || normalizeCurrencyCode(currency1.currency),
 												currency2.ticker || normalizeCurrencyCode(currency2.currency),
 											]}
+											issuers={[
+												currency1.issuer
+													? currency1.issuer
+													: normalizeCurrencyCode(currency1.currency) === "XRP"
+														? "XRP"
+														: "unknown",
+												currency2.issuer
+													? currency2.issuer
+													: normalizeCurrencyCode(currency2.currency) === "XRP"
+														? "XRP"
+														: "unknown",
+											]}
 											key="LP Tokens"
 										/>,
 

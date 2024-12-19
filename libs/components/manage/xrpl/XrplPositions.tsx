@@ -27,6 +27,18 @@ export function XrplPositions() {
 									pool.xToken.ticker || normalizeCurrencyCode(pool.xToken.currency),
 									pool.yToken.ticker || normalizeCurrencyCode(pool.yToken.currency),
 								]}
+								issuers={[
+									pool.xToken.issuer
+										? pool.xToken.issuer
+										: normalizeCurrencyCode(pool.xToken.currency) === "XRP"
+											? "XRP"
+											: "unknown",
+									pool.yToken.issuer
+										? pool.yToken.issuer
+										: normalizeCurrencyCode(pool.yToken.currency) === "XRP"
+											? "XRP"
+											: "unknown",
+								]}
 								key="LP Tokens"
 							/>,
 							<div className="space-y-2" key="position">
