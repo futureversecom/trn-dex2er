@@ -213,10 +213,8 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 			let xAmountWithoutGas: Balance<TrnToken> = xBalance;
 			let yAmountWithoutGas: Balance<TrnToken> = yBalance;
 			if (
-				(state.xToken.assetId === DEFAULT_GAS_TOKEN.assetId ||
-					state.yToken.assetId === DEFAULT_GAS_TOKEN.assetId) &&
-				(state.gasToken.assetId === state.xToken.assetId ||
-					state.gasToken.assetId === state.yToken.assetId)
+				state.gasToken.assetId === state.xToken.assetId ||
+				state.gasToken.assetId === state.yToken.assetId
 			) {
 				xAmountWithoutGas =
 					state.xToken.assetId === DEFAULT_GAS_TOKEN.assetId
