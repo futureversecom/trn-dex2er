@@ -11,9 +11,9 @@ import {
 	TokenImage,
 	TokenSelect,
 } from "@/libs/components/shared";
+import { EXCHANGE_RATE, NETWORK_FEE_RATE } from "@/libs/constants";
 import { type TrnSwapContextType, useTrnSwap } from "@/libs/context";
-import { getSwapFee, toFixed, toHuman } from "@/libs/utils";
-import { getNetworkFee } from "@/libs/utils";
+import { toFixed, toHuman } from "@/libs/utils";
 
 export function TrnSwap() {
 	const props = useTrnSwap();
@@ -169,12 +169,12 @@ const getInfoItems = ({
 				<>
 					<InfoItem
 						heading="Network Fee"
-						value={`~${toFixed(getNetworkFee(+xAmount).toNumber(), 6)} ${xToken.symbol}`}
+						value={`~${toFixed(+xAmount * (NETWORK_FEE_RATE / 100), 6)} ${xToken.symbol}`}
 						tip="A fee of 0.05% of the swap amount is collected to reward ROOT stakers."
 					/>
 					<InfoItem
 						heading="Swap fee"
-						value={`~${toFixed(getSwapFee(+xAmount).toNumber(), 6)} ${xToken.symbol}`}
+						value={`~${toFixed(+xAmount * ((EXCHANGE_RATE - NETWORK_FEE_RATE) / 100), 6)} ${xToken.symbol}`}
 						tip="A fee of 0.25% of the swap amount is collected to reward liquidity providers."
 					/>
 				</>

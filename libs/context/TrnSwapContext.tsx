@@ -24,7 +24,6 @@ import {
 	useCheckValidPool,
 	useTrnTokenInputs,
 } from "../hooks";
-import { getNetworkFee, getSwapFee } from "../utils";
 import { formatRootscanId } from "../utils";
 import { Balance, parseSlippage, toFixed } from "../utils";
 import { createBuilder } from "../utils/createBuilder";
@@ -84,7 +83,7 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 
 	const setTag = useCallback((tag?: ContextTag) => updateState({ tag }), []);
 	const setSrc = useCallback((src: "x" | "y") => (source.current = src), []);
-	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken }), []);
+	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken, error: "" }), []);
 	const setToken = useCallback(({ src, token }: { src: TokenSource; token: TrnToken }) => {
 		if (src === "x")
 			return updateState({
@@ -200,7 +199,7 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 			tx
 		);
 
-		const { gasString } = await builder.getGasFees();
+		const { gasString, gasFee } = await builder.getGasFees();
 		const [gas] = gasString.split(" ");
 		setEstimatedFee(gas);
 
@@ -211,15 +210,8 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 
 		let canPay: boolean | undefined;
 		let amountWithoutGas: Balance<TrnToken>;
-		if (
-			state.xToken.assetId === DEFAULT_GAS_TOKEN.assetId &&
-			state.gasToken.assetId === DEFAULT_GAS_TOKEN.assetId
-		) {
-			const exchangeFees = getNetworkFee(dexAmounts.current.calculatedFromBalance.toNumber())
-				.plus(getSwapFee(dexAmounts.current.calculatedFromBalance.toNumber()))
-				.plus(+gas);
-			amountWithoutGas = dexAmounts.current.calculatedFromBalance.minus(exchangeFees);
-
+		if (state.xToken.assetId === state.gasToken.assetId) {
+			amountWithoutGas = dexAmounts.current.calculatedFromBalance.minus(+gasFee * 1.5);
 			canPay = amountWithoutGas.toUnit().toNumber() >= 0 ? true : false; // TODO 768
 		} else {
 			amountWithoutGas = dexAmounts.current.calculatedFromBalance;

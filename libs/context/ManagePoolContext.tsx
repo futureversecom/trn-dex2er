@@ -98,7 +98,7 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 		setState((prev) => ({ ...prev, ...update }));
 
 	const setTag = useCallback((tag?: ContextTag) => updateState({ tag }), []);
-	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken }), []);
+	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken, error: "" }), []);
 	const setToken = useCallback(({ src, token }: { src: TokenSource; token: TrnToken }) => {
 		if (src === "x")
 			return updateState({
@@ -331,22 +331,22 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 			let xAmountWithoutGas: number = xBalance.toNumber();
 			let yAmountWithoutGas: number = yBalance.toNumber();
 			if (
-				(state.xToken.assetId === DEFAULT_GAS_TOKEN.assetId ||
-					state.yToken.assetId === DEFAULT_GAS_TOKEN.assetId) &&
-				state.gasToken.assetId === DEFAULT_GAS_TOKEN.assetId
+				(state.xToken.assetId === state.gasToken.assetId ||
+					state.yToken.assetId === state.gasToken.assetId) &&
+				state.action === "add"
 			) {
 				xAmountWithoutGas =
-					state.xToken.assetId === DEFAULT_GAS_TOKEN.assetId
+					state.xToken.assetId === state.gasToken.assetId
 						? +xAmount - +gas * 1.5 // Safety margin for gas
 						: xBalance.toNumber();
 				yAmountWithoutGas =
-					state.yToken.assetId === DEFAULT_GAS_TOKEN.assetId
+					state.yToken.assetId === state.gasToken.assetId
 						? +yAmount - +gas * 1.5 // Safety margin for gas
 						: yBalance.toNumber();
 				canPay =
-					state.xToken.assetId === DEFAULT_GAS_TOKEN.assetId
-						? gasBalance >= xAmountWithoutGas
-						: gasBalance >= yAmountWithoutGas;
+					state.xToken.assetId === state.gasToken.assetId
+						? gasBalance > xAmountWithoutGas
+						: gasBalance > yAmountWithoutGas;
 			} else {
 				canPay = gasBalance - +gas >= 0;
 			}
@@ -354,14 +354,19 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 			setCanPayForGas(canPay);
 			if (canPay === false) {
 				return updateState({ error: `Insufficient ${state.gasToken.symbol} balance for gas fee` });
+			} else {
+				updateState({ error: "" });
 			}
+
+			const xb = new Balance(xAmountWithoutGas, state.xToken, false);
+			const yb = new Balance(yAmountWithoutGas, state.yToken, false);
 
 			if (state.action === "add") {
 				tx = trnApi.tx.dex.addLiquidity(
 					state.xToken.assetId,
 					state.yToken.assetId,
-					xBalance.toPlanckString(),
-					yBalance.toPlanckString(),
+					xb.toPlanckString(),
+					yb.toPlanckString(),
 					xAmountMinBalance.toPlanckString(),
 					yAmountMinBalance.toPlanckString(),
 					null,

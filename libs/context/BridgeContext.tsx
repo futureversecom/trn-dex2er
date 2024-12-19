@@ -83,7 +83,6 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	const [estimatedFee, setEstimatedFee] = useState<string>();
 	const [canPayForGas, setCanPayForGas] = useState<boolean>();
 	const [networkState, setNetworkState] = useState<"root" | "xrpl" | undefined>(undefined);
-	// const builtTx = useRef<CustomExtrinsicBuilder>();
 
 	const updateState = (update: Partial<BridgeState>) =>
 		setState((prev) => ({ ...prev, ...update }));
@@ -91,7 +90,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	const resetState = () => setState(initialState);
 
 	const setTag = useCallback((tag?: ContextTag) => updateState({ tag }), []);
-	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken }), []);
+	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken, error: "" }), []);
 	const setBuilder = useCallback((builder: CustomExtrinsicBuilder) => updateState({ builder }), []);
 
 	const { network, xrplProvider } = useWallets();
@@ -165,30 +164,30 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 				const [gas] = gasString.split(" ");
 				setEstimatedFee(gas);
 
-				const gasBalance = await builder.checkBalance({
+				const gasTokenBalance = await builder.checkBalance({
 					walletAddress: userSession.futurepass,
 					assetId: state.gasToken.assetId,
 				});
+				const gasBalance = new Balance(+gasTokenBalance.balance, gasTokenBalance)
+					.toUnit()
+					.toNumber();
 
 				let canPay: boolean | undefined;
 				let amountWithoutGas: Balance<TrnToken> = bridgeBalance;
-				if (
-					bridgeToken.assetId === DEFAULT_GAS_TOKEN.assetId &&
-					state.gasToken.assetId === DEFAULT_GAS_TOKEN.assetId
-				) {
-					amountWithoutGas = bridgeBalance.toPlanck().minus(+gasFee * 2); // Safety margin for gas
+				if (bridgeToken.assetId === state.gasToken.assetId) {
+					amountWithoutGas = bridgeBalance.toPlanck().minus(+gasFee * 1.5); // Safety margin for gas
 					canPay = amountWithoutGas.toUnit().toNumber() >= 0 ? true : false; // TODO 768
 				} else {
-					canPay = new Balance(+gasBalance.balance, gasBalance).toUnit().toNumber() - +gas >= 0;
+					canPay = gasBalance - +gas >= 0;
 				}
-
-				console.log("can pay for gas");
 
 				setCanPayForGas(canPay);
 				if (canPay === false) {
 					return updateState({
 						error: `Insufficient ${state.gasToken.symbol} balance for gas fee`,
 					});
+				} else {
+					updateState({ error: "" });
 				}
 
 				tx = trnApi.tx.xrplBridge.withdraw(

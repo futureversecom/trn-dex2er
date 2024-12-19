@@ -19,4 +19,3 @@ export * from "./xrpl";
 export * from "./toDollarValue";
 export * from "./formatTime";
 export * from "./shortenAddress";
-export * from "./getExchangeFees";

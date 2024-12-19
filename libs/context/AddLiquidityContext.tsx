@@ -81,7 +81,7 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 		setState((prev) => ({ ...prev, ...update }));
 
 	const setTag = useCallback((tag?: ContextTag) => updateState({ tag }), []);
-	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken }), []);
+	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken, error: "" }), []);
 	const setToken = useCallback(({ src, token }: { src: TokenSource; token: TrnToken }) => {
 		if (src === "x")
 			return updateState({
@@ -215,7 +215,8 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 			if (
 				(state.xToken.assetId === DEFAULT_GAS_TOKEN.assetId ||
 					state.yToken.assetId === DEFAULT_GAS_TOKEN.assetId) &&
-				state.gasToken.assetId === DEFAULT_GAS_TOKEN.assetId
+				(state.gasToken.assetId === state.xToken.assetId ||
+					state.gasToken.assetId === state.yToken.assetId)
 			) {
 				xAmountWithoutGas =
 					state.xToken.assetId === DEFAULT_GAS_TOKEN.assetId

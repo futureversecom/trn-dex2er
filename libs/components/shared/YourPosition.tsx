@@ -1,7 +1,6 @@
 import { useManagePool } from "@/libs/context";
 import { useTrnTokens } from "@/libs/context";
 import { useTokenSymbols } from "@/libs/hooks";
-import { toHuman } from "@/libs/utils";
 import { toFixed } from "@/libs/utils";
 
 import { Text } from "./Text";
