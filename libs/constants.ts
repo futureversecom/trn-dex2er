@@ -1,4 +1,4 @@
-import * as sdk from "@futureverse/experience-sdk";
+import * as sdk from "@futureverse/auth";
 
 import { TrnNetworkDetails, TrnToken, XrplNetworkDetails } from "./types";
 
@@ -21,7 +21,7 @@ export const ROOT_NETWORK = {
 		LinkedXrpChain: process.env.NEXT_PUBLIC_LINKED_XRPL_CHAIN ?? "testnet",
 		ExplorerUrl: "https://porcini.rootscan.io",
 		Environment: sdk.ENVIRONMENTS["staging"],
-		Stage: "staging" as sdk.Stage,
+		Stage: "staging" as sdk.Environment,
 	},
 
 	root: {
@@ -38,7 +38,7 @@ export const ROOT_NETWORK = {
 		LinkedXrpChain: "livenet",
 		ExplorerUrl: "https://rootscan.io",
 		Environment: sdk.ENVIRONMENTS["production"],
-		Stage: "production" as sdk.Stage,
+		Stage: "production" as sdk.Environment,
 	},
 }[process.env.NEXT_PUBLIC_ROOT_NETWORK ?? "porcini"] as TrnNetworkDetails;
 
@@ -52,6 +52,11 @@ export const XRPL_NETWORK: XrplNetworkDetails = {
 			Swap: "https://devnet.xrpl.org",
 			Pool: "https://devnet.xrpl.org",
 		},
+		ChainId: {
+			// TODO 768 find devnet chain id
+			InDec: 0,
+			InHex: `0x${Number(0).toString(16)}`,
+		},
 	},
 
 	testnet: {
@@ -63,6 +68,10 @@ export const XRPL_NETWORK: XrplNetworkDetails = {
 			Swap: "https://testnet.xrpl.org",
 			Pool: "https://testnet.xrpl.org",
 		},
+		ChainId: {
+			InDec: 1601,
+			InHex: `0x${Number(1601).toString(16)}`,
+		},
 	},
 
 	livenet: {
@@ -70,6 +79,10 @@ export const XRPL_NETWORK: XrplNetworkDetails = {
 			InWebSocket: "wss://s1.ripple.com/",
 		},
 		ExplorerUrl: "https://livenet.xrpl.org",
+		ChainId: {
+			InDec: 1600,
+			InHex: `0x${Number(1600).toString(16)}`,
+		},
 	},
 }[process.env.NEXT_PUBLIC_XRP_NETWORK ?? ROOT_NETWORK.LinkedXrpChain]!;
 
@@ -109,3 +122,5 @@ export const XRPL_BRIDGE_TOKENS = (process.env.NEXT_PUBLIC_XRPL_BRIDGE_TOKENS ??
 export const MONGO_API_URL = process.env.MONGO_API_URL ?? "";
 
 export const MONGO_API_KEY = process.env.MONGO_API_KEY ?? "";
+
+export const XAMAN_API_KEY = process.env.NEXT_PUBLIC_XAMAN_API_KEY ?? "";

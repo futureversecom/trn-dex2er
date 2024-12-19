@@ -21,11 +21,13 @@ export type BridgeTokenInput = {
 
 	filteredTokens: TrnTokens | XrplCurrency[];
 	isDisabled: boolean;
+
+	refetchTokenBalances: () => void;
 };
 
 export function useBridgeTokenInput(): BridgeTokenInput {
 	const { network } = useWallets();
-	const { tokens, getTokenBalance } = useTrnTokens();
+	const { tokens, getTokenBalance, refetchTokenBalances } = useTrnTokens();
 	const { currencies, getBalance } = useXrplCurrencies();
 
 	const [token, setToken] = useState<Token>();
@@ -90,5 +92,7 @@ export function useBridgeTokenInput(): BridgeTokenInput {
 		filteredTokens,
 
 		isDisabled,
+
+		refetchTokenBalances,
 	};
 }

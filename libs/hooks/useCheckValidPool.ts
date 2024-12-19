@@ -1,4 +1,4 @@
-import { useTrnApi } from "@futureverse/react";
+import { useTrnApi } from "@futureverse/transact-react";
 import { useCallback } from "react";
 
 import { fetchPairStatus } from "../utils";

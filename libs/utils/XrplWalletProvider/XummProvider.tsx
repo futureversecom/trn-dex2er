@@ -81,7 +81,7 @@ export class XummProvider implements IXrplWalletProvider {
 			throw new Error("Xumm provider is not initialized");
 		}
 		try {
-			const result = (await this.provider?.authorize()) as ResolvedFlow & {
+			const result = (await this.provider.authorize()) as ResolvedFlow & {
 				me: { networkEndpoint: string };
 			};
 			if (result && result.me) {

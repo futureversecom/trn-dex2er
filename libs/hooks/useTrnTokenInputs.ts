@@ -29,6 +29,8 @@ export interface TrnTokenInputs {
 	onTokenClick: (token: TrnToken) => void;
 
 	isDisabled: boolean;
+
+	refetchTokenBalances: () => void;
 }
 
 export type TrnTokenInputState = Pick<TrnTokenInputs, "xToken" | "yToken">;
@@ -50,7 +52,7 @@ export function useTrnTokenInputs<T extends TrnTokenInputState>(
 		| undefined
 ) {
 	const pathname = usePathname();
-	const { tokens, getTokenBalance } = useTrnTokens();
+	const { tokens, getTokenBalance, refetchTokenBalances } = useTrnTokens();
 
 	const [isOpen, setIsOpen] = useState<IsTokenOpen>(false);
 
@@ -112,19 +114,29 @@ export function useTrnTokenInputs<T extends TrnTokenInputState>(
 
 			if (isOpen === "xToken") {
 				setToken({ src: "x", token });
-				if (xToken && yToken && token.symbol === yToken.symbol)
+				setXAmount("");
+				if (xToken && yToken && token.symbol === yToken.symbol) {
 					setToken({ src: "y", token: xToken });
+					const x = xAmount;
+					setXAmount(yAmount);
+					setYAmount(x);
+				}
 			}
 
 			if (isOpen === "yToken") {
 				setToken({ src: "y", token });
-				if (xToken && yToken && token.symbol === xToken.symbol)
+				setYAmount("");
+				if (xToken && yToken && token.symbol === xToken.symbol) {
 					setToken({ src: "x", token: yToken });
+					const y = yAmount;
+					setYAmount(xAmount);
+					setXAmount(y);
+				}
 			}
 
 			setIsOpen(false);
 		},
-		[isOpen, setToken, state]
+		[isOpen, setToken, setXAmount, setYAmount, state, xAmount, yAmount]
 	);
 
 	const isDisabled = useMemo(() => {
@@ -179,5 +191,7 @@ export function useTrnTokenInputs<T extends TrnTokenInputState>(
 		onTokenClick,
 
 		isDisabled,
+
+		refetchTokenBalances,
 	};
 }

@@ -1,4 +1,4 @@
-import * as sdk from "@futureverse/experience-sdk";
+import * as sdk from "@futureverse/auth";
 import { Static, Type } from "@sinclair/typebox";
 import type { NetworkName } from "@therootnetwork/api";
 import type BigNumber from "bignumber.js";
@@ -28,13 +28,17 @@ export interface TrnNetworkDetails {
 	LinkedEthChain: string;
 	LinkedXrpChain: string;
 	ExplorerUrl: string;
-	Environment: sdk.Environment;
-	Stage: sdk.Stage;
+	Environment: sdk.EnvironmentInfo;
+	Stage: sdk.Environment;
 }
 
 export interface XrplNetworkDetails {
 	ApiUrl: {
 		InWebSocket: string;
+	};
+	ChainId: {
+		InDec: number;
+		InHex: string;
 	};
 	ExplorerUrl: string | { Bridge: string; Swap: string; Pool: string };
 }

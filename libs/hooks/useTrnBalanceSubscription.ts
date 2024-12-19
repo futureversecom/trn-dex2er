@@ -1,4 +1,4 @@
-import { useTrnApi } from "@futureverse/react";
+import { useTrnApi } from "@futureverse/transact-react";
 import type { QueryableStorageMultiArg, VoidFn } from "@polkadot/api/types";
 import type { Option } from "@polkadot/types";
 import type { FrameSystemAccountInfo, PalletAssetsAssetAccount } from "@polkadot/types/lookup";
@@ -41,7 +41,7 @@ export function useTrnBalanceSubscription(
 
 				const free = new Balance(rootRes.data.free.toString(), rootToken);
 				const frozen = new Balance(
-					// @ts-ignore
+					// @ts-expect-error ...
 					rootRes.data[specVersion < 55 ? "miscFrozen" : "frozen"].toString(),
 					rootToken
 				);

@@ -1,4 +1,4 @@
-import { useTrnApi } from "@futureverse/react";
+import { useTrnApi } from "@futureverse/transact-react";
 import type { Option, u32 } from "@polkadot/types";
 import { useQuery } from "@tanstack/react-query";
 import BigNumber from "bignumber.js";

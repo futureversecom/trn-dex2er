@@ -1,4 +1,6 @@
-import { useFutureverse, type UserSession } from "@futureverse/react";
+import { type UserSession } from "@futureverse/auth";
+import { useAuth } from "@futureverse/auth-react";
+import { useAuthUi } from "@futureverse/auth-ui";
 import { upperFirst } from "lodash";
 import Image from "next/image";
 import {
@@ -13,8 +15,10 @@ import {
 	useState,
 } from "react";
 import { useAccount } from "wagmi";
+import { Xumm } from "xumm";
 
 import { Button, Hyperlink, Modal, Text } from "../components/shared";
+import { XAMAN_API_KEY } from "../constants";
 import {
 	type IXrplWalletProvider,
 	type ProviderName,
@@ -43,7 +47,8 @@ const WalletContext = createContext<WalletContextType>({} as WalletContextType);
 
 export function WalletProvider({ children }: PropsWithChildren) {
 	const { isConnected: isTrnConnected } = useAccount();
-	const { login: fvLogin, logout: trnLogout, userSession, xamanClient } = useFutureverse();
+	const { signOut: fpLogout, userSession } = useAuth();
+	const { openLogin: fpLogin } = useAuthUi();
 
 	const [xrplAddress, setXrplAddress] = useState<string>();
 	const [network, setNetwork] = useState<"root" | "xrpl">("root");
@@ -64,27 +69,24 @@ export function WalletProvider({ children }: PropsWithChildren) {
 
 	const trnLogin = useCallback(() => {
 		saveRedirectLocation();
-		fvLogin();
-	}, [fvLogin]);
+		fpLogin();
+	}, [fpLogin]);
 
-	const xrplConnect = useCallback(
-		async (wallet: ProviderName) => {
-			try {
-				const provider = new XrplWalletProvider().detectProvider(
-					wallet === "xaman" ? xamanClient : undefined
-				);
+	const xrplConnect = useCallback(async (wallet: ProviderName) => {
+		try {
+			const provider = new XrplWalletProvider().detectProvider(
+				wallet === "xaman" ? new Xumm(XAMAN_API_KEY) : undefined
+			);
 
-				await provider.connect();
+			await provider.connect();
 
-				setXrplAddress(provider.getAccount());
-				setXrplProvider(provider);
-				setIsXrplWalletSelectOpen(false);
-			} catch (err) {
-				console.warn("Failed to connect to XRPL wallet", err);
-			}
-		},
-		[xamanClient]
-	);
+			setXrplAddress(provider.getAccount());
+			setXrplProvider(provider);
+			setIsXrplWalletSelectOpen(false);
+		} catch (err) {
+			console.warn("Failed to connect to XRPL wallet", err);
+		}
+	}, []);
 
 	const connect = useCallback(
 		(xrplWallet?: ProviderName) => {
@@ -104,10 +106,10 @@ export function WalletProvider({ children }: PropsWithChildren) {
 	}, [xrplProvider]);
 
 	const disconnect = useCallback(async () => {
-		if (network === "root") return trnLogout();
+		if (network === "root") return fpLogout();
 
 		await xrplDisconnect();
-	}, [network, trnLogout, xrplDisconnect]);
+	}, [network, fpLogout, xrplDisconnect]);
 
 	// Ensure Futurepass wallet is connected on user's return to site
 	useEffect(() => {
