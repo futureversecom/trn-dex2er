@@ -43,7 +43,7 @@ export type TrnSwapContextType = {
 	estimatedFee?: string;
 	ratio?: string;
 } & TrnSwapState &
-	Omit<TrnTokenInputs, "setXAmount" | "setYAmount">;
+	Omit<TrnTokenInputs, "setXAmount" | "setYAmount" | "refetchTokenBalances">;
 
 const TrnSwapContext = createContext<TrnSwapContextType>({} as TrnSwapContextType);
 
@@ -99,6 +99,7 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 		setXAmount,
 		setYAmount,
 		isDisabled: isTokenDisabled,
+		refetchTokenBalances,
 		...tokenInputs
 	} = useTrnTokenInputs(state, setToken);
 
@@ -311,6 +312,8 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 			});
 			if (!result) return setTag(undefined);
 
+			refetchTokenBalances();
+
 			updateState({
 				explorerUrl: `${ROOT_NETWORK.ExplorerUrl}/extrinsic/${formatRootscanId(result.extrinsicId)}`,
 			});
@@ -322,7 +325,7 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 				error: err.message ?? err,
 			});
 		}
-	}, [setTag]);
+	}, [setTag, refetchTokenBalances]);
 
 	const isDisabled = useMemo(() => {
 		if (state.tag === "sign") return true;

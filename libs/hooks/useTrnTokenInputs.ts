@@ -29,6 +29,8 @@ export interface TrnTokenInputs {
 	onTokenClick: (token: TrnToken) => void;
 
 	isDisabled: boolean;
+
+	refetchTokenBalances: () => void;
 }
 
 export type TrnTokenInputState = Pick<TrnTokenInputs, "xToken" | "yToken">;
@@ -50,7 +52,7 @@ export function useTrnTokenInputs<T extends TrnTokenInputState>(
 		| undefined
 ) {
 	const pathname = usePathname();
-	const { tokens, getTokenBalance } = useTrnTokens();
+	const { tokens, getTokenBalance, refetchTokenBalances } = useTrnTokens();
 
 	const [isOpen, setIsOpen] = useState<IsTokenOpen>(false);
 
@@ -189,5 +191,7 @@ export function useTrnTokenInputs<T extends TrnTokenInputState>(
 		onTokenClick,
 
 		isDisabled,
+
+		refetchTokenBalances,
 	};
 }

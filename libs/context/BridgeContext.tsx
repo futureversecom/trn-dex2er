@@ -58,7 +58,7 @@ export type BridgeContextType = {
 	hasTrustline: boolean;
 	tokenSymbol: string;
 } & BridgeState &
-	BridgeTokenInput;
+	Omit<BridgeTokenInput, "refetchTokenBalances">;
 
 const BridgeContext = createContext<BridgeContextType>({} as BridgeContextType);
 
@@ -96,7 +96,11 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	const { network, xrplProvider } = useWallets();
 	const { checkTrustline, refetch: refetchXrplBalances, findToken } = useXrplCurrencies();
 
-	const { isDisabled: isTokenDisabled, ...bridgeTokenInput } = useBridgeTokenInput();
+	const {
+		isDisabled: isTokenDisabled,
+		refetchTokenBalances,
+		...bridgeTokenInput
+	} = useBridgeTokenInput();
 	const { error: destinationError, destination, setDestination } = useBridgeDestinationInput();
 
 	const { trnApi } = useTrnApi();
@@ -268,6 +272,8 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 			});
 			if (!result) return setTag(undefined);
 
+			refetchTokenBalances();
+
 			updateState({
 				explorerUrl: `${ROOT_NETWORK.ExplorerUrl}/extrinsic/${formatRootscanId(result.extrinsicId)}`,
 			});
@@ -277,7 +283,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 				error: err.message ?? err,
 			});
 		}
-	}, [setTag, state.builder]);
+	}, [setTag, state.builder, refetchTokenBalances]);
 
 	const signXrplTransaction = useCallback(
 		async (

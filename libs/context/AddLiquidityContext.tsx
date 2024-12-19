@@ -113,7 +113,7 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 
 	const { trnApi } = useTrnApi();
 	const { userSession } = useWallets();
-	const { getTokenBalance, pools } = useTrnTokens();
+	const { getTokenBalance, pools, refetchTokenBalances } = useTrnTokens();
 	const signer = useFutureverseSigner();
 	const customEx = useCustomExtrinsicBuilder({
 		trnApi,
@@ -357,6 +357,8 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 			});
 			if (!result) return setTag(undefined);
 
+			refetchTokenBalances();
+
 			updateState({
 				explorerUrl: `${ROOT_NETWORK.ExplorerUrl}/extrinsic/${formatRootscanId(result.extrinsicId)}`,
 			});
@@ -373,7 +375,7 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 				error: err.message ?? err,
 			});
 		}
-	}, [state.builder, setTag, queryClient]);
+	}, [state.builder, setTag, queryClient, refetchTokenBalances]);
 
 	const checkValidPool = useCheckValidPool();
 

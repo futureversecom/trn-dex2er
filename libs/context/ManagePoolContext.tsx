@@ -63,7 +63,7 @@ export type ManagePoolContextType = {
 	poolBalances?: PoolBalances;
 	xamanData?: XamanData;
 } & ManagePoolState &
-	Omit<TrnTokenInputs, "setXAmount" | "setYAmount">;
+	Omit<TrnTokenInputs, "setXAmount" | "setYAmount" | "refetchTokenBalances">;
 
 interface ManagePoolState extends TrnTokenInputState {
 	builder?: CustomExtrinsicBuilder;
@@ -209,6 +209,7 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 		setXAmount,
 		setYAmount,
 		isDisabled: isTokenDisabled,
+		refetchTokenBalances,
 		...tokenInputs
 	} = useTrnTokenInputs(state, setToken, state.action === "remove" ? poolBalances : undefined);
 
@@ -517,6 +518,8 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 			});
 			if (!result) return setTag(undefined);
 
+			refetchTokenBalances();
+
 			updateState({
 				explorerUrl: `${ROOT_NETWORK.ExplorerUrl}/extrinsic/${formatRootscanId(result.extrinsicId)}`,
 			});
@@ -526,7 +529,7 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 				error: err.message ?? err,
 			});
 		}
-	}, [setTag, state.builder]);
+	}, [setTag, state.builder, refetchTokenBalances]);
 
 	const checkValidPool = useCheckValidPool();
 
