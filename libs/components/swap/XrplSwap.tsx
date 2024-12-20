@@ -65,7 +65,7 @@ export function XrplSwap() {
 					<InfoItem
 						heading={
 							<span className="flex items-center gap-2">
-								<TokenImage symbol={xTokenSymbol} />
+								<TokenImage symbol={xTokenSymbol} issuer={props.xToken.issuer} />
 								<Text size="md" className="!text-neutral-600">
 									{xTokenSymbol} to spend
 								</Text>
@@ -81,7 +81,7 @@ export function XrplSwap() {
 					<InfoItem
 						heading={
 							<span className="flex items-center gap-2">
-								<TokenImage symbol={yTokenSymbol} />
+								<TokenImage symbol={yTokenSymbol} issuer={props.yToken.issuer} />
 								<Text size="md" className="!text-neutral-600">
 									{yTokenSymbol} to receive
 								</Text>

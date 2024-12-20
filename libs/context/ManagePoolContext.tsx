@@ -1,5 +1,8 @@
-import * as sdk from "@futureverse/experience-sdk";
-import { useAuthenticationMethod, useTrnApi } from "@futureverse/react";
+import { useFutureverseSigner } from "@futureverse/auth-react";
+import { CustomExtrinsicBuilder } from "@futureverse/transact";
+import { useTrnApi } from "@futureverse/transact-react";
+import { SubmittableExtrinsic } from "@polkadot/api/types";
+import { ISubmittableResult } from "@polkadot/types/types";
 import BigNumber from "bignumber.js";
 import {
 	createContext,
@@ -14,15 +17,18 @@ import {
 import type { ContextTag, TokenSource, TrnToken, XamanData } from "@/libs/types";
 
 import { useTrnTokens, useWallets } from ".";
-import { DEFAULT_GAS_TOKEN, ROOT_NETWORK } from "../constants";
+import { ROOT_NETWORK } from "../constants";
+import { DEFAULT_GAS_TOKEN } from "../constants";
 import {
 	type TrnTokenInputs,
 	type TrnTokenInputState,
 	useCheckValidPool,
-	useExtrinsic,
 	useTrnTokenInputs,
 } from "../hooks";
-import { Balance, formatRootscanId, getMinAmount, parseSlippage, toFixed } from "../utils";
+import { useCustomExtrinsicBuilder } from "../hooks";
+import { formatRootscanId } from "../utils";
+import { Balance, getMinAmount, parseSlippage, toFixed } from "../utils";
+import { createBuilder } from "../utils/createBuilder";
 
 interface Position {
 	assetId: number;
@@ -57,15 +63,15 @@ export type ManagePoolContextType = {
 	poolBalances?: PoolBalances;
 	xamanData?: XamanData;
 } & ManagePoolState &
-	Omit<TrnTokenInputs, "setXAmount" | "setYAmount">;
+	Omit<TrnTokenInputs, "setXAmount" | "setYAmount" | "refetchTokenBalances">;
 
 interface ManagePoolState extends TrnTokenInputState {
+	builder?: CustomExtrinsicBuilder;
 	action: "add" | "remove";
 	gasToken: TrnToken;
 	percentage?: number;
 	slippage: string;
 	tag?: ContextTag;
-	tx?: sdk.Extrinsic;
 	error?: string;
 	explorerUrl?: string;
 	ratio?: string;
@@ -85,19 +91,18 @@ const initialState: ManagePoolState = {
 export function ManagePoolProvider({ children }: PropsWithChildren) {
 	const [state, setState] = useState<ManagePoolState>(initialState);
 	const [estimatedFee, setEstimatedFee] = useState<string>();
+	const [canPayForGas, setCanPayForGas] = useState<boolean>();
+	// const builtTx = useRef<CustomExtrinsicBuilder>();
 
 	const updateState = (update: Partial<ManagePoolState>) =>
 		setState((prev) => ({ ...prev, ...update }));
 
 	const setTag = useCallback((tag?: ContextTag) => updateState({ tag }), []);
-
-	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken }), []);
-
+	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken, error: "" }), []);
 	const setToken = useCallback(({ src, token }: { src: TokenSource; token: TrnToken }) => {
 		if (src === "x")
 			return updateState({
 				xToken: token,
-				gasToken: token,
 			});
 
 		updateState({
@@ -105,20 +110,16 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 		});
 	}, []);
 
+	const setBuilder = useCallback((builder: CustomExtrinsicBuilder) => updateState({ builder }), []);
+
 	const { trnApi } = useTrnApi();
 	const { userSession } = useWallets();
 	const { getTokenBalance, pools, tokens, isFetching } = useTrnTokens();
-	const authenticationMethod = useAuthenticationMethod();
-
-	const futurepass = userSession?.futurepass as string | undefined;
-
-	const { estimateFee, submitExtrinsic, xamanData } = useExtrinsic({
-		extrinsic: state.tx,
-		senderAddress: futurepass,
-		feeOptions: {
-			assetId: state.gasToken.assetId,
-			slippage: +state.slippage / 100,
-		},
+	const signer = useFutureverseSigner();
+	const customEx = useCustomExtrinsicBuilder({
+		trnApi,
+		walletAddress: userSession?.eoa ?? "",
+		signer,
 	});
 
 	const positions = useMemo(() => {
@@ -165,7 +166,7 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 		});
 	}, [pools, state.xToken, state.yToken]);
 
-	useEffect(() => {
+	useMemo(() => {
 		if (!liquidityPool || !positions.length || isFetching) return;
 
 		const position = positions.find((pos) => pos.assetId === liquidityPool.assetId);
@@ -208,6 +209,7 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 		setXAmount,
 		setYAmount,
 		isDisabled: isTokenDisabled,
+		refetchTokenBalances,
 		...tokenInputs
 	} = useTrnTokenInputs(state, setToken, state.action === "remove" ? poolBalances : undefined);
 
@@ -217,53 +219,11 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 		setYAmount("");
 	}, [setXAmount, setYAmount]);
 
-	useEffect(() => {
-		if (!state.tx) return;
-
-		estimateFee()
-			.then((gasFee) => setEstimatedFee(new Balance(gasFee, state.gasToken).toHuman()))
-			.catch(({ cause }: Error) => {
-				if (!cause) return;
-
-				updateState({
-					gasToken: DEFAULT_GAS_TOKEN,
-				});
-			});
-	}, [state.tx, state.gasToken, estimateFee]);
-
-	const signTransaction = useCallback(async () => {
-		if (!state.tx) return;
-
-		try {
-			const res = await submitExtrinsic(state.tx);
-			if (!res) return setTag(undefined);
-
-			setTag("submitted");
-			updateState({
-				explorerUrl: `${ROOT_NETWORK.ExplorerUrl}/extrinsic/${formatRootscanId(res.extrinsicId)}`,
-			});
-		} catch (err: any) {
-			setTag("failed");
-			updateState({
-				error: err.message ?? err,
-			});
-		}
-	}, [state.tx, setTag, submitExtrinsic]);
-
-	useEffect(() => {
-		switch (xamanData?.progress) {
-			case "onCreated":
-				return setTag("sign");
-			case "onSignatureSuccess":
-				return setTag("submit");
-		}
-	}, [authenticationMethod?.method, xamanData?.progress, setTag]);
-
 	const isDisabled = useMemo(() => {
 		if (state.tag === "sign") return true;
 
-		return isTokenDisabled || !!state.error;
-	}, [state, isTokenDisabled]);
+		return isTokenDisabled || !!state.error || canPayForGas === false;
+	}, [state, isTokenDisabled, canPayForGas]);
 
 	const onPoolClick = useCallback((xToken: TrnToken, yToken: TrnToken) => {
 		updateState({ xToken, yToken });
@@ -274,7 +234,7 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 	}, [state.action]);
 
 	const buildTransaction = useCallback(
-		({
+		async ({
 			xAmount = tokenInputs.xAmount,
 			yAmount = tokenInputs.yAmount,
 			slippage = state.slippage,
@@ -285,52 +245,164 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 			slippage?: string;
 			percentage?: number;
 		}) => {
-			if (!trnApi || !state.xToken || !state.yToken || !xAmount || !yAmount) return;
+			if (
+				!trnApi ||
+				!state.xToken ||
+				!state.yToken ||
+				!xAmount ||
+				!yAmount ||
+				!signer ||
+				!userSession ||
+				!state.position ||
+				!percentage ||
+				!customEx
+			)
+				return;
 
 			const xBalance = new Balance(xAmount, state.xToken, false);
 			const yBalance = new Balance(yAmount, state.yToken, false);
 
 			if (xBalance.eq(0) || yBalance.eq(0))
 				return updateState({
-					tx: undefined,
+					builder: undefined,
 					ratio: undefined,
 				});
 
-			const xAmountMin = getMinAmount(xBalance, slippage);
-			const yAmountMin = getMinAmount(yBalance, slippage);
+			const xAmountMin = getMinAmount(xBalance, slippage).toNumber();
+			const yAmountMin = getMinAmount(yBalance, slippage).toNumber();
 
-			if (state.action === "add")
-				return updateState({
-					tx: trnApi.tx.dex.addLiquidity(
-						state.xToken.assetId,
-						state.yToken.assetId,
-						xBalance.toPlanckString(),
-						yBalance.toPlanckString(),
-						xAmountMin.toPlanckString(),
-						yAmountMin.toPlanckString(),
-						null,
-						null
-					),
-				});
-
-			if (!state.position || !percentage) return;
+			const xAmountMinBalance = new Balance(xAmountMin, state.xToken, false);
+			const yAmountMinBalance = new Balance(yAmountMin, state.yToken, false);
 
 			const position = state.position.lpBalance;
 			const removeLiquidity = position.multipliedBy(percentage / 100).integerValue();
 
-			updateState({
-				tx: trnApi.tx.dex.removeLiquidity(
+			let tx: SubmittableExtrinsic<"promise", ISubmittableResult>;
+			if (state.action === "add") {
+				tx = trnApi.tx.dex.addLiquidity(
+					state.xToken.assetId,
+					state.yToken.assetId,
+					xBalance.toPlanckString(),
+					yBalance.toPlanckString(),
+					xAmountMinBalance.toPlanckString(),
+					yAmountMinBalance.toPlanckString(),
+					null,
+					null
+				);
+			} else {
+				tx = trnApi.tx.dex.removeLiquidity(
 					state.xToken.assetId,
 					state.yToken.assetId,
 					removeLiquidity.toPlanckString(),
-					xBalance.toPlanckString(),
-					yBalance.toPlanckString(),
+					xAmountMinBalance.toPlanckString(),
+					yAmountMinBalance.toPlanckString(),
 					null,
 					null
-				),
+				);
+			}
+
+			let builder = await createBuilder(
+				userSession,
+				state.gasToken.assetId,
+				state.slippage,
+				customEx,
+				tx
+			);
+
+			const { gasString } = await builder.getGasFees();
+			const [gas] = gasString.split(" ");
+			setEstimatedFee(gas);
+
+			const gasTokenBalance = await builder.checkBalance({
+				walletAddress: userSession.futurepass,
+				assetId: state.gasToken.assetId,
 			});
+			const gasBalance = new Balance(+gasTokenBalance.balance, gasTokenBalance).toUnit().toNumber();
+
+			let canPay: boolean | undefined;
+			let xAmountWithoutGas: number = xBalance.toNumber();
+			let yAmountWithoutGas: number = yBalance.toNumber();
+			if (
+				(state.xToken.assetId === state.gasToken.assetId ||
+					state.yToken.assetId === state.gasToken.assetId) &&
+				state.action === "add"
+			) {
+				xAmountWithoutGas =
+					state.xToken.assetId === state.gasToken.assetId
+						? +xAmount - +gas * 1.5 // Safety margin for gas
+						: xBalance.toNumber();
+				yAmountWithoutGas =
+					state.yToken.assetId === state.gasToken.assetId
+						? +yAmount - +gas * 1.5 // Safety margin for gas
+						: yBalance.toNumber();
+				canPay =
+					state.xToken.assetId === state.gasToken.assetId
+						? gasBalance > xAmountWithoutGas
+						: gasBalance > yAmountWithoutGas;
+			} else {
+				canPay = gasBalance - +gas >= 0;
+			}
+
+			setCanPayForGas(canPay);
+			if (canPay === false) {
+				return updateState({ error: `Insufficient ${state.gasToken.symbol} balance for gas fee` });
+			} else {
+				updateState({ error: "" });
+			}
+
+			const xb = new Balance(xAmountWithoutGas, state.xToken, false);
+			const yb = new Balance(yAmountWithoutGas, state.yToken, false);
+
+			if (state.action === "add") {
+				tx = trnApi.tx.dex.addLiquidity(
+					state.xToken.assetId,
+					state.yToken.assetId,
+					xb.toPlanckString(),
+					yb.toPlanckString(),
+					xAmountMinBalance.toPlanckString(),
+					yAmountMinBalance.toPlanckString(),
+					null,
+					null
+				);
+			} else {
+				tx = trnApi.tx.dex.removeLiquidity(
+					state.xToken.assetId,
+					state.yToken.assetId,
+					removeLiquidity.toPlanckString(),
+					xAmountMinBalance.toPlanckString(),
+					yAmountMinBalance.toPlanckString(),
+					null,
+					null
+				);
+			}
+
+			builder = await createBuilder(
+				userSession,
+				state.gasToken.assetId,
+				state.slippage,
+				customEx,
+				tx
+			);
+
+			setBuilder(builder);
 		},
-		[trnApi, state, tokenInputs]
+		[
+			tokenInputs.xAmount,
+			tokenInputs.yAmount,
+			state.slippage,
+			state.percentage,
+			state.xToken,
+			state.yToken,
+			state.position,
+			state.action,
+			state.gasToken.assetId,
+			state.gasToken.symbol,
+			trnApi,
+			signer,
+			userSession,
+			customEx,
+			setBuilder,
+		]
 	);
 
 	const setAmount = useCallback(
@@ -423,6 +495,33 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 		[buildTransaction]
 	);
 
+	const signTransaction = useCallback(async () => {
+		if (!state.builder) return;
+
+		try {
+			const result = await state.builder.signAndSend({
+				onSign: () => {
+					setTag("submit");
+				},
+				onSend: () => {
+					setTag("submitted");
+				},
+			});
+			if (!result) return setTag(undefined);
+
+			refetchTokenBalances();
+
+			updateState({
+				explorerUrl: `${ROOT_NETWORK.ExplorerUrl}/extrinsic/${formatRootscanId(result.extrinsicId)}`,
+			});
+		} catch (err: any) {
+			setTag("failed");
+			updateState({
+				error: err.message ?? err,
+			});
+		}
+	}, [setTag, state.builder, refetchTokenBalances]);
+
 	const checkValidPool = useCheckValidPool();
 
 	useEffect(() => {
@@ -430,19 +529,6 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 
 		checkValidPool([state.xToken.assetId, state.yToken.assetId]).then((isValid) => {
 			let error = "";
-
-			if (estimatedFee) {
-				const gasTokenBalance = getTokenBalance(state.gasToken);
-
-				if (
-					(state.gasToken.symbol === "XRP" && gasTokenBalance?.toUnit().lt(+estimatedFee)) ||
-					(state.gasToken.symbol === state.xToken!.symbol &&
-						gasTokenBalance
-							?.toUnit()
-							.lt(state.action === "add" ? +tokenInputs.xAmount + +estimatedFee : +estimatedFee))
-				)
-					error = `Insufficient ${state.gasToken.symbol} balance for gas fee`;
-			}
 
 			if (!isValid) error = "This pair is not valid yet. Choose another token to deposit";
 
@@ -486,7 +572,7 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 
 				poolBalances,
 
-				xamanData,
+				// xamanData,
 
 				...state,
 				...tokenInputs,

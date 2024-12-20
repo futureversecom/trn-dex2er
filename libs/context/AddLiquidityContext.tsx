@@ -1,5 +1,6 @@
-import * as sdk from "@futureverse/experience-sdk";
-import { useAuthenticationMethod, useTrnApi } from "@futureverse/react";
+import { useFutureverseSigner } from "@futureverse/auth-react";
+import { CustomExtrinsicBuilder } from "@futureverse/transact";
+import { useTrnApi } from "@futureverse/transact-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import {
@@ -12,18 +13,19 @@ import {
 	useState,
 } from "react";
 
-import type { ContextTag, TokenSource, TrnToken, XamanData } from "@/libs/types";
+import type { ContextTag, TokenSource, TrnToken } from "@/libs/types";
 
 import { useTrnTokens, useWallets } from ".";
 import { DEFAULT_GAS_TOKEN, ROOT_NETWORK } from "../constants";
+import { useCustomExtrinsicBuilder } from "../hooks";
 import {
 	type TrnTokenInputs,
 	type TrnTokenInputState,
 	useCheckValidPool,
-	useExtrinsic,
 	useTrnTokenInputs,
 } from "../hooks";
 import { Balance, formatRootscanId, getMinAmount, parseSlippage, toFixed } from "../utils";
+import { createBuilder } from "../utils/createBuilder";
 
 export type AddLiquidityContextType = {
 	resetState: () => void;
@@ -34,7 +36,6 @@ export type AddLiquidityContextType = {
 	ratio?: string;
 	signTransaction: () => void;
 	setTag: (tag?: ContextTag) => void;
-	xamanData?: XamanData;
 	setGasToken: (gasToken: TrnToken) => void;
 	estimatedFee?: string;
 } & AddLiquidityState &
@@ -43,7 +44,7 @@ export type AddLiquidityContextType = {
 const AddLiquidityContext = createContext<AddLiquidityContextType>({} as AddLiquidityContextType);
 
 interface AddLiquidityState extends TrnTokenInputState {
-	tx?: sdk.Extrinsic;
+	builder?: CustomExtrinsicBuilder;
 	gasToken: TrnToken;
 	slippage: string;
 	ratio?: string;
@@ -66,10 +67,8 @@ const initialState = {
 export function AddLiquidityProvider({ children }: PropsWithChildren) {
 	const [state, setState] = useState<AddLiquidityState>(initialState);
 	const [estimatedFee, setEstimatedFee] = useState<string>();
+	const [canPayForGas, setCanPayForGas] = useState<boolean>();
 	const queryClient = useQueryClient();
-
-	const updateState = (update: Partial<AddLiquidityState>) =>
-		setState((prev) => ({ ...prev, ...update }));
 
 	const pathname = usePathname();
 	useEffect(() => {
@@ -78,21 +77,26 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 		});
 	}, [pathname]);
 
+	const updateState = (update: Partial<AddLiquidityState>) =>
+		setState((prev) => ({ ...prev, ...update }));
+
 	const setTag = useCallback((tag?: ContextTag) => updateState({ tag }), []);
-
-	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken }), []);
-
+	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken, error: "" }), []);
 	const setToken = useCallback(({ src, token }: { src: TokenSource; token: TrnToken }) => {
 		if (src === "x")
 			return updateState({
 				xToken: token,
-				gasToken: token,
 			});
 
 		updateState({
 			yToken: token,
 		});
 	}, []);
+	const onPoolClick = useCallback((xToken: TrnToken, yToken: TrnToken) => {
+		updateState({ xToken, yToken });
+	}, []);
+
+	const setBuilder = useCallback((builder: CustomExtrinsicBuilder) => updateState({ builder }), []);
 
 	const {
 		setXAmount,
@@ -109,18 +113,12 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 
 	const { trnApi } = useTrnApi();
 	const { userSession } = useWallets();
-	const { getTokenBalance, pools } = useTrnTokens();
-	const authenticationMethod = useAuthenticationMethod();
-
-	const futurepass = userSession?.futurepass as string | undefined;
-
-	const { estimateFee, submitExtrinsic, xamanData } = useExtrinsic({
-		extrinsic: state.tx,
-		senderAddress: futurepass,
-		feeOptions: {
-			assetId: state.gasToken.assetId,
-			slippage: +state.slippage / 100,
-		},
+	const { getTokenBalance, pools, refetchTokenBalances } = useTrnTokens();
+	const signer = useFutureverseSigner();
+	const customEx = useCustomExtrinsicBuilder({
+		trnApi,
+		walletAddress: userSession?.eoa ?? "",
+		signer,
 	});
 
 	const liquidityPool = useMemo(() => {
@@ -150,32 +148,8 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 		};
 	}, [state.xToken, state.yToken, liquidityPool]);
 
-	useEffect(() => {
-		if (!state.tx) return;
-
-		estimateFee()
-			.then((gasFee) => setEstimatedFee(new Balance(gasFee, state.gasToken).toHuman()))
-			.catch(({ cause }: Error) => {
-				if (!cause) return;
-
-				updateState({
-					gasToken: DEFAULT_GAS_TOKEN,
-				});
-			});
-	}, [state.tx, state.gasToken, estimateFee]);
-
-	const onPoolClick = useCallback((xToken: TrnToken, yToken: TrnToken) => {
-		updateState({ xToken, yToken });
-	}, []);
-
-	const isDisabled = useMemo(() => {
-		if (state.tag === "sign") return true;
-
-		return isTokenDisabled || !!state.error;
-	}, [state, isTokenDisabled]);
-
 	const buildTransaction = useCallback(
-		({
+		async ({
 			xAmount = tokenInputs.xAmount,
 			yAmount = tokenInputs.yAmount,
 			slippage = state.slippage,
@@ -184,21 +158,30 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 			yAmount?: string;
 			slippage?: string;
 		}) => {
-			if (!trnApi || !state.xToken || !state.yToken || !xAmount || !yAmount) return;
+			if (
+				!trnApi ||
+				!state.xToken ||
+				!state.yToken ||
+				!xAmount ||
+				!yAmount ||
+				!signer ||
+				!userSession ||
+				!customEx
+			)
+				return;
 
 			const xBalance = new Balance(xAmount, state.xToken, false);
 			const yBalance = new Balance(yAmount, state.yToken, false);
 
 			if (xBalance.eq(0) || yBalance.eq(0))
 				return updateState({
-					tx: undefined,
 					ratio: undefined,
 				});
 
 			const xAmountMin = getMinAmount(xBalance, slippage);
 			const yAmountMin = getMinAmount(yBalance, slippage);
 
-			const tx = trnApi.tx.dex.addLiquidity(
+			let tx = trnApi.tx.dex.addLiquidity(
 				state.xToken.assetId,
 				state.yToken.assetId,
 				xBalance.toPlanckString(),
@@ -209,9 +192,73 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 				null
 			);
 
-			updateState({ tx });
+			let builder = await createBuilder(
+				userSession,
+				state.gasToken.assetId,
+				state.slippage,
+				customEx,
+				tx
+			);
+
+			const { gasString, gasFee } = await builder.getGasFees();
+			const [gas] = gasString.split(" ");
+			setEstimatedFee(gas);
+
+			const gasBalance = await builder.checkBalance({
+				walletAddress: userSession.futurepass,
+				assetId: state.gasToken.assetId,
+			});
+
+			let canPay: boolean | undefined;
+			let xAmountWithoutGas: Balance<TrnToken> = xBalance;
+			let yAmountWithoutGas: Balance<TrnToken> = yBalance;
+			if (
+				state.gasToken.assetId === state.xToken.assetId ||
+				state.gasToken.assetId === state.yToken.assetId
+			) {
+				xAmountWithoutGas =
+					state.xToken.assetId === DEFAULT_GAS_TOKEN.assetId
+						? xBalance.toPlanck().minus(+gasFee * 1.5) // Safety margin for gas
+						: xBalance;
+				yAmountWithoutGas =
+					state.yToken.assetId === DEFAULT_GAS_TOKEN.assetId
+						? yBalance.toPlanck().minus(+gasFee * 1.5) // Safety margin for gas
+						: yBalance;
+				canPay =
+					state.xToken.assetId === DEFAULT_GAS_TOKEN.assetId
+						? xAmountWithoutGas.gte(0)
+						: yAmountWithoutGas.gte(0);
+			} else {
+				canPay = new Balance(+gasBalance.balance, gasBalance).toUnit().toNumber() - +gas >= 0;
+			}
+
+			setCanPayForGas(canPay);
+			if (!canPay) {
+				return updateState({ error: `Insufficient ${state.gasToken.symbol} balance for gas fee` });
+			}
+
+			tx = trnApi.tx.dex.addLiquidity(
+				state.xToken.assetId,
+				state.yToken.assetId,
+				xAmountWithoutGas.toPlanckString().split(".")[0],
+				yAmountWithoutGas.toPlanckString().split(".")[0],
+				xAmountMin.toPlanckString(),
+				yAmountMin.toPlanckString(),
+				null,
+				null
+			);
+
+			builder = await createBuilder(
+				userSession,
+				state.gasToken.assetId,
+				state.slippage,
+				customEx,
+				tx
+			);
+
+			setBuilder(builder);
 		},
-		[trnApi, state, tokenInputs]
+		[tokenInputs, state, trnApi, signer, userSession, setBuilder, customEx]
 	);
 
 	const setAmount = useCallback(
@@ -228,8 +275,8 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 			const balance = new Balance(amount, token, false);
 
 			if (balance.eq(0)) {
-				setXAmount("0");
-				return setYAmount("0");
+				setXAmount("");
+				return setYAmount("");
 			}
 
 			if (state.action === "create") {
@@ -295,16 +342,25 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 	);
 
 	const signTransaction = useCallback(async () => {
-		if (!state.tx) return;
+		if (!state.builder) return;
 
 		try {
-			const res = await submitExtrinsic(state.tx);
-			if (!res) return setTag(undefined);
-
-			setTag("submitted");
-			updateState({
-				explorerUrl: `${ROOT_NETWORK.ExplorerUrl}/extrinsic/${formatRootscanId(res.extrinsicId)}`,
+			const result = await state.builder.signAndSend({
+				onSign: () => {
+					setTag("submit");
+				},
+				onSend: () => {
+					setTag("submitted");
+				},
 			});
+			if (!result) return setTag(undefined);
+
+			refetchTokenBalances();
+
+			updateState({
+				explorerUrl: `${ROOT_NETWORK.ExplorerUrl}/extrinsic/${formatRootscanId(result.extrinsicId)}`,
+			});
+
 			void queryClient.invalidateQueries({
 				queryKey: ["tokenMetadata"],
 			});
@@ -317,35 +373,21 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 				error: err.message ?? err,
 			});
 		}
-	}, [state.tx, submitExtrinsic, setTag, queryClient]);
-
-	useEffect(() => {
-		switch (xamanData?.progress) {
-			case "onCreated":
-				return setTag("sign");
-			case "onSignatureSuccess":
-				return setTag("submit");
-		}
-	}, [authenticationMethod?.method, xamanData?.progress, setTag]);
+	}, [state.builder, setTag, queryClient, refetchTokenBalances]);
 
 	const checkValidPool = useCheckValidPool();
+
+	const isDisabled = useMemo(() => {
+		if (state.tag === "sign") return true;
+
+		return isTokenDisabled || !!state.error || canPayForGas === false;
+	}, [state.tag, state.error, isTokenDisabled, canPayForGas]);
 
 	useEffect(() => {
 		if (!state.xToken || !state.yToken || !tokenInputs.xAmount) return;
 
 		checkValidPool([state.xToken.assetId, state.yToken.assetId]).then((isValid) => {
 			let error = "";
-
-			if (estimatedFee) {
-				const gasTokenBalance = getTokenBalance(state.gasToken);
-
-				if (
-					(state.gasToken.symbol === "XRP" && gasTokenBalance?.toUnit().lt(+estimatedFee)) ||
-					(state.gasToken.symbol === state.xToken!.symbol &&
-						gasTokenBalance?.toUnit().lt(+tokenInputs.xAmount + +estimatedFee))
-				)
-					error = `Insufficient ${state.gasToken.symbol} balance for gas fee`;
-			}
 
 			if (state.action === "add" && !isValid)
 				error = "This pair is not valid yet. Choose another token to deposit";
@@ -377,7 +419,6 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 				setSlippage,
 				setGasToken,
 
-				xamanData,
 				signTransaction,
 
 				isDisabled,

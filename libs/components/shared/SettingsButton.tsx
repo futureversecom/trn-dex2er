@@ -1,4 +1,4 @@
-import { useTrnApi } from "@futureverse/react";
+import { useTrnApi } from "@futureverse/transact-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { DEFAULT_GAS_TOKEN } from "@/libs/constants";

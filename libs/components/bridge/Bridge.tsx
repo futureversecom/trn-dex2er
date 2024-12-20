@@ -17,6 +17,7 @@ import {
 } from "@/libs/components/shared";
 import { type BridgeContextType, useBridge, useWallets } from "@/libs/context";
 import type { TrnToken, XrplCurrency } from "@/libs/types";
+import { isXrplCurrency } from "@/libs/utils";
 
 import { TxHistory } from "./TxHistory";
 
@@ -84,7 +85,10 @@ export function Bridge() {
 					<InfoItem
 						heading={
 							<span className="flex items-center gap-2">
-								<TokenImage symbol={props.tokenSymbol} />
+								<TokenImage
+									symbol={props.tokenSymbol}
+									issuer={isXrplCurrency(props.token) ? props.token.issuer : undefined}
+								/>
 								<Text size="md" className="!text-neutral-600">
 									{props.tokenSymbol} to bridge
 								</Text>
@@ -144,6 +148,12 @@ export function Bridge() {
 
 				{props.tokenSymbol && network === "root" && (
 					<>
+						{props.error && (
+							<Text className="text-red-300" size="md">
+								{props.error}
+							</Text>
+						)}
+
 						<div className="flex items-center justify-end px-2">
 							<SettingsButton {...props} xToken={props.token} />
 						</div>
