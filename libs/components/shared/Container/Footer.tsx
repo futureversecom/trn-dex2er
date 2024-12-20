@@ -3,6 +3,7 @@ import classNames from "@sindresorhus/class-names";
 import { useIsMobile } from "@/libs/hooks";
 
 import { Hyperlink } from "../Hyperlink";
+import { Text } from "../Text";
 
 export function Footer() {
 	const isMobile = useIsMobile();
@@ -23,6 +24,8 @@ export function Footer() {
 					SUPPORT
 				</Hyperlink>
 			</span>
+
+			<Text>Version 1.2.0</Text>
 
 			<span>&copy; Dexter {new Date().getFullYear()}</span>
 		</footer>
