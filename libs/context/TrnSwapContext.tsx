@@ -344,8 +344,6 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 			updateState({
 				explorerUrl: `${ROOT_NETWORK.ExplorerUrl}/extrinsic/${formatRootscanId(result.extrinsicId)}`,
 			});
-
-			builtTx.current = undefined;
 		} catch (err: any) {
 			setTag("failed");
 			updateState({
