@@ -16,21 +16,13 @@ export async function createBuilder(
 	const fromEx = builder.fromExtrinsic(extrinsic);
 
 	if (gasTokenAssetId === DEFAULT_GAS_TOKEN.assetId) {
-		try {
-			await fromEx.addFuturePass(userSession.futurepass);
-		} catch (err: any) {
-			console.info(err);
-		}
+		await fromEx.addFuturePass(userSession.futurepass);
 	} else {
-		try {
-			await fromEx.addFuturePassAndFeeProxy({
-				futurePass: userSession.futurepass,
-				assetId: gasTokenAssetId,
-				slippage: +slippage,
-			});
-		} catch (err: any) {
-			console.info(err);
-		}
+		await fromEx.addFuturePassAndFeeProxy({
+			futurePass: userSession.futurepass,
+			assetId: gasTokenAssetId,
+			slippage: +slippage,
+		});
 	}
 
 	return fromEx;

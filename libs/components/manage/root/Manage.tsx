@@ -10,7 +10,7 @@ import {
 	Box,
 	Button,
 	ConfirmModal,
-	InfoItem, // QrModal,
+	InfoItem,
 	Ratio,
 	SettingsButton,
 	Text,
@@ -34,12 +34,6 @@ export function Manage() {
 				onClose={() => props.setIsOpen(false)}
 				tokens={Object.values(props.filteredTokens)}
 			/>
-
-			{/* <QrModal
-				qr={props.xamanData?.qrCodeImg}
-				onClose={() => props.setTag(undefined)}
-				open={!!props.xamanData && props.tag === "sign"}
-			/> */}
 
 			{props.xToken && props.yToken && (
 				<ConfirmModal

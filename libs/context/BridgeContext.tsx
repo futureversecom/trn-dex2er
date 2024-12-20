@@ -180,7 +180,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 				let amountWithoutGas: Balance<TrnToken> = bridgeBalance;
 				if (bridgeToken.assetId === state.gasToken.assetId) {
 					amountWithoutGas = bridgeBalance.toPlanck().minus(+gasFee * 1.5); // Safety margin for gas
-					canPay = amountWithoutGas.toUnit().toNumber() >= 0 ? true : false; // TODO 768
+					canPay = amountWithoutGas.toUnit().toNumber() >= 0 ? true : false;
 				} else {
 					canPay = gasBalance - +gas >= 0;
 				}

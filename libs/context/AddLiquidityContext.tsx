@@ -233,7 +233,7 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 			}
 
 			setCanPayForGas(canPay);
-			if (canPay === false) {
+			if (!canPay) {
 				return updateState({ error: `Insufficient ${state.gasToken.symbol} balance for gas fee` });
 			}
 

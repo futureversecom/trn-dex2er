@@ -38,7 +38,7 @@ export const getWagmiConfig = async () => {
 		xamanAPIKey: XAMAN_API_KEY,
 		authClient,
 		chains: [root, porcini],
-		ssr: true, // TODO 768
+		ssr: true,
 	});
 };
 

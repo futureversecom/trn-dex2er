@@ -219,15 +219,6 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 		setYAmount("");
 	}, [setXAmount, setYAmount]);
 
-	// useEffect(() => {
-	// 	switch (xamanData?.progress) {
-	// 		case "onCreated":
-	// 			return setTag("sign");
-	// 		case "onSignatureSuccess":
-	// 			return setTag("submit");
-	// 	}
-	// }, [authenticationMethod?.method, xamanData?.progress, setTag]);
-
 	const isDisabled = useMemo(() => {
 		if (state.tag === "sign") return true;
 
