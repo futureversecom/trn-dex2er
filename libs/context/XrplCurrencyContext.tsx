@@ -41,6 +41,8 @@ export type XrplCurrencyContextType = {
 	setCurrencyCode: (code?: string) => void;
 	setIssuer: (issuer?: string) => void;
 	resetState: () => void;
+	setFilter: (filter: string) => void;
+	filter: string;
 } & XrplCurrencyContextState;
 
 const XrplCurrencyContext = createContext<XrplCurrencyContextType>({} as XrplCurrencyContextType);
@@ -78,6 +80,10 @@ export function XrplCurrencyProvider({
 		isFetching: isFetchingPools,
 		refetch: refetchXrplPools,
 	} = useFetchXrplPools(xrplProvider, tokenPairs, prices);
+
+	const [filter, setFilter] = useState("");
+
+	const filterPool = useCallback((f: string) => setFilter(f), []);
 
 	const [state, setState] = useState<XrplCurrencyContextState>({
 		...initialState,
@@ -308,6 +314,8 @@ export function XrplCurrencyProvider({
 					return line.issuer === pool.lpTokenIssuer;
 				});
 
+				if (!userLPTokenBalance) return null;
+
 				let poolShare: number = 0;
 				if (userLPTokenBalance && pool.lpTokenSupply) {
 					poolShare = (parseFloat(userLPTokenBalance.value) / parseFloat(pool.lpTokenSupply)) * 100;
@@ -324,6 +332,34 @@ export function XrplCurrencyProvider({
 			.filter((pool) => !!pool);
 	}, [balances, findToken, pools]);
 
+	const filteredPools = useMemo(() => {
+		if (!pools) return;
+		if (!filter) return pools;
+
+		return pools.filter((pool) => {
+			const [xCurrency, yCurrency] = pool.poolKey.split("-");
+
+			const xToken = findToken(xCurrency);
+			const yToken = findToken(yCurrency);
+
+			if (!xToken || !yToken) return false;
+
+			if (!xToken.ticker) {
+				const ticker = normalizeCurrencyCode(xToken.currency);
+				if (ticker.toLowerCase().includes(filter.toLowerCase())) return true;
+			} else {
+				if (xToken.ticker.toLowerCase().includes(filter.toLowerCase())) return true;
+			}
+
+			if (!yToken.ticker) {
+				const ticker = normalizeCurrencyCode(yToken.currency);
+				if (ticker.toLowerCase().includes(filter.toLowerCase())) return true;
+			} else {
+				if (yToken.ticker.toLowerCase().includes(filter.toLowerCase())) return true;
+			}
+		});
+	}, [filter, findToken, pools]);
+
 	const refetch = useCallback(async () => {
 		await Promise.all([refetchBalances(), refetchTrustlines()]);
 	}, [refetchBalances, refetchTrustlines]);
@@ -339,7 +375,7 @@ export function XrplCurrencyProvider({
 				isFetching: isFetchingBalances || isFetchingTrustlines || isFetchingPools,
 				refetch,
 				positions: positions ?? [],
-				pools: pools ?? [],
+				pools: filteredPools ?? [],
 				findToken,
 				openImportModal,
 				error: state.error,
@@ -349,6 +385,8 @@ export function XrplCurrencyProvider({
 				setIssuer,
 				setTag,
 				signTransaction,
+				setFilter: filterPool,
+				filter,
 
 				...state,
 			}}

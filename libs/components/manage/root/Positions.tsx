@@ -5,19 +5,17 @@ import { useManagePool, useTrnTokens } from "@/libs/context";
 import { toFixed } from "@/libs/utils";
 
 export function Positions() {
-	const { position } = useTrnTokens();
+	const { positions } = useTrnTokens();
 	const { onPoolClick } = useManagePool();
 
 	const { startIndex, endIndex, ...paginationProps } = usePagination({
-		totalItems: position?.length ?? 0,
-		initialPageSize: 5,
+		totalItems: positions?.length ?? 0,
+		initialPageSize: 10,
 	});
-
-	if (!position?.length) return null;
 
 	return (
 		<>
-			{position.slice(startIndex, endIndex + 1).map((pool) => (
+			{positions.slice(startIndex, endIndex + 1).map((pool) => (
 				<TableRow
 					key={pool.assetId}
 					onClick={onPoolClick.bind(null, pool.xToken, pool.yToken)}

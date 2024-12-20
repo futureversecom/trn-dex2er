@@ -1,7 +1,6 @@
 import classNames from "@sindresorhus/class-names";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo } from "react";
 
 import { useWallets } from "@/libs/context";
 import { useIsMobile } from "@/libs/hooks";
@@ -21,15 +20,6 @@ export function Header() {
 	const router = useRouter();
 	const isMobile = useIsMobile();
 	const { network, setNetwork } = useWallets();
-
-	const isXrplAvailable = useMemo(
-		() => pathname.includes("swap") || pathname.includes("bridge") || pathname.includes("pool"),
-		[pathname]
-	);
-
-	useEffect(() => {
-		if (!isXrplAvailable) setNetwork("root");
-	}, [isXrplAvailable, setNetwork]);
 
 	const networks = [
 		{
@@ -81,8 +71,8 @@ export function Header() {
 							className={classNames(
 								"font-mikrobe text-sm",
 								pathname.includes(page.toLowerCase())
-									? "text-neutral-700"
-									: "text-primary-700 hover:text-primary-500"
+									? "bg-neutral-300 text-primary-700"
+									: "text-neutral-500 hover:text-primary-700"
 							)}
 						>
 							{page}
@@ -106,7 +96,7 @@ export function Header() {
 						}
 						setNetwork(network as "root" | "xrpl");
 					}}
-					options={networks.slice(0, isXrplAvailable ? 2 : 1)}
+					options={networks}
 				/>
 
 				<span className="p-1">
