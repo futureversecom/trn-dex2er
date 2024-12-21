@@ -16,6 +16,12 @@ const mainnet: XrplCurrencies = {
 			decimals: 6,
 		},
 		{
+			ticker: "RLUSD",
+			currency: getCurrencyCode("RLUSD"),
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+			decimals: 6,
+		},
+		{
 			ticker: "ROOT",
 			currency: getCurrencyCode("ROOT"),
 			issuer: "r9MrRER8UKSAumcqvbwCAsyWbUKomz68i3",
@@ -71,6 +77,12 @@ const mainnet: XrplCurrencies = {
 		},
 	],
 	pool: [
+		{
+			ticker: "RLUSD",
+			currency: getCurrencyCode("RLUSD"),
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+			decimals: 6,
+		},
 		{
 			currency: "BTC",
 			issuer: "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B",
@@ -143,6 +155,12 @@ const mainnet: XrplCurrencies = {
 			decimals: 6,
 		},
 		{
+			ticker: "RLUSD",
+			currency: getCurrencyCode("RLUSD"),
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+			decimals: 6,
+		},
+		{
 			ticker: "ROOT",
 			currency: getCurrencyCode("ROOT"),
 			issuer: "r9MrRER8UKSAumcqvbwCAsyWbUKomz68i3",
@@ -175,6 +193,12 @@ const testnet: XrplCurrencies = {
 			decimals: 6,
 		},
 		{
+			ticker: "RLUSD",
+			currency: getCurrencyCode("RLUSD"),
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
+			decimals: 6,
+		},
+		{
 			currency: "ETH",
 			decimals: 18,
 			issuer: "rpwY2B7RHSCPDsmdYjvsYxBLkzHXLhQykS",
@@ -188,6 +212,12 @@ const testnet: XrplCurrencies = {
 	pool: [
 		{
 			currency: "XRP",
+			decimals: 6,
+		},
+		{
+			ticker: "RLUSD",
+			currency: getCurrencyCode("RLUSD"),
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
 			decimals: 6,
 		},
 		{
@@ -247,6 +277,12 @@ const testnet: XrplCurrencies = {
 	bridge: [
 		{
 			currency: "XRP",
+			decimals: 6,
+		},
+		{
+			ticker: "RLUSD",
+			currency: getCurrencyCode("RLUSD"),
+			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
 			decimals: 6,
 		},
 		{
