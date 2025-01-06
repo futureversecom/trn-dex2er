@@ -19,7 +19,7 @@ const mainnet: XrplCurrencies = {
 			ticker: "RLUSD",
 			currency: getCurrencyCode("RLUSD"),
 			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
-			decimals: 6,
+			decimals: 18,
 		},
 		{
 			ticker: "ROOT",
@@ -81,7 +81,7 @@ const mainnet: XrplCurrencies = {
 			ticker: "RLUSD",
 			currency: getCurrencyCode("RLUSD"),
 			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
-			decimals: 6,
+			decimals: 18,
 		},
 		{
 			currency: "BTC",
@@ -158,7 +158,7 @@ const mainnet: XrplCurrencies = {
 			ticker: "RLUSD",
 			currency: getCurrencyCode("RLUSD"),
 			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
-			decimals: 6,
+			decimals: 18,
 		},
 		{
 			ticker: "ROOT",
@@ -196,7 +196,7 @@ const testnet: XrplCurrencies = {
 			ticker: "RLUSD",
 			currency: getCurrencyCode("RLUSD"),
 			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
-			decimals: 6,
+			decimals: 18,
 		},
 		{
 			currency: "ETH",
@@ -218,7 +218,7 @@ const testnet: XrplCurrencies = {
 			ticker: "RLUSD",
 			currency: getCurrencyCode("RLUSD"),
 			issuer: "rPaqStERf9Te6HzbQKrcQW6bhiVRgphZsA",
-			decimals: 6,
+			decimals: 18,
 		},
 		{
 			decimals: 6,
