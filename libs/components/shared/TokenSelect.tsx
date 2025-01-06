@@ -122,7 +122,14 @@ export function TokenSelect<T extends Token>({
 					</>
 				) : (
 					(filteredTokens as TrnToken[]).map((token) => {
-						const tokenBalance = getTokenBalance(token)?.toHuman() ?? 0;
+						let tokenBalance = getTokenBalance(token)?.toHuman() ?? 0;
+						if (typeof tokenBalance === "string") {
+							const cleanedValue = tokenBalance.replace(/,/g, "");
+							const [integerPart, decimalPart = ""] = cleanedValue.split(".");
+							tokenBalance = decimalPart
+								? `${integerPart}.${decimalPart.slice(0, 6)}`
+								: integerPart;
+						}
 
 						return (
 							<TableRow
