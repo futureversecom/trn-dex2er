@@ -11,6 +11,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
+import { Dispatch, SetStateAction } from "react";
 import {
 	type Amount,
 	convertStringToHex,
@@ -58,6 +59,8 @@ export type BridgeContextType = {
 	destinationError?: string;
 	hasTrustline: boolean;
 	tokenSymbol: string;
+	destinationTag: string;
+	setDestinationTag: Dispatch<SetStateAction<string>>;
 } & BridgeState &
 	Omit<BridgeTokenInput, "refetchTokenBalances">;
 
@@ -82,6 +85,7 @@ const initialState = {
 export function BridgeProvider({ children }: PropsWithChildren) {
 	const [state, setState] = useState<BridgeState>(initialState);
 	const [estimatedFee, setEstimatedFee] = useState<string>();
+	const [destinationTag, setDestinationTag] = useState<string>("");
 	const [canPayForGas, setCanPayForGas] = useState<boolean>();
 	const [networkState, setNetworkState] = useState<"root" | "xrpl" | undefined>(undefined);
 
@@ -154,7 +158,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 					bridgeToken.assetId,
 					bridgeBalance.toPlanck().integerValue(BigNumber.ROUND_DOWN).toString(),
 					decodedToAddress,
-					null
+					destinationTag
 				);
 
 				let builder = await createBuilder(
@@ -195,11 +199,12 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 					updateState({ error: "" });
 				}
 
+				console.log("destination tag ", destinationTag);
 				tx = trnApi.tx.xrplBridge.withdraw(
 					bridgeToken.assetId,
 					amountWithoutGas.toPlanck().integerValue(BigNumber.ROUND_DOWN).toString(),
 					decodedToAddress,
-					null
+					destinationTag
 				);
 
 				builder = await createBuilder(
@@ -256,6 +261,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 			state.gasToken.symbol,
 			state.slippage,
 			setBuilder,
+			destinationTag,
 		]
 	);
 
@@ -408,6 +414,8 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 				resetState,
 				setTag,
 				setGasToken,
+				destinationTag,
+				setDestinationTag,
 
 				signTransaction,
 
