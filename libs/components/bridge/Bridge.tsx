@@ -224,10 +224,12 @@ function AddressInput({ destination, setDestination, destinationError: error }: 
 	);
 }
 
-function DestinationTagInput({ destinationTag, setDestinationTag }: BridgeContextType) {
+function DestinationTagInput({
+	destinationTag,
+	setDestinationTag,
+	destinationTagError,
+}: BridgeContextType) {
 	const { network } = useWallets();
-
-	console.log("network ", network);
 
 	if (network === "xrpl") {
 		return <></>;
@@ -244,14 +246,19 @@ function DestinationTagInput({ destinationTag, setDestinationTag }: BridgeContex
 				<span className="relative flex w-full items-center justify-between">
 					<input
 						type="text"
-						value={destinationTag}
+						value={destinationTag ?? undefined}
 						placeholder={`Enter Destination tag`}
 						id="destination-tag-input"
 						onChange={(e) => setDestinationTag(e.target.value)}
 						className="w-full bg-transparent text-xl font-semibold focus:outline-none"
 					/>
 				</span>
-				<Text size="xs">Optional field that will help recovering a failed tx</Text>
+				<Text size="xs" className={classNames(destinationTagError && "text-red-300")}>
+					{destinationTagError
+						? destinationTagError
+						: "Optional field that will help recovering a failed tx."}
+				</Text>
+				<Text size="xs"></Text>
 			</div>
 		</div>
 	);
