@@ -81,33 +81,42 @@ export function TokenSelect<T extends Token>({
 			<div className="flex max-h-[20em] flex-col space-y-2 overflow-y-scroll">
 				{isXrpl ? (
 					<>
-						{(filteredTokens as XrplCurrency[]).map((token) => {
-							const tokenBalance = toHuman(getBalance(token)?.value ?? 0, token);
-
-							return (
-								<TableRow
-									key={token.currency}
-									onClick={onRowClick.bind(null, token as T)}
-									items={[
-										<TokenImage
-											symbol={token.ticker || normalizeCurrencyCode(token.currency)}
-											issuer={token.issuer}
-											size={28}
-											key="token"
-										/>,
-										<div key="symbol">
-											<Text>{token.ticker || normalizeCurrencyCode(token.currency)}</Text>
-											<Text className="!text-neutral-500">
-												{token.ticker || normalizeCurrencyCode(token.currency)}
-											</Text>
-										</div>,
-										<div key="balance" className="flex w-full justify-end">
-											<Text>{tokenBalance}</Text>
-										</div>,
-									]}
-								/>
-							);
-						})}
+						{(filteredTokens as XrplCurrency[])
+							.map((token) => {
+								return {
+									...token,
+									tokenBalance: getBalance(token)?.value ?? 0,
+								};
+							})
+							.sort((a, b) => +b.tokenBalance - +a.tokenBalance)
+							.map((token) => {
+								return (
+									<TableRow
+										key={token.currency}
+										onClick={onRowClick.bind(
+											null,
+											token as Omit<XrplCurrency, "tokenBalance"> as T
+										)}
+										items={[
+											<TokenImage
+												symbol={token.ticker || normalizeCurrencyCode(token.currency)}
+												issuer={token.issuer}
+												size={28}
+												key="token"
+											/>,
+											<div key="symbol">
+												<Text>{token.ticker || normalizeCurrencyCode(token.currency)}</Text>
+												<Text className="!text-neutral-500">
+													{token.ticker || normalizeCurrencyCode(token.currency)}
+												</Text>
+											</div>,
+											<div key="balance" className="flex w-full justify-end">
+												<Text>{toHuman(token.tokenBalance, token)}</Text>
+											</div>,
+										]}
+									/>
+								);
+							})}
 						{onImportTokenClick && (
 							<TableRow
 								key="import token"
@@ -121,33 +130,42 @@ export function TokenSelect<T extends Token>({
 						)}
 					</>
 				) : (
-					(filteredTokens as TrnToken[]).map((token) => {
-						let tokenBalance = getTokenBalance(token)?.toHuman() ?? 0;
-						if (typeof tokenBalance === "string") {
-							const cleanedValue = tokenBalance.replace(/,/g, "");
-							const [integerPart, decimalPart = ""] = cleanedValue.split(".");
-							tokenBalance = decimalPart
-								? `${integerPart}.${decimalPart.slice(0, 6)}`
-								: integerPart;
-						}
+					(filteredTokens as TrnToken[])
+						.map((token) => {
+							return {
+								...token,
+								tokenBalance: getTokenBalance(token) ?? 0,
+							};
+						})
+						.sort((a, b) => +b.tokenBalance - +a.tokenBalance)
+						.map((token) => {
+							let tokenBalance =
+								typeof token.tokenBalance === "number"
+									? "0"
+									: token.tokenBalance.toHuman()?.replace(/,/g, "");
 
-						return (
-							<TableRow
-								key={token.assetId}
-								onClick={onRowClick.bind(null, token as T)}
-								items={[
-									<TokenImage symbol={token.symbol} size={28} key="token" />,
-									<div key="symbol">
-										<Text>{token.symbol}</Text>
-										<Text className="!text-neutral-500">{token.name ?? token.symbol}</Text>
-									</div>,
-									<div key="balance" className="flex w-full justify-end">
-										<Text>{tokenBalance}</Text>
-									</div>,
-								]}
-							/>
-						);
-					})
+							if (typeof tokenBalance === "string" && tokenBalance.includes(".")) {
+								const [integerPart, decimalPart] = tokenBalance.split(".");
+								tokenBalance = `${integerPart}.${decimalPart.slice(0, 6)}`;
+							}
+
+							return (
+								<TableRow
+									key={token.assetId}
+									onClick={onRowClick.bind(null, token as Omit<TrnToken, "TokenBalance"> as T)}
+									items={[
+										<TokenImage symbol={token.symbol} size={28} key="token" />,
+										<div key="symbol">
+											<Text>{token.symbol}</Text>
+											<Text className="!text-neutral-500">{token.name ?? token.symbol}</Text>
+										</div>,
+										<div key="balance" className="flex w-full justify-end">
+											<Text>{tokenBalance}</Text>
+										</div>,
+									]}
+								/>
+							);
+						})
 				)}
 			</div>
 		</Modal>
