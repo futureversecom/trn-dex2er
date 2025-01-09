@@ -8,30 +8,38 @@ import { toDollarValue } from "@/libs/utils";
 import { Text } from "./";
 
 interface AmountInputProps extends PropsWithChildren {
-	amount: string;
-	setAmount: (amount: string) => void;
-	label?: string;
-	token?: Token;
-	tokenBalance?: Balance<TrnToken> | string;
-	error?: string;
-	tokenUSD?: number;
 	onClick?: () => void;
+	setAmount: (amount: string) => void;
+
+	token?: Token;
+	amount: string;
+	label?: string;
+	error?: string;
+	active?: boolean;
+	tokenUSD?: number;
+	tokenBalance?: Balance<TrnToken> | string;
 }
 
 export function AmountInput({
-	amount,
-	setAmount,
 	label,
-	tokenBalance,
 	token,
 	error,
-	tokenUSD,
+	amount,
+	active,
 	onClick,
+	tokenUSD,
 	children,
+	setAmount,
+	tokenBalance,
 }: AmountInputProps) {
 	return (
 		<div className="flex space-x-4">
-			<div className="flex h-28 w-full min-w-[50em] flex-col justify-center space-y-2 rounded bg-neutral-400 px-6">
+			<div
+				className={classNames(
+					"flex h-28 w-full min-w-[50em] flex-col justify-center space-y-2 rounded px-6",
+					active ? "border border-primary-700" : ""
+				)}
+			>
 				<span className="flex items-center justify-between text-sm">
 					{label && (
 						<label htmlFor={`amount-${label}`} className="cursor-pointer text-neutral-700">

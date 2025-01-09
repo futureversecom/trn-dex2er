@@ -11,6 +11,7 @@ interface AmountInputsProps {
 	yToken?: Token;
 
 	setSrc?: (src: "x" | "y") => void;
+	src?: "x" | "y";
 
 	xAmount: string;
 	yAmount: string;
@@ -32,6 +33,8 @@ interface AmountInputsProps {
 	setIsOpen: (token: "xToken" | "yToken") => void;
 
 	setAmount: (args: { src: TokenSource; amount: string }) => void;
+
+	isSwap?: boolean;
 }
 
 export function AmountInputs({
@@ -39,6 +42,7 @@ export function AmountInputs({
 	yToken,
 
 	setSrc,
+	src,
 
 	xAmount,
 	yAmount,
@@ -60,6 +64,8 @@ export function AmountInputs({
 	setIsOpen,
 
 	setAmount,
+
+	isSwap,
 }: AmountInputsProps) {
 	const [xSymbol, ySymbol] = useTokenSymbols(xToken, yToken);
 
@@ -70,10 +76,11 @@ export function AmountInputs({
 				amount={xAmount}
 				label={labels[0]}
 				error={xTokenError}
-				setAmount={(amount) => setAmount({ src: "x", amount })}
-				onClick={() => setSrc?.("x")}
-				tokenBalance={xTokenBalance}
 				tokenUSD={xTokenUSD}
+				tokenBalance={xTokenBalance}
+				onClick={() => setSrc?.("x")}
+				active={src === "x" ? true : false}
+				setAmount={(amount) => setAmount({ src: "x", amount })}
 			>
 				{xToken && (
 					<Button
@@ -122,12 +129,13 @@ export function AmountInputs({
 					amount={yAmount}
 					label={labels[1]}
 					error={yTokenError}
-					setAmount={(amount) => setAmount({ src: "y", amount })}
-					onClick={() => setSrc?.("y")}
-					tokenBalance={yTokenBalance}
 					tokenUSD={yTokenUSD}
+					tokenBalance={yTokenBalance}
+					onClick={() => setSrc?.("y")}
+					active={src === "y" ? true : false}
+					setAmount={(amount) => setAmount({ src: "y", amount })}
 				>
-					{yToken && (
+					{yToken && !isSwap && (
 						<Button
 							variant="secondary"
 							size="sm"
