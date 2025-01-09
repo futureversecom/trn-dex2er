@@ -407,6 +407,12 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 
 	const setAmount = useCallback(
 		({ src, amount }: { src: TokenSource; amount: string }) => {
+			if (amount === "") {
+				setXAmount("");
+				setYAmount("");
+				return updateState({ percentage: 0 });
+			}
+
 			const otherSrc = src === "x" ? "y" : "x";
 			const token = state[`${src}Token`];
 			const otherToken = state[`${otherSrc}Token`];
@@ -414,12 +420,6 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 			if (!token || !otherToken || !poolBalances) return;
 
 			const balance = new Balance(amount, token, false);
-
-			if (balance.eq(0)) {
-				setXAmount("0");
-				setYAmount("0");
-				return updateState({ percentage: 0 });
-			}
 
 			if (state.action === "remove" && balance.gt(poolBalances[src].balance.toUnit())) {
 				setXAmount(poolBalances[src === "x" ? src : otherSrc].balance.toUnit().toString());
@@ -430,16 +430,14 @@ export function ManagePoolProvider({ children }: PropsWithChildren) {
 			const tokenLiquidity = new Balance(poolBalances[src].liquidity, token).toUnit();
 			const otherLiquidity = new Balance(poolBalances[otherSrc].liquidity, otherToken).toUnit();
 
-			const otherConverted = balance.multipliedBy(otherLiquidity.div(tokenLiquidity));
-
-			const otherBalance = new Balance(otherConverted.toString(), otherToken, false);
+			const otherBalance = balance.multipliedBy(otherLiquidity.div(tokenLiquidity));
 
 			if (src === "x") {
-				setXAmount(balance.toString());
+				setXAmount(amount.toString());
 				setYAmount(otherBalance.toString());
 			} else {
 				setXAmount(otherBalance.toString());
-				setYAmount(balance.toString());
+				setYAmount(amount.toString());
 			}
 
 			const xBalance = src === "x" ? balance : otherBalance;
