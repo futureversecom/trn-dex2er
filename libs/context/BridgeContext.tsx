@@ -152,7 +152,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 				let tx = trnApi.tx.xrplBridge.withdraw(
 					bridgeToken.assetId,
-					bridgeBalance.integerValue(BigNumber.ROUND_DOWN).toString(),
+					bridgeBalance.toPlanck().integerValue(BigNumber.ROUND_DOWN).toString(),
 					decodedToAddress,
 					null
 				);
@@ -197,7 +197,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 				tx = trnApi.tx.xrplBridge.withdraw(
 					bridgeToken.assetId,
-					amountWithoutGas.integerValue(BigNumber.ROUND_DOWN).toString(),
+					amountWithoutGas.toPlanck().integerValue(BigNumber.ROUND_DOWN).toString(),
 					decodedToAddress,
 					null
 				);
