@@ -110,7 +110,7 @@ export function Bridge() {
 			)}
 
 			<Box heading="BRIDGE" className="relative">
-				<AmountInput {...props} label="Token">
+				<AmountInput {...{ ...props, error: props.tokenError }} label="Token">
 					<Button
 						variant="secondary"
 						size="sm"
@@ -227,11 +227,11 @@ function AddressInput({ destination, setDestination, destinationError: error }: 
 function DestinationTagInput({
 	destinationTag,
 	setDestinationTag,
-	destinationTagError,
+	destinationTagRequired,
 }: BridgeContextType) {
 	const { network } = useWallets();
 
-	if (network === "xrpl") {
+	if (network === "xrpl" || destinationTagRequired === undefined) {
 		return <></>;
 	}
 
@@ -253,10 +253,13 @@ function DestinationTagInput({
 						className="w-full bg-transparent text-xl font-semibold focus:outline-none"
 					/>
 				</span>
-				<Text size="xs" className={classNames(destinationTagError && "text-red-300")}>
-					{destinationTagError
-						? destinationTagError
-						: "Optional field that will help recovering a failed tx."}
+				<Text
+					size="xs"
+					className={classNames(
+						destinationTagRequired && destinationTag === null && "text-red-300"
+					)}
+				>
+					{`${destinationTagRequired ? "Required" : "Optional"} field that will help recovering a failed tx. It's important to note down this value should it be needed to resolve any errors.`}
 				</Text>
 				<Text size="xs"></Text>
 			</div>

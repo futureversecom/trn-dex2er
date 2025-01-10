@@ -1,7 +1,7 @@
 import { useFutureverseSigner } from "@futureverse/auth-react";
 import { CustomExtrinsicBuilder } from "@futureverse/transact";
 import { useTrnApi } from "@futureverse/transact-react";
-// import { u32 } from "@polkadot/types-codec";
+import { useQuery } from "@tanstack/react-query";
 import {
 	createContext,
 	type PropsWithChildren,
@@ -46,43 +46,43 @@ import { useXrplCurrencies } from "./XrplCurrencyContext";
 export type BridgeContextType = {
 	resetState: () => void;
 	signTransaction: () => void;
-	setTag: (tag?: ContextTag) => void;
-	xamanData?: XamanData;
-	setGasToken: (gasToken: TrnToken) => void;
-	estimatedFee?: string;
-	token?: Token;
 	setToken: (token: Token) => void;
+	setTag: (tag?: ContextTag) => void;
+	setGasToken: (gasToken: TrnToken) => void;
+	setDestination: (destination: string) => void;
+	setDestinationTag: (destinationTag: string) => void;
+
+	token?: Token;
+	tokenSymbol: string;
 	isDisabled: boolean;
 	destination: string;
-	setDestination: (destination: string) => void;
-	destinationError?: string;
 	hasTrustline: boolean;
-	tokenSymbol: string;
-	destinationTag: number | null;
-	setDestinationTag: (destinationTag: string) => void;
-	destinationTagError?: string;
+	estimatedFee?: string;
+	xamanData?: XamanData;
+	destinationError?: string;
+	destinationTag: string | null;
+	destinationTagRequired?: boolean;
 } & BridgeState &
 	Omit<BridgeTokenInput, "refetchTokenBalances">;
 
 const BridgeContext = createContext<BridgeContextType>({} as BridgeContextType);
 
 interface BridgeState extends TrnTokenInputState {
-	builder?: CustomExtrinsicBuilder;
+	qr?: string;
 	tx?: Payment;
-	gasToken: TrnToken;
+	error?: string;
 	slippage: string;
 	tag?: ContextTag;
+	gasToken: TrnToken;
 	explorerUrl?: string;
-	error?: string;
-	qr?: string;
-	destinationTag: number | null;
-	destinationTagError?: string;
+	destinationTag: string | null;
+	builder?: CustomExtrinsicBuilder;
 }
 
 const initialState = {
 	slippage: "5",
-	gasToken: DEFAULT_GAS_TOKEN,
 	destinationTag: null,
+	gasToken: DEFAULT_GAS_TOKEN,
 } as BridgeState;
 
 export function BridgeProvider({ children }: PropsWithChildren) {
@@ -97,15 +97,17 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	const resetState = () => setState(initialState);
 
 	const setTag = useCallback((tag?: ContextTag) => updateState({ tag }), []);
-	const setDestinationTag = useCallback((destinationTag: string) => {
-		const digitsOnly = /^\d+$/.test(destinationTag);
-		if (!digitsOnly) return updateState({ destinationTagError: "Only numbers allowed" });
-		updateState({ destinationTag: Number(destinationTag), destinationTagError: undefined });
-	}, []);
 	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken, error: "" }), []);
 	const setBuilder = useCallback((builder: CustomExtrinsicBuilder) => updateState({ builder }), []);
+	const setDestinationTag = useCallback((destinationTag: string) => {
+		const digitsOnly = /^\d*$/.test(destinationTag);
+		if (!digitsOnly) return;
+		updateState({
+			destinationTag: destinationTag === "" ? null : destinationTag,
+		});
+	}, []);
 
-	const { network, xrplProvider } = useWallets();
+	const { network, xrplProvider, address } = useWallets();
 	const { checkTrustline, refetch: refetchXrplBalances, findToken } = useXrplCurrencies();
 
 	const {
@@ -132,6 +134,13 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 		return token.symbol;
 	}, [bridgeTokenInput.token]);
+
+	const { data: destinationTagRequired } = useQuery({
+		queryKey: ["xrplDestinationTag", address],
+		queryFn: () => xrplProvider?.requiresDestinationTag(),
+		refetchInterval: 10000,
+		enabled: !!xrplProvider,
+	});
 
 	// Default to paying fee with the token selected to bridge
 	useEffect(() => {
@@ -165,7 +174,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 					bridgeToken.assetId,
 					bridgeBalance.toPlanck().integerValue(BigNumber.ROUND_DOWN).toString(),
 					decodedToAddress,
-					state.destinationTag
+					state.destinationTag ?? Number(state.destinationTag)
 				);
 
 				let builder = await createBuilder(
@@ -211,7 +220,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 					bridgeToken.assetId,
 					amountWithoutGas.toPlanck().integerValue(BigNumber.ROUND_DOWN).toString(),
 					decodedToAddress,
-					state.destinationTag
+					state.destinationTag ?? Number(state.destinationTag)
 				);
 
 				builder = await createBuilder(
@@ -369,13 +378,26 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		tokenSymbol,
 	]);
 
-	const isDisabled = useMemo(
-		() =>
-			!hasTrustline
-				? false
-				: !!state.error || isTokenDisabled || !!destinationError || canPayForGas === false,
-		[state.error, isTokenDisabled, destinationError, hasTrustline, canPayForGas]
-	);
+	const isDisabled = useMemo(() => {
+		if (
+			!!state.error ||
+			isTokenDisabled ||
+			!!destinationError ||
+			canPayForGas === false ||
+			(destinationTagRequired && state.destinationTag === null)
+		) {
+			return true;
+		} else {
+			return false;
+		}
+	}, [
+		state.error,
+		state.destinationTag,
+		isTokenDisabled,
+		destinationError,
+		canPayForGas,
+		destinationTagRequired,
+	]);
 
 	const doSetToken = useCallback(
 		(token?: Token) => {
@@ -437,6 +459,8 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 				destination,
 				setDestination: doSetDestination,
 				destinationError,
+
+				destinationTagRequired,
 
 				setToken: doSetToken,
 				setAmount: doSetAmount,

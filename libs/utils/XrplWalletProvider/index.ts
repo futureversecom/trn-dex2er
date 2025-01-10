@@ -85,6 +85,12 @@ export class XrplWalletProvider implements IXrplWalletProvider {
 		return this.currentProvider!.createTrustline();
 	}
 
+	async requiresDestinationTag(account?: string): Promise<boolean> {
+		this.checkProviderInitialized();
+
+		return this.currentProvider!.requiresDestinationTag(account);
+	}
+
 	async request<TRequest extends BaseRequest, TResponse extends BaseResponse>(
 		request: TRequest
 	): Promise<TResponse> {
