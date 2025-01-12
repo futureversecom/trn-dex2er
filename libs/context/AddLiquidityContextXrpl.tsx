@@ -257,8 +257,6 @@ export function AddLiquidityXrplProvider({ children }: PropsWithChildren) {
 	);
 
 	const signTransaction = useCallback(async () => {
-		console.log("signTransaction ", !state.tx || !xrplProvider || !state.xToken || !state.yToken);
-		console.log("!state.tx ", !state.tx);
 		if (!state.tx || !xrplProvider || !state.xToken || !state.yToken) return;
 
 		xrplProvider
