@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
 	swcMinify: false,
+	staticPageGenerationTimeout: 120, // temporary fix
 
 	transpilePackages: [
 		"@futureverse/react",

@@ -90,6 +90,7 @@ export const XRPL_BRIDGE_ADDRESS = process.env.NEXT_PUBLIC_XRPL_BRIDGE_ADDRESS ?
 
 export const CMC_TOKENS = {
 	ROOT: "the-root-network",
+	RLUSD: "ripple-usd",
 	XRP: "xrp",
 	ETH: "ethereum",
 	SYLO: "sylo",

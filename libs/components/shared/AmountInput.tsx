@@ -3,6 +3,7 @@ import { type PropsWithChildren } from "react";
 
 import type { Token, TrnToken } from "@/libs/types";
 import { Balance, toHuman } from "@/libs/utils";
+import { toDollarValue } from "@/libs/utils";
 
 import { Text } from "./";
 
@@ -63,7 +64,7 @@ export function AmountInput({
 							error && "text-red-300"
 						)}
 					>
-						{error ? error : tokenUSD ? `$${tokenUSD.toFixed(2)}` : ""}
+						{error ? error : tokenUSD ? `$${toDollarValue(+tokenUSD?.toFixed(2))}` : ""}
 					</Text>
 					<span className="flex gap-2">{children}</span>
 				</span>

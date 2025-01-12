@@ -51,7 +51,7 @@ interface AddLiquidityStateXrpl extends XrplTokenInputState {
 	error?: string;
 	estPoolShare?: number;
 	action: "add" | "addSingle" | "create";
-	tradingFee?: number;
+	tradingFee: number;
 	tradingFeeError?: string;
 	qr?: string;
 	ammExists?: boolean;
@@ -59,6 +59,7 @@ interface AddLiquidityStateXrpl extends XrplTokenInputState {
 
 const initialState = {
 	action: "create",
+	tradingFee: 0,
 } as AddLiquidityStateXrpl;
 
 export function AddLiquidityXrplProvider({ children }: PropsWithChildren) {
@@ -173,7 +174,7 @@ export function AddLiquidityXrplProvider({ children }: PropsWithChildren) {
 						formatTxInput(yToken, yAmount)
 					),
 				});
-			} else if (state.action === "create" && state.tradingFee && ammCost) {
+			} else if (state.action === "create" && ammCost) {
 				return updateState({
 					tx: buildCreateAmmTx(
 						address,

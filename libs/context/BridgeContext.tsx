@@ -1,6 +1,7 @@
 import { useFutureverseSigner } from "@futureverse/auth-react";
 import { CustomExtrinsicBuilder } from "@futureverse/transact";
 import { useTrnApi } from "@futureverse/transact-react";
+import BigNumber from "bignumber.js";
 import {
 	createContext,
 	type PropsWithChildren,
@@ -151,7 +152,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 				let tx = trnApi.tx.xrplBridge.withdraw(
 					bridgeToken.assetId,
-					bridgeBalance.toPlanckString(),
+					bridgeBalance.toPlanck().integerValue(BigNumber.ROUND_DOWN).toString(),
 					decodedToAddress,
 					null
 				);
@@ -196,7 +197,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 				tx = trnApi.tx.xrplBridge.withdraw(
 					bridgeToken.assetId,
-					amountWithoutGas.toPlanckString(),
+					amountWithoutGas.toPlanck().integerValue(BigNumber.ROUND_DOWN).toString(),
 					decodedToAddress,
 					null
 				);
