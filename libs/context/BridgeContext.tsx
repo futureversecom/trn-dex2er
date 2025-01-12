@@ -2,6 +2,7 @@ import { useFutureverseSigner } from "@futureverse/auth-react";
 import { CustomExtrinsicBuilder } from "@futureverse/transact";
 import { useTrnApi } from "@futureverse/transact-react";
 import { useQuery } from "@tanstack/react-query";
+import BigNumber from "bignumber.js";
 import {
 	createContext,
 	type PropsWithChildren,
@@ -154,10 +155,12 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 			token,
 			amount,
 			toAddress,
+			destinationTag,
 		}: {
 			token?: Token;
 			amount?: string;
 			toAddress?: string;
+			destinationTag?: string | null;
 		}) => {
 			if (!token || !amount || !toAddress || !signer || !userSession)
 				return updateState({ builder: undefined, tx: undefined });
@@ -174,7 +177,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 					bridgeToken.assetId,
 					bridgeBalance.toPlanck().integerValue(BigNumber.ROUND_DOWN).toString(),
 					decodedToAddress,
-					state.destinationTag ?? Number(state.destinationTag)
+					destinationTag ? destinationTag : null
 				);
 
 				let builder = await createBuilder(
@@ -215,12 +218,11 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 					updateState({ error: "" });
 				}
 
-				console.log("destination tag ", state.destinationTag);
 				tx = trnApi.tx.xrplBridge.withdraw(
 					bridgeToken.assetId,
 					amountWithoutGas.toPlanck().integerValue(BigNumber.ROUND_DOWN).toString(),
 					decodedToAddress,
-					state.destinationTag ?? Number(state.destinationTag)
+					destinationTag ? destinationTag : null
 				);
 
 				builder = await createBuilder(
@@ -277,7 +279,6 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 			state.gasToken.symbol,
 			state.slippage,
 			setBuilder,
-			state.destinationTag,
 		]
 	);
 
@@ -402,17 +403,59 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	const doSetToken = useCallback(
 		(token?: Token) => {
 			bridgeTokenInput.setToken(token);
-			buildTransaction({ token, amount: bridgeTokenInput.amount, toAddress: destination });
+			buildTransaction({
+				token,
+				amount: bridgeTokenInput.amount,
+				toAddress: destination,
+				destinationTag: state.destinationTag,
+			});
 		},
-		[bridgeTokenInput, destination, buildTransaction]
+		[bridgeTokenInput, destination, buildTransaction, state.destinationTag]
 	);
 
 	const doSetAmount = useCallback(
 		(amount: string) => {
 			bridgeTokenInput.setAmount(amount);
-			buildTransaction({ amount, token: bridgeTokenInput.token, toAddress: destination });
+			buildTransaction({
+				amount,
+				token: bridgeTokenInput.token,
+				toAddress: destination,
+				destinationTag: state.destinationTag,
+			});
 		},
-		[bridgeTokenInput, destination, buildTransaction]
+		[bridgeTokenInput, destination, buildTransaction, state.destinationTag]
+	);
+
+	const doSetDestination = useCallback(
+		(destination: string) => {
+			setDestination(destination);
+			buildTransaction({
+				toAddress: destination,
+				amount: bridgeTokenInput.amount,
+				token: bridgeTokenInput.token,
+				destinationTag: state.destinationTag,
+			});
+		},
+		[bridgeTokenInput, setDestination, buildTransaction, state.destinationTag]
+	);
+
+	const doSetDestinationTag = useCallback(
+		(tag: string) => {
+			setDestinationTag(tag);
+			buildTransaction({
+				toAddress: destination,
+				amount: bridgeTokenInput.amount,
+				token: bridgeTokenInput.token,
+				destinationTag: tag,
+			});
+		},
+		[
+			bridgeTokenInput.amount,
+			bridgeTokenInput.token,
+			buildTransaction,
+			destination,
+			setDestinationTag,
+		]
 	);
 
 	// Adding useMemo to track network changes and reset token and amount when network changes
@@ -425,25 +468,12 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [network]);
 
-	const doSetDestination = useCallback(
-		(destination: string) => {
-			setDestination(destination);
-			buildTransaction({
-				toAddress: destination,
-				amount: bridgeTokenInput.amount,
-				token: bridgeTokenInput.token,
-			});
-		},
-		[bridgeTokenInput, setDestination, buildTransaction]
-	);
-
 	return (
 		<BridgeContext.Provider
 			value={{
 				resetState,
 				setTag,
 				setGasToken,
-				setDestinationTag,
 
 				signTransaction,
 
@@ -456,14 +486,15 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 				...bridgeTokenInput,
 
-				destination,
-				setDestination: doSetDestination,
-				destinationError,
-
 				destinationTagRequired,
 
 				setToken: doSetToken,
 				setAmount: doSetAmount,
+				setDestination: doSetDestination,
+				setDestinationTag: doSetDestinationTag,
+
+				destination,
+				destinationError,
 
 				tokenSymbol,
 			}}
