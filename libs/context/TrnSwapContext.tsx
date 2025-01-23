@@ -153,8 +153,18 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 				await trnApi.rpc.dex.getLiquidity(state.xToken.assetId, state.yToken.assetId)
 			).toJSON();
 
-			const xAssetLiquidity = BigInt(result["0"] ? result["0"].toString() : "0");
-			const yAssetLiquidity = BigInt(result["1"] ? result["1"].toString() : "0");
+			const convertScientificNotation = (liquidity: string) => {
+				if (liquidity.includes("e")) {
+					const [base, exponent] = liquidity.split("e").map(Number);
+					const result = BigInt(base * Math.pow(10, exponent));
+					return result;
+				}
+				return BigInt(liquidity);
+			};
+
+			const xAssetLiquidity = convertScientificNotation(result["0"] ? result["0"].toString() : "0");
+			const yAssetLiquidity = convertScientificNotation(result["1"] ? result["1"].toString() : "0");
+
 			const xAssetLiquidityBalance = new Balance(xAssetLiquidity, state.xToken);
 			const yAssetLiquidityBalance = new Balance(yAssetLiquidity, state.yToken);
 
@@ -302,29 +312,21 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 		};
 
 		if (state.source === "x") {
-			try {
-				return trnApi.tx.dex.swapWithExactSupply(
-					removeGas(state.xAmountRatio.toPlanckString()),
-					yAmountMin.toPlanckString(),
-					[state.xToken.assetId, state.yToken.assetId],
-					null,
-					null
-				);
-			} catch (e) {
-				console.info("error with exact supply ", e); // Todo 799
-			}
+			return trnApi.tx.dex.swapWithExactSupply(
+				removeGas(state.xAmountRatio.toPlanckString()),
+				yAmountMin.toPlanckString(),
+				[state.xToken.assetId, state.yToken.assetId],
+				null,
+				null
+			);
 		} else {
-			try {
-				return trnApi.tx.dex.swapWithExactTarget(
-					state.yAmountRatio.toPlanckString(),
-					removeGas(xAmountMax.toPlanckString()),
-					[state.xToken.assetId, state.yToken.assetId],
-					null,
-					null
-				);
-			} catch (e) {
-				console.info("error with exact target ", e); // Todo 799
-			}
+			return trnApi.tx.dex.swapWithExactTarget(
+				state.yAmountRatio.toPlanckString(),
+				removeGas(xAmountMax.toPlanckString()),
+				[state.xToken.assetId, state.yToken.assetId],
+				null,
+				null
+			);
 		}
 	}, [
 		trnApi,
@@ -344,27 +346,23 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 		if (!trnApi || !state.xToken || !state.yToken || !userSession || !swapTx || !customEx) return;
 
 		const calculateFeeEstimate = async () => {
-			try {
-				const builder = await createBuilder(
-					userSession,
-					state.gasToken.assetId,
-					state.slippage,
-					customEx,
-					swapTx
-				);
-				const { gasString, gasFee } = await builder.getGasFees();
-				const [gas] = gasString.split(" ");
+			const builder = await createBuilder(
+				userSession,
+				state.gasToken.assetId,
+				state.slippage,
+				customEx,
+				swapTx
+			);
+			const { gasString, gasFee } = await builder.getGasFees();
+			const [gas] = gasString.split(" ");
 
-				const gasBalance = await builder.checkBalance({
-					walletAddress: userSession.futurepass,
-					assetId: state.gasToken.assetId,
-				});
+			const gasBalance = await builder.checkBalance({
+				walletAddress: userSession.futurepass,
+				assetId: state.gasToken.assetId,
+			});
 
-				const canPay = new Balance(+gasBalance.balance, gasBalance).toUnit().toNumber() - +gas >= 0; // Todo 799
-				setGasInfo(gas, gasFee, canPay, gasBalance.balance);
-			} catch (e) {
-				console.info("Error calculating fee estimate: ", e); // Todo 799
-			}
+			const canPay = new Balance(+gasBalance.balance, gasBalance).toUnit().toNumber() - +gas >= 0;
+			setGasInfo(gas, gasFee, canPay, gasBalance.balance);
 		};
 		calculateFeeEstimate();
 	}, [
