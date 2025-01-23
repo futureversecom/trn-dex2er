@@ -97,16 +97,13 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 			updateState({ estimatedFee, gasFeePlanck, canPayForGas, gasBalance }),
 		[]
 	);
-	const setToken = useCallback(({ src, token }: { src: TokenSource; token: TrnToken }) => {
-		if (src === "x")
-			return updateState({
-				xToken: token,
-			});
-
-		updateState({
-			yToken: token,
-		});
-	}, []);
+	const setToken = useCallback(
+		({ src, token }: { src: TokenSource; token: TrnToken }) =>
+			updateState({
+				[`${src}Token`]: token,
+			}),
+		[]
+	);
 
 	const {
 		setXAmount,
