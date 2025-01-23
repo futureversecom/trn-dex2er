@@ -15,7 +15,7 @@ import {
 } from "@/libs/components/shared";
 import { useXrplCurrencies, useXrplSwap, type XrplSwapContextType } from "@/libs/context";
 import { useTokenSymbols } from "@/libs/hooks";
-import { toHuman } from "@/libs/utils";
+import { toFixed, toHuman } from "@/libs/utils";
 
 export function XrplSwap() {
 	const props = useXrplSwap();
@@ -112,6 +112,8 @@ export function XrplSwap() {
 						xToken: props.xToken,
 						yToken: props.yToken,
 						labels: ["From", "To"],
+						src: props.source,
+						isSwap: true,
 						...props,
 						yTokenError: undefined,
 					}}
@@ -141,9 +143,12 @@ export function XrplSwap() {
 				)}
 
 				<ActionButton
-					text={props.hasTrustlines ? "swap" : "create trustline"}
+					text={"swap"}
 					disabled={props.isDisabled}
-					onClick={() => (props.hasTrustlines ? props.setTag("review") : props.signTransaction())}
+					onClick={() => {
+						props.buildTransaction();
+						props.setTag("review");
+					}}
 				/>
 			</Box>
 		</>
@@ -151,13 +156,16 @@ export function XrplSwap() {
 }
 
 const getInfoItems = ({
-	yAmount,
+	dexTx,
 	yToken,
-	slippage,
-	yAmountMin,
-	estimatedFee,
-	// xAmount,
 	xToken,
+	yAmount,
+	xAmount,
+	slippage,
+	tradingFee,
+	yAmountMin,
+	xAmountMax,
+	estimatedFee,
 	xTokenSymbol = "",
 	yTokenSymbol = "",
 }: XrplSwapContextType & { xTokenSymbol?: string; yTokenSymbol?: string }) => {
@@ -172,13 +180,20 @@ const getInfoItems = ({
 					tip="Is the amount you expect to receive based on the current market price. Keep in mind that the market price may change while your transaction is processing, and may affect the final amount you receive."
 				/>
 			)}
-			{yAmountMin && (
+			{dexTx === "exactSupply" && yAmountMin && (
 				<InfoItem
 					heading={
 						<span>Minimum received after slippage ({slippage === "" ? "0" : slippage}%)</span>
 					}
-					value={`${yAmountMin} ${yTokenSymbol}`}
+					value={`${yAmountMin.toString()} ${yTokenSymbol}`}
 					tip="Is the minimum amount you are guaranteed to receive. However, if the price drops further, your transaction may fail."
+				/>
+			)}
+			{dexTx === "exactTarget" && xAmountMax && (
+				<InfoItem
+					heading={<span>Maximum spent after slippage ({slippage === "" ? "0" : slippage}%)</span>}
+					value={`${xAmountMax.toString()} ${xTokenSymbol}`}
+					tip="Is the maximum amount you may need to spend. However, if the price drops further, your transaction may fail."
 				/>
 			)}
 			{estimatedFee && (
@@ -188,20 +203,15 @@ const getInfoItems = ({
 					tip="Is the fee paid to the miners who process your transaction."
 				/>
 			)}
-			{/* {xAmount && ( */}
-			{/* 	<> */}
-			{/* 		<InfoItem */}
-			{/* 			heading="Network Fee" */}
-			{/* 			value={`~${toFixed(+xAmount * (NETWORK_FEE_RATE / 100), 6)} ${xToken.currency}`} */}
-			{/* 			tip="A fee of 0.05% of the swap amount is collected to reward ROOT stakers." */}
-			{/* 		/> */}
-			{/* 		<InfoItem */}
-			{/* 			heading="Swap fee" */}
-			{/* 			value={`~${toFixed(+xAmount * ((EXCHANGE_RATE - NETWORK_FEE_RATE) / 100), 6)} ${xToken.currency}`} */}
-			{/* 			tip="A fee of 0.25% of the swap amount is collected to reward liquidity providers." */}
-			{/* 		/> */}
-			{/* 	</> */}
-			{/* )} */}
+			{xAmount && tradingFee && (
+				<>
+					<InfoItem
+						heading="Swap fee"
+						value={`~${toFixed(+xAmount * tradingFee, 6)} ${xTokenSymbol}`}
+						tip={`A fee of ${tradingFee}% of the swap amount is collected to reward liquidity providers.`}
+					/>
+				</>
+			)}
 		</>
 	);
 };
