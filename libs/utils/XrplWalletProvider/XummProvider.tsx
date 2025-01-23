@@ -1,4 +1,4 @@
-import type {
+import {
 	AccountInfoRequest,
 	AccountInfoResponse,
 	AccountLinesRequest,
@@ -10,6 +10,7 @@ import type {
 	Balance,
 	BaseRequest,
 	BaseResponse,
+	parseAccountRootFlags,
 	Request,
 	Transaction,
 } from "xrpl";
@@ -265,6 +266,21 @@ export class XummProvider implements IXrplWalletProvider {
 			hash: resolvedPayload?.payload?.response?.txid,
 			status: this.resolveStatusFromMeta(resolvedPayload?.payload?.meta),
 		} as InteractiveTransactionResponse);
+	}
+
+	async requiresDestinationTag(account?: string): Promise<boolean> {
+		const getAccountInfoRequest: AccountInfoRequest = {
+			command: "account_info",
+			account: account ?? this.account!,
+			restrict: true,
+		};
+		const accountInfo = (await this.request(getAccountInfoRequest)) as AccountInfoResponse;
+		const flags = parseAccountRootFlags(accountInfo.result.account_data.Flags);
+		if (flags.lsfRequireDestTag) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	resolveStatusFromMeta(meta: XummPayloadMeta | undefined): string {
