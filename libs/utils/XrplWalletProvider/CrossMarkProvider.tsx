@@ -1,5 +1,7 @@
 import Sdk from "@crossmarkio/sdk";
 import type {
+	AccountInfoRequest,
+	AccountInfoResponse,
 	AccountLinesRequest,
 	AccountLinesResponse,
 	AccountLinesTrustline,
@@ -12,7 +14,7 @@ import type {
 	Request,
 	Transaction,
 } from "xrpl";
-import { Client } from "xrpl";
+import { Client, parseAccountRootFlags } from "xrpl";
 
 import { IXrplWalletProvider, ProviderName } from "./types";
 import { filterTransactions } from "./XummProvider";
@@ -85,6 +87,23 @@ export class CrossmarkProvider implements IXrplWalletProvider {
 		console.log("fetch trustline response", response);
 
 		return response?.result?.lines ?? [];
+	}
+
+	async requiresDestinationTag(account?: string): Promise<boolean> {
+		const requestBody = {
+			command: "account_info",
+			account: account ?? this.account,
+		} as AccountInfoRequest;
+
+		const response = await this.request<AccountInfoRequest, AccountInfoResponse>(requestBody);
+		console.log("fetch trustline response", response);
+
+		const flags = parseAccountRootFlags(response.result.account_data.Flags);
+		if (flags.lsfRequireDestTag) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	async getBridgeTransactions(): Promise<AccountTxTransaction[]> {

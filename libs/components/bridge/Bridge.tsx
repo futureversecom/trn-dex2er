@@ -110,7 +110,7 @@ export function Bridge() {
 			)}
 
 			<Box heading="BRIDGE" className="relative">
-				<AmountInput {...props} label="Token">
+				<AmountInput {...{ ...props, error: props.tokenError }} label="Token">
 					<Button
 						variant="secondary"
 						size="sm"
@@ -136,6 +136,7 @@ export function Bridge() {
 				</AmountInput>
 
 				<AddressInput {...props} />
+				<DestinationTagInput {...props} />
 
 				<div className="flex space-x-4 rounded bg-neutral-400 p-4">
 					<Image src="/images/info.svg" width={32} height={32} alt="info" />
@@ -218,6 +219,49 @@ function AddressInput({ destination, setDestination, destinationError: error }: 
 				<Text size="xs" className={classNames(error && "text-red-300")}>
 					{error ? error : "This is auto-filled with the wallet you're connected to."}
 				</Text>
+			</div>
+		</div>
+	);
+}
+
+function DestinationTagInput({
+	destinationTag,
+	setDestinationTag,
+	destinationTagRequired,
+}: BridgeContextType) {
+	const { network } = useWallets();
+
+	if (network === "xrpl" || destinationTagRequired === undefined) {
+		return <></>;
+	}
+
+	return (
+		<div className="flex space-x-4 rounded">
+			<div className="flex h-28 w-full min-w-[50em] flex-col justify-center space-y-2 rounded bg-neutral-400 px-6">
+				<span className="flex items-center justify-between text-sm">
+					<label htmlFor="destination-tag-input" className="cursor-pointer text-neutral-700">
+						Destination Tag
+					</label>
+				</span>
+				<span className="relative flex w-full items-center justify-between">
+					<input
+						type="text"
+						value={destinationTag ?? undefined}
+						placeholder={`Enter Destination tag`}
+						id="destination-tag-input"
+						onChange={(e) => setDestinationTag(e.target.value)}
+						className="w-full bg-transparent text-xl font-semibold focus:outline-none"
+					/>
+				</span>
+				<Text
+					size="xs"
+					className={classNames(
+						destinationTagRequired && destinationTag === null && "text-red-300"
+					)}
+				>
+					{`${destinationTagRequired ? "Required" : "Optional"} field that will help recovering a failed tx. It's important to note down this value should it be needed to resolve any errors.`}
+				</Text>
+				<Text size="xs"></Text>
 			</div>
 		</div>
 	);

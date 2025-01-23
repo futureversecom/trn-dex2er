@@ -31,6 +31,7 @@ export interface IXrplWalletProvider {
 	request<TRequest extends BaseRequest, TResponse extends BaseResponse>(
 		request: TRequest
 	): Promise<TResponse>;
+	requiresDestinationTag(account?: string): Promise<boolean>;
 	getBalances(): Promise<XrplBalance[]>;
 	getTrustlines(): Promise<AccountLinesTrustline[]>;
 	getBridgeTransactions(): Promise<AccountTxTransaction[]>;
