@@ -2,6 +2,7 @@ import {
 	AMMCreate,
 	AMMDeposit,
 	type AMMInfoRequest,
+	type AMMInfoResponse,
 	AMMWithdraw,
 	type Amount,
 	Currency,
@@ -113,7 +114,7 @@ export async function getAmmInfo(
 	provider: IXrplWalletProvider,
 	asset: XrplCurrency,
 	asset2: XrplCurrency
-) {
+): Promise<AMMInfoResponse> {
 	const ammInfoRequest: AMMInfoRequest = {
 		command: "amm_info",
 		ledger_index: "validated",

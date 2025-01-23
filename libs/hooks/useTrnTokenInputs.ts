@@ -8,25 +8,25 @@ import { useAmountInput } from "./useAmountInput";
 
 export interface TrnTokenInputs {
 	xAmount: string;
-	setXAmount: (amount: string) => void;
 	xToken?: TrnToken;
-	xTokenBalance?: Balance<TrnToken>;
-	xTokenError?: string;
 	xTokenUSD?: number;
+	xTokenError?: string;
+	xTokenBalance?: Balance<TrnToken>;
+	setXAmount: (amount: string) => void;
 
 	yAmount: string;
-	setYAmount: (amount: string) => void;
 	yToken?: TrnToken;
-	yTokenBalance?: Balance<TrnToken>;
-	yTokenError?: string;
 	yTokenUSD?: number;
+	yTokenError?: string;
+	yTokenBalance?: Balance<TrnToken>;
+	setYAmount: (amount: string) => void;
 
 	priceDifference?: number;
 
 	isOpen: IsTokenOpen;
-	setIsOpen: Dispatch<SetStateAction<IsTokenOpen>>;
-	filteredTokens: Record<string, TrnToken>;
 	onTokenClick: (token: TrnToken) => void;
+	filteredTokens: Record<string, TrnToken>;
+	setIsOpen: Dispatch<SetStateAction<IsTokenOpen>>;
 
 	isDisabled: boolean;
 

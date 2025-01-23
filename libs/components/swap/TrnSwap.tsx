@@ -13,7 +13,7 @@ import {
 } from "@/libs/components/shared";
 import { EXCHANGE_RATE, NETWORK_FEE_RATE } from "@/libs/constants";
 import { type TrnSwapContextType, useTrnSwap } from "@/libs/context";
-import { toFixed, toHuman } from "@/libs/utils";
+import { toFixed } from "@/libs/utils";
 
 export function TrnSwap() {
 	const props = useTrnSwap();
@@ -90,6 +90,8 @@ export function TrnSwap() {
 						xToken: props.xToken,
 						yToken: props.yToken,
 						labels: ["From", "To"],
+						src: props.source,
+						isSwap: true,
 						...props,
 						yTokenError: undefined,
 					}}
@@ -121,7 +123,10 @@ export function TrnSwap() {
 				<ActionButton
 					text="swap"
 					disabled={props.isDisabled}
-					onClick={() => props.setTag("review")}
+					onClick={() => {
+						props.buildTransaction();
+						props.setTag("review");
+					}}
 				/>
 			</Box>
 		</>
@@ -129,33 +134,34 @@ export function TrnSwap() {
 }
 
 const getInfoItems = ({
-	yAmount,
+	dexTx,
+	xToken,
 	yToken,
+	xAmount,
 	slippage,
+	gasToken,
+	xAmountMax,
 	yAmountMin,
 	estimatedFee,
-	xAmount,
-	xToken,
-	gasToken,
 }: TrnSwapContextType) => {
-	if (!xToken || !yToken) return null;
+	if (!xToken || !yToken || !dexTx) return null;
 
 	return (
 		<>
-			{yAmount && (
-				<InfoItem
-					heading="Estimated received"
-					value={`${toHuman(yAmount, yToken)} ${yToken.symbol}`}
-					tip="Is the amount you expect to receive based on the current market price. Keep in mind that the market price may change while your transaction is processing, and may affect the final amount you receive."
-				/>
-			)}
-			{yAmountMin && (
+			{dexTx === "exactSupply" && yAmountMin && (
 				<InfoItem
 					heading={
 						<span>Minimum received after slippage ({slippage === "" ? "0" : slippage}%)</span>
 					}
-					value={`${yAmountMin} ${yToken!.symbol}`}
+					value={`${yAmountMin.toHuman()} ${yToken!.symbol}`}
 					tip="Is the minimum amount you are guaranteed to receive. However, if the price drops further, your transaction may fail."
+				/>
+			)}
+			{dexTx === "exactTarget" && xAmountMax && (
+				<InfoItem
+					heading={<span>Maximum spent after slippage ({slippage === "" ? "0" : slippage}%)</span>}
+					value={`${xAmountMax.toHuman()} ${xToken!.symbol}`}
+					tip="Is the maximum amount you may need to spend. However, if the price drops further, your transaction may fail."
 				/>
 			)}
 			{estimatedFee && (

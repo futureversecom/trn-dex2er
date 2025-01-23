@@ -29,6 +29,8 @@ export interface XrplTokenInputs {
 	onTokenClick: (token: XrplCurrency) => void;
 
 	isDisabled: boolean;
+
+	refetchTokenBalances: () => void;
 }
 
 export type XrplTokenInputState = Pick<XrplTokenInputs, "xToken" | "yToken">;
@@ -45,7 +47,7 @@ export function useXrplTokenInputs<T extends XrplTokenInputState>(
 	singleSidedDeposit: boolean = false
 ): XrplTokenInputs {
 	const pathname = usePathname();
-	const { currencies, getBalance } = useXrplCurrencies();
+	const { currencies, getBalance, refetch: refetchTokenBalances } = useXrplCurrencies();
 
 	const [isOpen, setIsOpen] = useState<IsTokenOpen>(false);
 
@@ -122,7 +124,7 @@ export function useXrplTokenInputs<T extends XrplTokenInputState>(
 			return true;
 		}
 
-		if (xTokenError || yTokenError) return true;
+		if (xTokenError || (yTokenError && !singleSidedDeposit)) return true;
 
 		return false;
 	}, [state, xAmount, yAmount, xTokenError, yTokenError, singleSidedDeposit]);
@@ -169,5 +171,7 @@ export function useXrplTokenInputs<T extends XrplTokenInputState>(
 		onTokenClick,
 
 		isDisabled,
+
+		refetchTokenBalances,
 	};
 }
