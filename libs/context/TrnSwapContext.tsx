@@ -67,6 +67,9 @@ interface TrnSwapState extends TrnTokenInputState {
 	gasFeePlanck?: string;
 	canPayForGas?: boolean;
 	priceDifference?: number;
+	xAssetLiquidity?: number;
+	yAssetLiquidity?: number;
+	sufficientLiquidity?: boolean;
 	xAmountRatio?: Balance<TrnToken>;
 	yAmountRatio?: Balance<TrnToken>;
 	builtTx?: CustomExtrinsicBuilder;
@@ -92,9 +95,21 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 	const setDexTx = useCallback((dexTx: dexTxType) => updateState({ dexTx }), []);
 	const setBuildTx = useCallback((builtTx: CustomExtrinsicBuilder) => updateState({ builtTx }), []);
 	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken, error: "" }), []);
+	const setSufficientLiquidity = useCallback(
+		(sufficientLiquidity?: boolean) => updateState({ sufficientLiquidity }),
+		[]
+	);
 	const setGasInfo = useCallback(
 		(estimatedFee: string, gasFeePlanck: string, canPayForGas: boolean, gasBalance: string) =>
 			updateState({ estimatedFee, gasFeePlanck, canPayForGas, gasBalance }),
+		[]
+	);
+	const setXAssetLiquidity = useCallback(
+		(xAssetLiquidity?: number) => updateState({ xAssetLiquidity }),
+		[]
+	);
+	const setYAssetLiquidity = useCallback(
+		(yAssetLiquidity?: number) => updateState({ yAssetLiquidity }),
 		[]
 	);
 	const setToken = useCallback(
@@ -129,6 +144,59 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 		signer,
 	});
 
+	// Temporary till rpc error reporting gets fixed
+	useEffect(() => {
+		void (async () => {
+			if (!trnApi || !state.xToken || !state.yToken) return;
+
+			const result = (
+				await trnApi.rpc.dex.getLiquidity(state.xToken.assetId, state.yToken.assetId)
+			).toJSON();
+
+			const xAssetLiquidity = BigInt(result["0"] ? result["0"].toString() : "0");
+			const yAssetLiquidity = BigInt(result["1"] ? result["1"].toString() : "0");
+			const xAssetLiquidityBalance = new Balance(xAssetLiquidity, state.xToken);
+			const yAssetLiquidityBalance = new Balance(yAssetLiquidity, state.yToken);
+
+			setXAssetLiquidity(xAssetLiquidityBalance.toUnit().toNumber());
+			setYAssetLiquidity(yAssetLiquidityBalance.toUnit().toNumber());
+		})();
+	}, [setXAssetLiquidity, setYAssetLiquidity, state.xToken, state.yToken, trnApi]);
+
+	// Temporary till rpc error reporting gets fixed
+	const yAmountMinNotRatio = useMemo(() => {
+		return +tokenInputs.yAmount * (1 - +state.slippage / 100);
+	}, [state.slippage, tokenInputs.yAmount]);
+
+	// Temporary till rpc error reporting gets fixed
+	const checkSufficientLiquidity = useCallback(() => {
+		if (
+			!state.xAssetLiquidity ||
+			!state.yAssetLiquidity ||
+			!tokenInputs.xAmount ||
+			!tokenInputs.yAmount
+		)
+			return;
+
+		const productOfReserves = state.xAssetLiquidity * state.yAssetLiquidity; // Constant Product Model
+		const xNewReserve = state.xAssetLiquidity + +tokenInputs.xAmount;
+		const yNewReserve = productOfReserves / xNewReserve;
+		const yAmountAvailable = state.yAssetLiquidity - yNewReserve; // Calulcates how many units of ytoken can be provided
+
+		if (yAmountAvailable > yAmountMinNotRatio) {
+			return setSufficientLiquidity(true);
+		} else {
+			return setSufficientLiquidity(false);
+		}
+	}, [
+		setSufficientLiquidity,
+		state.xAssetLiquidity,
+		state.yAssetLiquidity,
+		tokenInputs.xAmount,
+		tokenInputs.yAmount,
+		yAmountMinNotRatio,
+	]);
+
 	useEffect(() => {
 		void (async () => {
 			if (!trnApi || !state.xToken || !state.yToken || !state.source) return;
@@ -150,32 +218,38 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 				return;
 			}
 
-			const result = parseJsonRpcResult<[number, number]>(
-				await trnApi.rpc.dex[state.source === "x" ? "getAmountsOut" : "getAmountsIn"](
-					sourceBalance.toPlanckString(),
-					[state.xToken.assetId, state.yToken.assetId]
-				)
-			);
+			// Temporary try/catch till rpc error reporting is fixed
+			try {
+				const result = parseJsonRpcResult<[number, number]>(
+					await trnApi.rpc.dex[state.source === "x" ? "getAmountsOut" : "getAmountsIn"](
+						sourceBalance.toPlanckString(),
+						[state.xToken.assetId, state.yToken.assetId]
+					)
+				);
 
-			if (result.isErr()) return console.warn("Dex RPC error:", result.error.cause);
+				if (result.isErr()) return console.warn("Dex RPC error:", result.error.cause);
 
-			const [calculatedFrom, calculatedTo] = result.value;
-			const calculatedFromBalance = new Balance(calculatedFrom, state.xToken);
-			const calculatedtoBalance = new Balance(calculatedTo, state.yToken);
+				const [calculatedFrom, calculatedTo] = result.value;
+				const calculatedFromBalance = new Balance(calculatedFrom, state.xToken);
+				const calculatedtoBalance = new Balance(calculatedTo, state.yToken);
 
-			if (state.source === "x") setYAmount(calculatedtoBalance.toUnit().toString());
-			else setXAmount(calculatedFromBalance.toUnit().toString());
+				if (state.source === "x") setYAmount(calculatedtoBalance.toUnit().toString());
+				else setXAmount(calculatedFromBalance.toUnit().toString());
 
-			const ratio = toFixed(
-				calculatedtoBalance.toUnit().dividedBy(calculatedFromBalance.toUnit()).toNumber(),
-				10
-			);
+				const ratio = toFixed(
+					calculatedtoBalance.toUnit().dividedBy(calculatedFromBalance.toUnit()).toNumber(),
+					10
+				);
 
-			updateState({
-				xAmountRatio: calculatedFromBalance,
-				yAmountRatio: calculatedtoBalance,
-				ratio: ratio,
-			});
+				updateState({
+					xAmountRatio: calculatedFromBalance,
+					yAmountRatio: calculatedtoBalance,
+					ratio: ratio,
+					sufficientLiquidity: true,
+				});
+			} catch (e) {
+				checkSufficientLiquidity();
+			}
 		})();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
@@ -186,6 +260,7 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 		tokenInputs.xAmount,
 		tokenInputs.yAmount,
 		trnApi,
+		checkSufficientLiquidity,
 	]);
 
 	const yAmountMin = useMemo(() => {
@@ -353,7 +428,6 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 				setYAmount(amount);
 				setDexTx("exactTarget");
 			}
-			updateState({ error: "" });
 		},
 		[setXAmount, setYAmount, setDexTx]
 	);
@@ -421,6 +495,10 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 		const x = async () => {
 			if (!state.xToken || !state.yToken || !tokenInputs.xAmount) return;
 
+			if (state.sufficientLiquidity === false) {
+				return updateState({ error: "This pair has insufficient liquidity for this trade" });
+			}
+
 			const xBalance = getTokenBalance(state.xToken);
 			if (
 				state.dexTx === "exactTarget" &&
@@ -459,6 +537,7 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 		getTokenBalance,
 		state.canPayForGas,
 		tokenInputs.xAmount,
+		state.sufficientLiquidity,
 	]);
 
 	return (

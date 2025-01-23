@@ -65,6 +65,8 @@ interface XrplSwapState extends XrplTokenInputState {
 	yAmountRatio?: string;
 	estimatedFee?: string;
 	priceDifference?: number;
+	xAssetLiquidity?: number;
+	yAssetLiquidity?: number;
 }
 
 const initialState = {
@@ -85,6 +87,14 @@ export function XrplSwapProvider({ children }: PropsWithChildren) {
 	const setSrc = useCallback((source: sourceType) => updateState({ source }), []);
 	const setDexTx = useCallback((dexTx: dexTxType) => updateState({ dexTx }), []);
 	const setValidPool = useCallback((validPool?: boolean) => updateState({ validPool }), []);
+	const setXAssetLiquidity = useCallback(
+		(xAssetLiquidity?: number) => updateState({ xAssetLiquidity }),
+		[]
+	);
+	const setYAssetLiquidity = useCallback(
+		(yAssetLiquidity?: number) => updateState({ yAssetLiquidity }),
+		[]
+	);
 	const setToken = useCallback(
 		({ src, token }: { src: TokenSource; token: XrplCurrency }) =>
 			updateState({
@@ -147,6 +157,9 @@ export function XrplSwapProvider({ children }: PropsWithChildren) {
 				: Number(dropsToXrp(amm_info.result.amm.amount2));
 			const tradingFeePercentage = amm_info.result.amm.trading_fee / 100000; // Normalize trading fee to a percentage
 
+			setXAssetLiquidity(xAssetLiquidity);
+			setYAssetLiquidity(yAssetLiquidity);
+
 			if (state.source === "x") {
 				const ratio = yAssetLiquidity / xAssetLiquidity;
 				const yAmount = sourceBalance * ratio;
@@ -195,6 +208,34 @@ export function XrplSwapProvider({ children }: PropsWithChildren) {
 			+state.xAmountRatio
 		).toString();
 	}, [state.slippage, state.xAmountRatio]);
+
+	const sufficientLiquidity = useMemo(() => {
+		if (
+			!state.xAssetLiquidity ||
+			!state.yAssetLiquidity ||
+			!tokenInputs.xAmount ||
+			!tokenInputs.yAmount ||
+			!yAmountMin
+		)
+			return;
+
+		const productOfReserves = state.xAssetLiquidity * state.yAssetLiquidity; // Constant Product Model
+		const xNewReserve = state.xAssetLiquidity + +tokenInputs.xAmount;
+		const yNewReserve = productOfReserves / xNewReserve;
+		const yAmountAvailable = state.yAssetLiquidity - yNewReserve; // Calulcates how many units of ytoken can be provided
+
+		if (yAmountAvailable > +yAmountMin) {
+			return true;
+		} else {
+			return false;
+		}
+	}, [
+		state.xAssetLiquidity,
+		state.yAssetLiquidity,
+		tokenInputs.xAmount,
+		tokenInputs.yAmount,
+		yAmountMin,
+	]);
 
 	const swapTx = useMemo(() => {
 		if (
@@ -366,6 +407,10 @@ export function XrplSwapProvider({ children }: PropsWithChildren) {
 
 		let error = "";
 
+		if (sufficientLiquidity === false) {
+			return updateState({ error: "This pair has insufficient liquidity for this trade" });
+		}
+
 		if (state.validPool === false) {
 			return updateState({ error: "This pair is not valid yet. Choose another token to swap" });
 		}
@@ -391,6 +436,7 @@ export function XrplSwapProvider({ children }: PropsWithChildren) {
 		state.estimatedFee,
 		tokenInputs.xAmount,
 		tokenInputs.yAmount,
+		sufficientLiquidity,
 	]);
 
 	return (
