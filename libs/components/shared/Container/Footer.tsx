@@ -25,7 +25,7 @@ export function Footer() {
 				</Hyperlink>
 			</span>
 
-			<Text>Version 1.2.1</Text>
+			<Text>Version 1.2.2</Text>
 
 			<span>&copy; Dexter {new Date().getFullYear()}</span>
 		</footer>
