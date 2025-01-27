@@ -212,7 +212,7 @@ function AddressInput({ destination, setDestination, destinationError: error }: 
 						placeholder={`Enter ${network === "root" ? "XRPL" : "Root"} Network address`}
 						id="address-input"
 						onChange={(e) => setDestination(e.target.value)}
-						className="w-full bg-transparent text-xl font-semibold focus:outline-none"
+						className="w-full bg-transparent text-xl font-semibold text-neutral-700 focus:outline-none"
 					/>
 				</span>
 
@@ -250,7 +250,7 @@ function DestinationTagInput({
 						placeholder={`Enter Destination tag`}
 						id="destination-tag-input"
 						onChange={(e) => setDestinationTag(e.target.value)}
-						className="w-full bg-transparent text-xl font-semibold focus:outline-none"
+						className="w-full bg-transparent text-xl font-semibold text-neutral-700 focus:outline-none"
 					/>
 				</span>
 				<Text

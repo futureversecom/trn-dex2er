@@ -14,7 +14,7 @@ export const SearchBar = ({
 			placeholder="Search Token"
 			id={`search bar`} // edit this
 			onChange={(e) => setSearchQuery(e.target.value)}
-			className="text-md bg-transparent font-light focus:outline-none"
+			className="text-md bg-transparent font-light text-neutral-700 focus:outline-none"
 		/>
 		<SearchIcon style={{ fill: "white" }} />
 	</form>
