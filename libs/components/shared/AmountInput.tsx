@@ -64,7 +64,7 @@ export function AmountInput({
 						id={`amount-${label}`}
 						onChange={(e) => setAmount(e.target.value)}
 						onClick={() => onClick?.()}
-						className="bg-transparent text-xl font-semibold focus:outline-none"
+						className="bg-transparent text-xl font-semibold text-neutral-700 focus:outline-none"
 					/>
 					<Text
 						className={classNames(

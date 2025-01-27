@@ -64,7 +64,10 @@ export function Dropdown({
 							<svg
 								width={16}
 								height={8}
-								className={classNames("ml-2 transition duration-200", open && "rotate-180")}
+								className={classNames(
+									"ml-2 text-neutral-700 transition duration-200",
+									open && "rotate-180"
+								)}
 							>
 								<use xlinkHref={`/images/commons.svg#chevron-down`} />
 							</svg>
