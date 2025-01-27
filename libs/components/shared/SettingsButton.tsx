@@ -64,7 +64,7 @@ export function SettingsButton({
 							<input
 								id="slippage"
 								value={slippage}
-								className="bg-transparent pl-4 outline-none"
+								className="bg-transparent pl-4 text-neutral-700 outline-none"
 								onChange={(e) => setSlippage(e.target.value)}
 							/>
 							%

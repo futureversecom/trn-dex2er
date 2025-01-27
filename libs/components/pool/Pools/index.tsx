@@ -75,15 +75,17 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 
 	return (
 		<>
-			<Text>
-				To add liquidity, {isConnected ? "select a pool below" : "please connect your wallet"}.
-			</Text>
-			<div className="absolute right-0 top-0 mr-6">
-				{network === "ROOT" ? (
-					<SearchBar setSearchQuery={setTrnPoolFilter} query={trnPoolFilter} />
-				) : (
-					<SearchBar setSearchQuery={setXrplPoolFilter} query={xrplPoolFilter} />
-				)}
+			<div className="flex">
+				<Text>
+					To add liquidity, {isConnected ? "select a pool below" : "please connect your wallet"}.
+				</Text>
+				<div className="absolute right-0 mr-6">
+					{network === "ROOT" ? (
+						<SearchBar setSearchQuery={setTrnPoolFilter} query={trnPoolFilter} />
+					) : (
+						<SearchBar setSearchQuery={setXrplPoolFilter} query={xrplPoolFilter} />
+					)}
+				</div>
 			</div>
 
 			{!!validPools?.length && (
