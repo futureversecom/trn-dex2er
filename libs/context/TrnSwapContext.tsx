@@ -217,7 +217,7 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 				false
 			);
 
-			if (sourceBalance.eq(0)) {
+			if (sourceBalance.toNumber() === 0) {
 				setXAmount("");
 				setYAmount("");
 				updateState({
@@ -258,6 +258,7 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 					sufficientLiquidity: true,
 				});
 			} catch (e) {
+				console.warn(e);
 				checkSufficientLiquidity();
 			}
 		})();
@@ -490,7 +491,7 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 	const checkValidPool = useCheckValidPool();
 
 	useEffect(() => {
-		const x = async () => {
+		const checkErrors = async () => {
 			if (!state.xToken || !state.yToken || !tokenInputs.xAmount) return;
 
 			if (state.sufficientLiquidity === false) {
@@ -523,7 +524,7 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 
 			updateState({ error: "" });
 		};
-		void x();
+		void checkErrors();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
 		xAmountMax,

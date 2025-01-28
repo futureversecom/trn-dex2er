@@ -78,7 +78,7 @@ export function AmountInputs({
 				error={xTokenError}
 				tokenUSD={xTokenUSD}
 				tokenBalance={xTokenBalance}
-				onClick={() => setSrc?.("x")}
+				onFocus={() => setSrc?.("x")}
 				active={src === "x" ? true : false}
 				setAmount={(amount) => setAmount({ src: "x", amount })}
 			>
@@ -131,7 +131,7 @@ export function AmountInputs({
 					error={yTokenError}
 					tokenUSD={yTokenUSD}
 					tokenBalance={yTokenBalance}
-					onClick={() => setSrc?.("y")}
+					onFocus={() => setSrc?.("y")}
 					active={src === "y" ? true : false}
 					setAmount={(amount) => setAmount({ src: "y", amount })}
 				>
