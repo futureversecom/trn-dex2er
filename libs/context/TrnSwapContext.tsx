@@ -217,7 +217,7 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 				false
 			);
 
-			if (sourceBalance.eq(0)) {
+			if (sourceBalance.toNumber() === 0) {
 				setXAmount("");
 				setYAmount("");
 				updateState({
@@ -258,18 +258,19 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 					sufficientLiquidity: true,
 				});
 			} catch (e) {
+				console.warn(e);
 				checkSufficientLiquidity();
 			}
 		})();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
+		trnApi,
 		setXAmount,
 		setYAmount,
 		state.xToken,
 		state.yToken,
 		tokenInputs.xAmount,
 		tokenInputs.yAmount,
-		trnApi,
 		checkSufficientLiquidity,
 	]);
 
@@ -490,8 +491,15 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 	const checkValidPool = useCheckValidPool();
 
 	useEffect(() => {
-		const x = async () => {
-			if (!state.xToken || !state.yToken || !tokenInputs.xAmount) return;
+		const checkErrors = async () => {
+			if (!state.xToken || !state.yToken) return;
+
+			const isValid = await checkValidPool([state.xToken.assetId, state.yToken.assetId]);
+			console.log("is valid ", isValid);
+			if (!isValid) {
+				updateState({ error: "This pair is not valid yet. Choose another token to swap" });
+				return;
+			}
 
 			if (state.sufficientLiquidity === false) {
 				return updateState({ error: "This pair has insufficient liquidity for this trade" });
@@ -515,18 +523,12 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 				return;
 			}
 
-			const isValid = await checkValidPool([state.xToken.assetId, state.yToken.assetId]);
-			if (!isValid) {
-				updateState({ error: "This pair is not valid yet. Choose another token to swap" });
-				return;
-			}
-
 			updateState({ error: "" });
 		};
-		void x();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		void checkErrors();
 	}, [
 		xAmountMax,
+		state.dexTx,
 		state.xToken,
 		state.yToken,
 		state.source,
@@ -534,7 +536,7 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 		state.slippage,
 		getTokenBalance,
 		state.canPayForGas,
-		tokenInputs.xAmount,
+		state.gasToken.name,
 		state.sufficientLiquidity,
 	]);
 

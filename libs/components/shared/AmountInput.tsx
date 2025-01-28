@@ -8,7 +8,7 @@ import { toDollarValue } from "@/libs/utils";
 import { Text } from "./";
 
 interface AmountInputProps extends PropsWithChildren {
-	onClick?: () => void;
+	onFocus?: () => void;
 	setAmount: (amount: string) => void;
 
 	token?: Token;
@@ -26,7 +26,7 @@ export function AmountInput({
 	error,
 	amount,
 	active,
-	onClick,
+	onFocus,
 	tokenUSD,
 	children,
 	setAmount,
@@ -63,7 +63,7 @@ export function AmountInput({
 						placeholder="0.0"
 						id={`amount-${label}`}
 						onChange={(e) => setAmount(e.target.value)}
-						onClick={() => onClick?.()}
+						onFocus={() => onFocus?.()}
 						className="bg-transparent text-xl font-semibold text-neutral-700 focus:outline-none"
 					/>
 					<Text
