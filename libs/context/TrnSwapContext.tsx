@@ -67,8 +67,6 @@ interface TrnSwapState extends TrnTokenInputState {
 	gasFeePlanck?: string;
 	canPayForGas?: boolean;
 	priceDifference?: number;
-	xAssetLiquidity?: number;
-	yAssetLiquidity?: number;
 	sufficientLiquidity?: boolean;
 	xAmountRatio?: Balance<TrnToken>;
 	yAmountRatio?: Balance<TrnToken>;
@@ -104,14 +102,6 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 			updateState({ estimatedFee, gasFeePlanck, canPayForGas, gasBalance }),
 		[]
 	);
-	const setXAssetLiquidity = useCallback(
-		(xAssetLiquidity?: number) => updateState({ xAssetLiquidity }),
-		[]
-	);
-	const setYAssetLiquidity = useCallback(
-		(yAssetLiquidity?: number) => updateState({ yAssetLiquidity }),
-		[]
-	);
 	const setToken = useCallback(
 		({ src, token }: { src: TokenSource; token: TrnToken }) =>
 			updateState({
@@ -144,69 +134,6 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 		signer,
 	});
 
-	// Temporary till rpc error reporting gets fixed
-	useEffect(() => {
-		void (async () => {
-			if (!trnApi || !state.xToken || !state.yToken) return;
-
-			const result = (
-				await trnApi.rpc.dex.getLiquidity(state.xToken.assetId, state.yToken.assetId)
-			).toJSON();
-
-			const convertScientificNotation = (liquidity: string) => {
-				if (liquidity.includes("e")) {
-					const [base, exponent] = liquidity.split("e").map(Number);
-					const result = BigInt(base * Math.pow(10, exponent));
-					return result;
-				}
-				return BigInt(liquidity);
-			};
-
-			const xAssetLiquidity = convertScientificNotation(result["0"] ? result["0"].toString() : "0");
-			const yAssetLiquidity = convertScientificNotation(result["1"] ? result["1"].toString() : "0");
-
-			const xAssetLiquidityBalance = new Balance(xAssetLiquidity, state.xToken);
-			const yAssetLiquidityBalance = new Balance(yAssetLiquidity, state.yToken);
-
-			setXAssetLiquidity(xAssetLiquidityBalance.toUnit().toNumber());
-			setYAssetLiquidity(yAssetLiquidityBalance.toUnit().toNumber());
-		})();
-	}, [setXAssetLiquidity, setYAssetLiquidity, state.xToken, state.yToken, trnApi]);
-
-	// Temporary till rpc error reporting gets fixed
-	const yAmountMinNotRatio = useMemo(() => {
-		return +tokenInputs.yAmount * (1 - +state.slippage / 100);
-	}, [state.slippage, tokenInputs.yAmount]);
-
-	// Temporary till rpc error reporting gets fixed
-	const checkSufficientLiquidity = useCallback(() => {
-		if (
-			!state.xAssetLiquidity ||
-			!state.yAssetLiquidity ||
-			!tokenInputs.xAmount ||
-			!tokenInputs.yAmount
-		)
-			return;
-
-		const productOfReserves = state.xAssetLiquidity * state.yAssetLiquidity; // Constant Product Model
-		const xNewReserve = state.xAssetLiquidity + +tokenInputs.xAmount;
-		const yNewReserve = productOfReserves / xNewReserve;
-		const yAmountAvailable = state.yAssetLiquidity - yNewReserve; // Calulcates how many units of ytoken can be provided
-
-		if (yAmountAvailable > yAmountMinNotRatio) {
-			return setSufficientLiquidity(true);
-		} else {
-			return setSufficientLiquidity(false);
-		}
-	}, [
-		setSufficientLiquidity,
-		state.xAssetLiquidity,
-		state.yAssetLiquidity,
-		tokenInputs.xAmount,
-		tokenInputs.yAmount,
-		yAmountMinNotRatio,
-	]);
-
 	useEffect(() => {
 		void (async () => {
 			if (!trnApi || !state.xToken || !state.yToken || !state.source) return;
@@ -218,8 +145,18 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 			);
 
 			if (sourceBalance.toNumber() === 0) {
-				setXAmount("");
-				setYAmount("");
+				if (state.source === "x") {
+					if (!tokenInputs[`${state.source}Amount`].includes(".")) {
+						setXAmount("");
+					}
+					setYAmount("");
+				} else {
+					if (!tokenInputs[`${state.source}Amount`].includes(".")) {
+						setYAmount("");
+					}
+					setXAmount("");
+				}
+
 				updateState({
 					ratio: undefined,
 					xAmountRatio: undefined,
@@ -251,6 +188,7 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 					10
 				);
 
+				setSufficientLiquidity(true);
 				updateState({
 					xAmountRatio: calculatedFromBalance,
 					yAmountRatio: calculatedtoBalance,
@@ -259,7 +197,8 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 				});
 			} catch (e) {
 				console.warn(e);
-				checkSufficientLiquidity();
+				// Its more likely than not that insufficient liquidity is the issue here. When the rpc error reporting is fixed we can know for sure.
+				setSufficientLiquidity(false);
 			}
 		})();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -271,7 +210,6 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 		state.yToken,
 		tokenInputs.xAmount,
 		tokenInputs.yAmount,
-		checkSufficientLiquidity,
 	]);
 
 	const yAmountMin = useMemo(() => {
@@ -313,17 +251,21 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 		};
 
 		if (state.source === "x") {
+			const xAmountRatioWithoutGas = removeGas(state.xAmountRatio.toPlanckString());
+			if (+xAmountRatioWithoutGas <= 0) return;
 			return trnApi.tx.dex.swapWithExactSupply(
-				removeGas(state.xAmountRatio.toPlanckString()),
+				xAmountRatioWithoutGas,
 				yAmountMin.toPlanckString(),
 				[state.xToken.assetId, state.yToken.assetId],
 				null,
 				null
 			);
 		} else {
+			const xAmountMaxWithoutGas = removeGas(xAmountMax.toPlanckString());
+			if (+xAmountMaxWithoutGas <= 0) return;
 			return trnApi.tx.dex.swapWithExactTarget(
 				state.yAmountRatio.toPlanckString(),
-				removeGas(xAmountMax.toPlanckString()),
+				xAmountMaxWithoutGas,
 				[state.xToken.assetId, state.yToken.assetId],
 				null,
 				null
