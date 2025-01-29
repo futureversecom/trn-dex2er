@@ -227,6 +227,7 @@ function AddressInput({ destination, setDestination, destinationError: error }: 
 function DestinationTagInput({
 	destinationTag,
 	setDestinationTag,
+	destinationTagError,
 	destinationTagRequired,
 }: BridgeContextType) {
 	const { network } = useWallets();
@@ -237,7 +238,12 @@ function DestinationTagInput({
 
 	return (
 		<div className="flex space-x-4 rounded">
-			<div className="flex h-28 w-full min-w-[50em] flex-col justify-center space-y-2 rounded bg-neutral-400 px-6">
+			<div
+				className={classNames(
+					"flex h-28 w-full min-w-[50em] flex-col justify-center space-y-2 rounded bg-neutral-400 px-6",
+					destinationTagError ? "border border-red-300" : ""
+				)}
+			>
 				<span className="flex items-center justify-between text-sm">
 					<label htmlFor="destination-tag-input" className="cursor-pointer text-neutral-700">
 						Destination Tag

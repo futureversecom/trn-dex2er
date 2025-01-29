@@ -77,12 +77,14 @@ interface BridgeState extends TrnTokenInputState {
 	gasToken: TrnToken;
 	explorerUrl?: string;
 	destinationTag: string | null;
+	destinationTagError: boolean;
 	builder?: CustomExtrinsicBuilder;
 }
 
 const initialState = {
 	slippage: "5",
 	destinationTag: null,
+	destinationTagError: false,
 	gasToken: DEFAULT_GAS_TOKEN,
 } as BridgeState;
 
@@ -101,8 +103,6 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken, error: "" }), []);
 	const setBuilder = useCallback((builder: CustomExtrinsicBuilder) => updateState({ builder }), []);
 	const setDestinationTag = useCallback((destinationTag: string) => {
-		const digitsOnly = /^\d*$/.test(destinationTag);
-		if (!digitsOnly) return;
 		updateState({
 			destinationTag: destinationTag === "" ? null : destinationTag,
 		});
@@ -441,6 +441,12 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 
 	const doSetDestinationTag = useCallback(
 		(tag: string) => {
+			const digitsOnly = /^\d*$/.test(tag);
+			if (!digitsOnly) {
+				return updateState({ error: "Only numbers (0-9) are allowed.", destinationTagError: true });
+			} else {
+				updateState({ error: "", destinationTagError: false });
+			}
 			setDestinationTag(tag);
 			buildTransaction({
 				toAddress: destination,
