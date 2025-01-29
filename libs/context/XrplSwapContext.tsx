@@ -124,22 +124,19 @@ export function XrplSwapProvider({ children }: PropsWithChildren) {
 		void (async () => {
 			if (!state.xToken || !state.yToken || !xrplProvider) return;
 
-			const valid = await checkAmmExists(
-				xrplProvider,
-				xrplCurrencytoCurrency(state.xToken),
-				xrplCurrencytoCurrency(state.yToken)
-			);
-
-			if (!valid) {
-				return setValidPool(valid);
-			} else {
-				setValidPool(valid);
-			}
-
 			const sourceBalance = +tokenInputs[`${state.source}Amount`];
 			if (sourceBalance === 0) {
-				setXAmount("");
-				setYAmount("");
+				if (state.source === "x") {
+					if (!tokenInputs[`${state.source}Amount`].includes(".")) {
+						setXAmount("");
+					}
+					setYAmount("");
+				} else {
+					if (!tokenInputs[`${state.source}Amount`].includes(".")) {
+						setYAmount("");
+					}
+					setXAmount("");
+				}
 				updateState({
 					ratio: undefined,
 					xAmountRatio: undefined,
@@ -403,33 +400,43 @@ export function XrplSwapProvider({ children }: PropsWithChildren) {
 	}, [state, isTokenDisabled]);
 
 	useEffect(() => {
-		if (!state.xToken || !state.yToken) return;
+		const checkErrors = async () => {
+			if (!state.xToken || !state.yToken || !xrplProvider) return;
 
-		let error = "";
+			let error = "";
 
-		if (sufficientLiquidity === false) {
-			return updateState({ error: "This pair has insufficient liquidity for this trade" });
-		}
+			const valid = await checkAmmExists(
+				xrplProvider,
+				xrplCurrencytoCurrency(state.xToken),
+				xrplCurrencytoCurrency(state.yToken)
+			);
+			if (!valid) {
+				return updateState({ error: "This pair is not valid yet. Choose another token to swap" });
+			}
 
-		if (state.validPool === false) {
-			return updateState({ error: "This pair is not valid yet. Choose another token to swap" });
-		}
+			if (sufficientLiquidity === false) {
+				return updateState({ error: "This pair has insufficient liquidity for this trade" });
+			}
 
-		const xrpBalance = getBalance(currencies.find((c) => c.currency === "XRP"))?.value;
-		if (!xrpBalance) return;
+			const xrpBalance = getBalance(currencies.find((c) => c.currency === "XRP"))?.value;
+			if (!xrpBalance) return;
 
-		if (!state.estimatedFee) return;
+			if (!state.estimatedFee) return;
 
-		if (
-			+xrpBalance < +state.estimatedFee ||
-			(state.xToken.currency === "XRP" && +xrpBalance - +tokenInputs.xAmount < +state.estimatedFee)
-		)
-			error = "Insufficient XRP balance for gas fee";
+			if (
+				+xrpBalance < +state.estimatedFee ||
+				(state.xToken.currency === "XRP" &&
+					+xrpBalance - +tokenInputs.xAmount < +state.estimatedFee)
+			)
+				error = "Insufficient XRP balance for gas fee";
 
-		updateState({ error });
+			updateState({ error });
+		};
+		void checkErrors();
 	}, [
 		currencies,
 		getBalance,
+		xrplProvider,
 		state.xToken,
 		state.yToken,
 		state.validPool,
