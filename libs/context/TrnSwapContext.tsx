@@ -437,7 +437,6 @@ export function TrnSwapProvider({ children }: PropsWithChildren) {
 			if (!state.xToken || !state.yToken) return;
 
 			const isValid = await checkValidPool([state.xToken.assetId, state.yToken.assetId]);
-			console.log("is valid ", isValid);
 			if (!isValid) {
 				updateState({ error: "This pair is not valid yet. Choose another token to swap" });
 				return;
