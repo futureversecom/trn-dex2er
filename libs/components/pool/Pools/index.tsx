@@ -93,7 +93,7 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 				</div>
 			</div>
 
-			{validPools.length != 0 && (
+			{validPools.length !== 0 && (
 				<div>
 					{validPools.slice(startIndex, endIndex + 1).map((pool) => {
 						const [asset1, asset2] = pool.poolKey.split("-");
