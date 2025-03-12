@@ -17,6 +17,7 @@ interface PoolsProps<T> {
 interface PoolComponentProps<T> {
 	onPoolClick: PoolsProps<T>["onPoolClick"];
 	network: "XRP" | "ROOT";
+	isLoadingPools: boolean;
 }
 
 type PoolProps<T extends "XRP" | "ROOT"> = T extends "XRP"
@@ -76,9 +77,13 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 	return (
 		<>
 			<div className="flex">
-				<Text>
-					To add liquidity, {isConnected ? "select a pool below" : "please connect your wallet"}.
-				</Text>
+				{props.isLoadingPools ? (
+					<Text>Fetching pools...</Text>
+				) : (
+					<Text>
+						To add liquidity, {isConnected ? "select a pool below" : "please connect your wallet"}.
+					</Text>
+				)}
 				<div className="absolute right-0 mr-6">
 					{network === "ROOT" ? (
 						<SearchBar setSearchQuery={setTrnPoolFilter} query={trnPoolFilter} />
@@ -88,7 +93,7 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 				</div>
 			</div>
 
-			{!!validPools?.length && (
+			{validPools.length != 0 && (
 				<div>
 					{validPools.slice(startIndex, endIndex + 1).map((pool) => {
 						const [asset1, asset2] = pool.poolKey.split("-");

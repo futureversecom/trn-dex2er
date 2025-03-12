@@ -28,6 +28,7 @@ export type TrnTokenContextType = {
 	tokens: TrnTokens;
 	pools: LiquidityPoolsRoot;
 	isFetching: boolean;
+	isLoadingPools: boolean;
 	tokenBalances: Record<number, Balance<TrnToken>>;
 	refetchTokenBalances: () => Promise<VoidFn | undefined>;
 	getTokenBalance: (token?: TrnToken) => Balance<TrnToken> | undefined;
@@ -81,7 +82,11 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 		[tokenBalances]
 	);
 
-	const { data: pools, isFetching: isFetchingPools } = useFetchTrnPools(tokensWithPrices);
+	const {
+		data: pools,
+		isFetching: isFetchingPools,
+		isLoading: isLoadingPools,
+	} = useFetchTrnPools(tokensWithPrices);
 
 	const positions = useMemo(() => {
 		if (!pools || !tokens || isFetchingPools) return null;
@@ -151,6 +156,7 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 				pools: filteredPools ?? [],
 				tokens: tokensWithPrices ?? tokens ?? {},
 				isFetching: isFetchingPools,
+				isLoadingPools: isLoadingPools,
 				positions: positions ?? [],
 				setFilter: filterPool,
 				filter,

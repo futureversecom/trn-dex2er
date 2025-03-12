@@ -6,13 +6,15 @@ import { BackButton, Box, Text } from "@/libs/components/shared";
 import { useAddLiquidity, useTrnTokens } from "@/libs/context";
 
 export default function Home() {
-	const { isFetching } = useTrnTokens();
+	const { isFetching, isLoadingPools } = useTrnTokens();
 	const { xToken, yToken, resetState, onPoolClick } = useAddLiquidity();
 
 	if (!xToken && !yToken)
 		return (
 			<Box heading="pools" isLoading={isFetching}>
-				<Pools onPoolClick={onPoolClick} network="ROOT" />
+				{!isLoadingPools && (
+					<Pools onPoolClick={onPoolClick} network="ROOT" isLoadingPools={isLoadingPools} />
+				)}
 			</Box>
 		);
 

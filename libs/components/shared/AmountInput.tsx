@@ -33,10 +33,10 @@ export function AmountInput({
 	tokenBalance,
 }: AmountInputProps) {
 	return (
-		<div className="flex space-x-4">
+		<div className="flex w-full">
 			<div
 				className={classNames(
-					"flex h-28 w-full min-w-[50em] flex-col justify-center space-y-2 rounded px-6",
+					"flex h-28 w-full flex-col justify-center space-y-2 rounded px-6",
 					active ? "border border-primary-700" : ""
 				)}
 			>
