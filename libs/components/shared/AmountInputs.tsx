@@ -121,7 +121,9 @@ export function AmountInputs({
 			{!singleSidedDeposit &&
 				(between
 					? between
-					: plusIcon && <div className="flex h-6 items-center justify-center text-lg">+</div>)}
+					: plusIcon && (
+							<div className="flex h-6 items-center justify-center text-lg text-neutral-700">+</div>
+						))}
 
 			{!singleSidedDeposit && (
 				<AmountInput

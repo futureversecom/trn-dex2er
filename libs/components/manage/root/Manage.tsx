@@ -85,7 +85,7 @@ export function Manage() {
 				</ConfirmModal>
 			)}
 
-			<Box heading={"I WOULD LIKE TO"} className="relative">
+			<Box heading={"I WOULD LIKE TO"}>
 				<div className="flex space-x-4">
 					<Button
 						variant={props.action === "add" ? "primary" : "secondary"}

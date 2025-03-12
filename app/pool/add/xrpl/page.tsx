@@ -6,13 +6,13 @@ import { BackButton, Box, Text } from "@/libs/components/shared";
 import { useAddLiquidityXrpl, useXrplCurrencies } from "@/libs/context";
 
 export default function Home() {
-	const { isFetching } = useXrplCurrencies();
+	const { isFetching, isLoadingPools } = useXrplCurrencies();
 	const { xToken, yToken, resetState, onPoolClick } = useAddLiquidityXrpl();
 
 	if (!xToken && !yToken) {
 		return (
 			<Box heading="pools" isLoading={isFetching}>
-				<Pools onPoolClick={onPoolClick} network="XRP" />
+				<Pools onPoolClick={onPoolClick} network="XRP" isLoadingPools={isLoadingPools} />
 			</Box>
 		);
 	}

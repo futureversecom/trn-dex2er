@@ -52,7 +52,7 @@ export function Ratio({
 						height={16}
 						width={16}
 						className={classNames(
-							"transition duration-200",
+							"text-neutral-700 transition duration-200",
 							isSwitched ? "-rotate-90" : "rotate-90"
 						)}
 					>

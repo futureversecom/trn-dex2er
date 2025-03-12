@@ -23,26 +23,36 @@ import { useUsdPrices } from "./UsdPriceContext";
 import { useWallets } from "./WalletContext";
 
 export type XrplCurrencyContextType = {
+	// Data
 	currencies: XrplCurrency[];
 	balances: XrplBalance[];
 	trustlines: AccountLinesTrustline[];
+	pools: LiquidityPoolsXrpl;
+	positions: XrplPosition[];
+
+	// State flags
+	isFetching: boolean;
+	isLoadingPools: boolean;
+	error: string | undefined;
+	filter: string;
+
+	// Data access methods
 	checkTrustline: (currency: XrplCurrency) => boolean;
 	getBalance: (currency?: XrplCurrency) => XrplBalance | undefined;
-	isFetching: boolean;
-	refetch: () => Promise<void>;
-	positions: XrplPosition[];
-	pools: LiquidityPoolsXrpl;
 	findToken: (currencyCode: string) => XrplCurrency | undefined;
-	error: string | undefined;
+
+	// Actions
+	refetch: () => Promise<void>;
 	openImportModal: (open: boolean) => void;
 	buildTrustLineTx: (token: IssuedCurrency) => void;
 	signTransaction: () => Promise<void>;
+	resetState: () => void;
+
+	// State setters
 	setTag: (tag?: ContextTag) => void;
 	setCurrencyCode: (code?: string) => void;
 	setIssuer: (issuer?: string) => void;
-	resetState: () => void;
 	setFilter: (filter: string) => void;
-	filter: string;
 } & XrplCurrencyContextState;
 
 const XrplCurrencyContext = createContext<XrplCurrencyContextType>({} as XrplCurrencyContextType);
@@ -79,6 +89,7 @@ export function XrplCurrencyProvider({
 		data: pools,
 		isFetching: isFetchingPools,
 		refetch: refetchXrplPools,
+		isLoading: isLoadingPools,
 	} = useFetchXrplPools(xrplProvider, tokenPairs, prices);
 
 	const [filter, setFilter] = useState("");
@@ -367,27 +378,38 @@ export function XrplCurrencyProvider({
 	return (
 		<XrplCurrencyContext.Provider
 			value={{
+				// Data properties
 				currencies: currenciesWithPrices ?? currencies,
 				balances: balances ?? [],
 				trustlines: trustlines ?? [],
-				checkTrustline,
-				getBalance,
-				isFetching: isFetchingBalances || isFetchingTrustlines || isFetchingPools,
-				refetch,
-				positions: positions ?? [],
 				pools: filteredPools ?? [],
-				findToken,
-				openImportModal,
-				error: state.error,
-				buildTrustLineTx,
-				resetState,
-				setCurrencyCode,
-				setIssuer,
-				setTag,
-				signTransaction,
-				setFilter: filterPool,
+				positions: positions ?? [],
 				filter,
 
+				// Status flags
+				isFetching: isFetchingBalances || isFetchingTrustlines || isFetchingPools,
+				isLoadingPools,
+				error: state.error,
+
+				// Data access methods
+				checkTrustline,
+				getBalance,
+				findToken,
+
+				// Actions
+				refetch,
+				openImportModal,
+				buildTrustLineTx,
+				signTransaction,
+				resetState,
+
+				// State setters
+				setTag,
+				setCurrencyCode,
+				setIssuer,
+				setFilter: filterPool,
+
+				// State object
 				...state,
 			}}
 		>

@@ -42,7 +42,7 @@ export function SettingsButton({
 	return (
 		<>
 			<Button size="rounded" variant="tertiary" className="!p-3" onClick={() => setOpen(!open)}>
-				<svg width="24" height="25">
+				<svg width="24" height="25" className="text-neutral-700">
 					<use xlinkHref="/images/commons.svg#cog" />
 				</svg>
 			</Button>
@@ -51,7 +51,7 @@ export function SettingsButton({
 				{setSlippage && (
 					<div>
 						<div className="flex items-center gap-2 pb-2">
-							<label htmlFor="slippage" className="font-semibold">
+							<label htmlFor="slippage" className="font-semibold text-neutral-700">
 								Slippage
 							</label>
 							<Tooltip
@@ -60,7 +60,7 @@ export function SettingsButton({
 							/>
 						</div>
 
-						<div className="w-full rounded-lg bg-neutral-200 py-4">
+						<div className="w-full rounded-lg bg-neutral-200 py-4 text-neutral-700">
 							<input
 								id="slippage"
 								value={slippage}
@@ -75,14 +75,14 @@ export function SettingsButton({
 				{gasToken && setGasToken && (
 					<div>
 						<div className="flex items-center gap-2 pb-2">
-							<label htmlFor="gas-token" className="font-semibold">
+							<label htmlFor="gas-token" className="font-semibold text-neutral-700">
 								Pay transaction fee with
 							</label>
 							<Tooltip id="gas-token-info" tip="Select any token to pay for transaction fee." />
 						</div>
 
 						<Dropdown
-							className="w-full p-4"
+							className="w-full p-4 text-neutral-700"
 							itemsClassName="w-[22em]"
 							current={gasToken.symbol}
 							options={gasTokens.map((token) => token.symbol)}
