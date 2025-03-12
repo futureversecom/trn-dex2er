@@ -25,16 +25,25 @@ export interface Position {
 }
 
 export type TrnTokenContextType = {
+	// Data
 	tokens: TrnTokens;
 	pools: LiquidityPoolsRoot;
+	positions: Position[];
+	tokenBalances: Record<number, Balance<TrnToken>>;
+	filter: string;
+
+	// State flags
 	isFetching: boolean;
 	isLoadingPools: boolean;
-	tokenBalances: Record<number, Balance<TrnToken>>;
-	refetchTokenBalances: () => Promise<VoidFn | undefined>;
+
+	// Data access methods
 	getTokenBalance: (token?: TrnToken) => Balance<TrnToken> | undefined;
-	positions: Position[];
+
+	// Actions
+	refetchTokenBalances: () => Promise<VoidFn | undefined>;
+
+	// State setters
 	setFilter: (filter: string) => void;
-	filter: string;
 };
 
 const TrnTokenContext = createContext<TrnTokenContextType>({} as TrnTokenContextType);
