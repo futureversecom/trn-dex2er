@@ -76,7 +76,7 @@ export const XRPL_NETWORK: XrplNetworkDetails = {
 
 	livenet: {
 		ApiUrl: {
-			InWebSocket: "wss://s1.ripple.com/",
+			InWebSocket: "wss://xrplcluster.com",
 		},
 		ExplorerUrl: "https://livenet.xrpl.org",
 		ChainId: {
