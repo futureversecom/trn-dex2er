@@ -362,10 +362,10 @@ export function AddLiquidityProvider({ children }: PropsWithChildren) {
 			});
 
 			void queryClient.invalidateQueries({
-				queryKey: ["tokenMetadata"],
+				queryKey: ["trnLiquidityPools"],
 			});
 			void queryClient.invalidateQueries({
-				queryKey: ["trnLiquidityPools"],
+				queryKey: ["tokenMetadata"],
 			});
 		} catch (err: any) {
 			setTag("failed");

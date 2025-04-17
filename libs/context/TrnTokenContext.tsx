@@ -28,7 +28,6 @@ export type TrnTokenContextType = {
 	// Data
 	tokens: TrnTokens;
 	pools: LiquidityPoolsRoot;
-	positions: Position[];
 	tokenBalances: Record<number, Balance<TrnToken>>;
 	filter: string;
 
@@ -97,40 +96,6 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 		isLoading: isLoadingPools,
 	} = useFetchTrnPools(tokensWithPrices);
 
-	const positions = useMemo(() => {
-		if (!pools || !tokens || isFetchingPools) return null;
-
-		const findToken = (assetId: number, tokens: TrnTokens): TrnToken | undefined => {
-			return Object.values(tokens).find((token) => token.assetId === assetId);
-		};
-
-		return pools
-			.sort((a, b) => (a.assetId > b.assetId ? 1 : -1))
-			.map((pool) => {
-				const lpToken = findToken(pool.assetId as number, tokens);
-				const lpBalance = getTokenBalance(lpToken);
-
-				if (!lpToken || !lpBalance || lpBalance.eq(0)) return null;
-
-				const [xAssetId, yAssetId] = pool.poolKey.split("-").map(Number);
-				const xToken = findToken(xAssetId, tokens);
-				const yToken = findToken(yAssetId, tokens);
-
-				if (!xToken || !yToken) return null;
-
-				const poolShare = lpBalance.div(lpToken.supply).multipliedBy(100);
-
-				return {
-					assetId: pool.assetId,
-					xToken,
-					yToken,
-					lpBalance,
-					poolShare,
-				};
-			})
-			.filter((pool): pool is Position => !!pool);
-	}, [pools, tokens, getTokenBalance, isFetchingPools]);
-
 	const filteredPools = useMemo(() => {
 		if (!pools || !tokens) return;
 		if (!filter) return pools;
@@ -166,7 +131,6 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 				tokens: tokensWithPrices ?? tokens ?? {},
 				isFetching: isFetchingPools,
 				isLoadingPools: isLoadingPools,
-				positions: positions ?? [],
 				setFilter: filterPool,
 				filter,
 			}}
