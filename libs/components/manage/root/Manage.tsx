@@ -16,6 +16,7 @@ import {
 	Text,
 	TokenImage,
 	TokenSelect,
+	YourPosition,
 } from "../../shared";
 import { PercentButtons } from "./PercentButtons";
 
@@ -95,92 +96,98 @@ export function Manage() {
 				</ConfirmModal>
 			)}
 
-			<Box heading={"I WOULD LIKE TO"}>
-				<div className="flex space-x-4">
-					<Button
-						variant={poolManagementData.action === "add" ? "primary" : "secondary"}
-						size="rounded"
-						onClick={poolManagementData.onSwitchClick}
-					>
-						+ Add Liquidity
-					</Button>
-					<Button
-						variant={poolManagementData.action === "add" ? "secondary" : "primary"}
-						size="rounded"
-						onClick={poolManagementData.onSwitchClick}
-					>
-						- Remove Liquidity
-					</Button>
-				</div>
-				<div className="pb-8">
-					{poolManagementData.action === "add" ? (
-						<Text>
-							By adding liquidity, you can earn 0.3% of all trades on this pair based on the amount
-							of liquidity you provided. Fees are automatically added to the pool in real-time and
-							can be claimed when you withdraw your liquidity.
-						</Text>
-					) : (
-						<Text>
-							When you remove liquidity, your position will be converted back into underlying tokens
-							at the current rate, proportional to your share of the pool. Any fees that have
-							accrued will be included in the amounts you receive.
+			<div className="flex flex-col gap-4 md:flex-row">
+				<Box heading={"I WOULD LIKE TO"}>
+					<div className="flex space-x-4">
+						<Button
+							variant={poolManagementData.action === "add" ? "primary" : "secondary"}
+							size="rounded"
+							onClick={poolManagementData.onSwitchClick}
+						>
+							+ Add Liquidity
+						</Button>
+						<Button
+							variant={poolManagementData.action === "add" ? "secondary" : "primary"}
+							size="rounded"
+							onClick={poolManagementData.onSwitchClick}
+						>
+							- Remove Liquidity
+						</Button>
+					</div>
+					<div className="pb-8">
+						{poolManagementData.action === "add" ? (
+							<Text>
+								By adding liquidity, you can earn 0.3% of all trades on this pair based on the
+								amount of liquidity you provided. Fees are automatically added to the pool in
+								real-time and can be claimed when you withdraw your liquidity.
+							</Text>
+						) : (
+							<Text>
+								When you remove liquidity, your position will be converted back into underlying
+								tokens at the current rate, proportional to your share of the pool. Any fees that
+								have accrued will be included in the amounts you receive.
+							</Text>
+						)}
+					</div>
+
+					<AmountInputs
+						{...{
+							xToken: poolManagementData.xToken,
+							yToken: poolManagementData.yToken,
+							labels: new Array(2).fill(
+								poolManagementData.action === "add" ? "Deposit" : "Withdraw"
+							) as [string, string],
+							...poolManagementData,
+							plusIcon: poolManagementData.action === "add",
+							...(poolManagementData.action === "remove" && {
+								between: <PercentButtons />,
+								xTokenBalance: poolManagementData.poolBalances?.x.balance.toUnit(),
+								yTokenBalance: poolManagementData.poolBalances?.y.balance.toUnit(),
+								// TODO: Check for error properly for 'remove' action
+								xTokenError: undefined,
+								yTokenError: undefined,
+							}),
+						}}
+					/>
+
+					{poolManagementData.error && (
+						<Text className="text-red-300" size="md">
+							{poolManagementData.error}
 						</Text>
 					)}
+
+					{poolManagementData.xToken && poolManagementData.yToken && poolManagementData.ratio && (
+						<>
+							<div className="flex items-center justify-between px-2">
+								<Ratio
+									isSwitchable
+									ratio={poolManagementData.ratio}
+									xToken={poolManagementData.xToken}
+									yToken={poolManagementData.yToken}
+								/>
+
+								<SettingsButton {...poolManagementData} />
+							</div>
+
+							<div className="space-y-2 rounded-lg bg-neutral-400 p-6">{infoItems}</div>
+						</>
+					)}
+
+					<ActionButton
+						disabled={
+							poolManagementData.isDisabled ||
+							poolManagementData.xAmount === "" ||
+							poolManagementData.yAmount === ""
+						}
+						onClick={() => poolManagementData.setTag("review")}
+						text={heading}
+					/>
+				</Box>
+
+				<div className="md:self-start">
+					<YourPosition />
 				</div>
-
-				<AmountInputs
-					{...{
-						xToken: poolManagementData.xToken,
-						yToken: poolManagementData.yToken,
-						labels: new Array(2).fill(
-							poolManagementData.action === "add" ? "Deposit" : "Withdraw"
-						) as [string, string],
-						...poolManagementData,
-						plusIcon: poolManagementData.action === "add",
-						...(poolManagementData.action === "remove" && {
-							between: <PercentButtons />,
-							xTokenBalance: poolManagementData.poolBalances?.x.balance.toUnit(),
-							yTokenBalance: poolManagementData.poolBalances?.y.balance.toUnit(),
-							// TODO: Check for error properly for 'remove' action
-							xTokenError: undefined,
-							yTokenError: undefined,
-						}),
-					}}
-				/>
-
-				{poolManagementData.error && (
-					<Text className="text-red-300" size="md">
-						{poolManagementData.error}
-					</Text>
-				)}
-
-				{poolManagementData.xToken && poolManagementData.yToken && poolManagementData.ratio && (
-					<>
-						<div className="flex items-center justify-between px-2">
-							<Ratio
-								isSwitchable
-								ratio={poolManagementData.ratio}
-								xToken={poolManagementData.xToken}
-								yToken={poolManagementData.yToken}
-							/>
-
-							<SettingsButton {...poolManagementData} />
-						</div>
-
-						<div className="space-y-2 rounded-lg bg-neutral-400 p-6">{infoItems}</div>
-					</>
-				)}
-
-				<ActionButton
-					disabled={
-						poolManagementData.isDisabled ||
-						poolManagementData.xAmount === "" ||
-						poolManagementData.yAmount === ""
-					}
-					onClick={() => poolManagementData.setTag("review")}
-					text={heading}
-				/>
-			</Box>
+			</div>
 		</>
 	);
 }
