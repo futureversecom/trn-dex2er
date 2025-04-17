@@ -1,8 +1,6 @@
 import { useFutureverseSigner } from "@futureverse/auth-react";
 import { CustomExtrinsicBuilder } from "@futureverse/transact";
 import { useTrnApi } from "@futureverse/transact-react";
-import { SubmittableExtrinsic } from "@polkadot/api/types";
-import { ISubmittableResult } from "@polkadot/types/types";
 import { useQueryClient } from "@tanstack/react-query";
 import BigNumber from "bignumber.js";
 import {
@@ -24,10 +22,11 @@ import {
 	type TrnTokenInputs,
 	type TrnTokenInputState,
 	useCheckValidPool,
+	useTrnPoolFinder,
 	useTrnTokenInputs,
 } from "../hooks";
-import { useCustomExtrinsicBuilder } from "../hooks";
-import { fetchSingleTrnToken, formatRootscanId } from "../utils";
+import { useCustomExtrinsicBuilder, useTrnPoolPositions } from "../hooks";
+import { calculateTrnPoolBalances, formatRootscanId } from "../utils";
 import { Balance, getMinAmount, parseSlippage, toFixed } from "../utils";
 import { createBuilder } from "../utils/createBuilder";
 import { Position } from "./TrnTokenContext";
@@ -92,8 +91,8 @@ function useManagePoolState() {
 	const [state, setState] = useState<ManagePoolState>(initialState);
 	const [estimatedFee, setEstimatedFee] = useState<string>();
 	const [canPayForGas, setCanPayForGas] = useState<boolean>();
-	const [positions, setPositions] = useState<Position[]>([]);
-	const [isLoadingPositions, setIsLoadingPositions] = useState(false);
+	// const [positions, setPositions] = useState<Position[]>([]);
+	// const [isLoadingPositions, setIsLoadingPositions] = useState(false);
 	const updateState = useCallback((update: Partial<ManagePoolState>) => {
 		setState((prev) => ({ ...prev, ...update }));
 	}, []);
@@ -139,94 +138,20 @@ function useManagePoolState() {
 		walletAddress: userSession?.eoa ?? "",
 		signer,
 	});
+	const { positions, isLoadingPositions } = useTrnPoolPositions(
+		pools,
+		tokens,
+		getTokenBalance,
+		trnApi,
+		isFetching
+	);
 
-	// Effect to fetch and calculate user's liquidity positions
-	// -------------------------------------------------------
-	// Runs when pools or tokens data updates
-	useEffect(() => {
-		if (!pools || !tokens || isFetching) {
-			return;
-		}
-
-		let isMounted = true;
-		setIsLoadingPositions(true);
-
-		const fetchPositions = async () => {
-			try {
-				const sortedPools = [...pools].sort((a, b) => (a.assetId > b.assetId ? 1 : -1));
-
-				const positionsPromises = sortedPools.map(async (pool) => {
-					const lpToken = tokens[pool.assetId as number];
-					const lpBalance = getTokenBalance(lpToken);
-
-					if (!lpToken || !lpBalance || lpBalance.eq(0)) return null;
-
-					let updatedSupply = lpToken.supply;
-					try {
-						const updatedToken = await fetchSingleTrnToken(pool.assetId, trnApi);
-						if (updatedToken) {
-							updatedSupply = updatedToken.supply;
-						}
-					} catch (error) {
-						console.error(`Error fetching updated supply for token ${pool.assetId}:`, error);
-					}
-
-					const poolShare = lpBalance.div(updatedSupply).multipliedBy(100);
-					const [xAssetId, yAssetId] = pool.poolKey.split("-").map(Number);
-
-					return {
-						assetId: pool.assetId,
-						xToken: tokens[xAssetId],
-						yToken: tokens[yAssetId],
-						lpBalance,
-						poolShare,
-					};
-				});
-
-				const resolvedPositions = await Promise.all(positionsPromises);
-
-				setPositions(resolvedPositions.filter((pool): pool is Position => !!pool));
-			} catch (error) {
-				console.error("Error calculating positions:", error);
-				setPositions([]);
-			} finally {
-				setIsLoadingPositions(false);
-			}
-		};
-
-		fetchPositions();
-		return () => {
-			isMounted = false;
-		};
-	}, [pools, tokens, isFetching, getTokenBalance, trnApi]);
-
-	// Memoized derivation of the current liquidity pool based on selected tokens
-	// ------------------------------------------------------------------------
-	const liquidityPool = useMemo(() => {
-		if (!state.xToken?.assetId || !state.yToken?.assetId) return undefined;
-
-		const xAssetId = state.xToken.assetId;
-		const yAssetId = state.yToken.assetId;
-
-		return pools.find(({ poolKey }) => {
-			const [x, y] = poolKey.split("-").map(Number);
-			return (x === xAssetId && y === yAssetId) || (x === yAssetId && y === xAssetId);
-		});
-	}, [pools, state.xToken?.assetId, state.yToken?.assetId]);
-
-	// Memoized derivation of the user's current position in the selected pool
-	// ---------------------------------------------------------------------
-	const currentPosition = useMemo(() => {
-		if (!liquidityPool) return;
-
-		const position = positions.find((pos) => pos.assetId === liquidityPool.assetId);
-		if (!position) {
-			console.warn("Failed to find LP position for assetId:", liquidityPool?.assetId);
-			return undefined;
-		}
-
-		return position;
-	}, [positions, liquidityPool]);
+	const { liquidityPool, currentPosition } = useTrnPoolFinder(
+		pools,
+		positions,
+		state.xToken,
+		state.yToken
+	);
 
 	// Effect to calculate pool balances when relevant state changes
 	// ------------------------------------------------------------
@@ -248,24 +173,13 @@ function useManagePoolState() {
 				)
 					return;
 
-				const asset = await fetchSingleTrnToken(currentPosition.assetId, trnApi);
-				if (!asset) {
-					throw new Error("Failed to fetch LP token data");
-				}
-
-				const [xAssetIdStr] = liquidityPool.poolKey.split("-");
-				const xAssetId = Number(xAssetIdStr);
-
-				const poolShare = currentPosition.poolShare.dividedBy(100);
-
-				const xLiquidityIndex = xAssetId === state.xToken.assetId ? 0 : 1;
-				const yLiquidityIndex = 1 - xLiquidityIndex; // The other index
-
-				const xLiquidity = new Balance(liquidityPool.liquidity[xLiquidityIndex], state.xToken);
-				const yLiquidity = new Balance(liquidityPool.liquidity[yLiquidityIndex], state.yToken);
-
-				const xBalance = xLiquidity.multipliedBy(poolShare);
-				const yBalance = yLiquidity.multipliedBy(poolShare);
+				const balances = await calculateTrnPoolBalances({
+					liquidityPool,
+					currentPosition,
+					xToken: state.xToken,
+					yToken: state.yToken,
+					trnApi,
+				});
 
 				if (!isMounted) return;
 
@@ -274,16 +188,7 @@ function useManagePoolState() {
 						...currentPosition,
 					},
 				});
-				setPoolBalances({
-					x: {
-						balance: xBalance,
-						liquidity: xLiquidity,
-					},
-					y: {
-						balance: yBalance,
-						liquidity: yLiquidity,
-					},
-				});
+				setPoolBalances(balances);
 			} catch (error) {
 				console.error("Error fetching pool balances:", error);
 				setPoolBalances(undefined);
@@ -351,6 +256,148 @@ function useManagePoolState() {
 		updateState({ action: state.action === "add" ? "remove" : "add" });
 	}, [state.action, updateState]);
 
+	// Helper functions for transaction building
+	// ------------------------------------------
+	const validateBuildInputs = useCallback(
+		(
+			xAmount: string,
+			yAmount: string,
+			xToken?: TrnToken,
+			yToken?: TrnToken,
+			action?: string,
+			position?: Position,
+			lpToRemove?: Balance<TrnToken>
+		) => {
+			if (
+				!trnApi ||
+				!xToken ||
+				!yToken ||
+				!xAmount ||
+				!yAmount ||
+				!signer ||
+				!userSession ||
+				!customEx ||
+				(action === "remove" && (!position || !lpToRemove))
+			) {
+				return false;
+			}
+
+			const xBalance = new Balance(xAmount, xToken, false);
+			const yBalance = new Balance(yAmount, yToken, false);
+
+			if (xBalance.eq(0) || yBalance.eq(0)) {
+				return false;
+			}
+
+			return { xBalance, yBalance };
+		},
+		[trnApi, signer, userSession, customEx]
+	);
+
+	const createAddLiquidityTx = useCallback(
+		(
+			xToken: TrnToken,
+			yToken: TrnToken,
+			xBalance: Balance<TrnToken>,
+			yBalance: Balance<TrnToken>,
+			slippage: string
+		) => {
+			const xAmountMin = getMinAmount(xBalance, slippage);
+			const yAmountMin = getMinAmount(yBalance, slippage);
+
+			return trnApi!.tx.dex.addLiquidity(
+				xToken.assetId,
+				yToken.assetId,
+				xBalance.toPlanckString(),
+				yBalance.toPlanckString(),
+				xAmountMin.toPlanckString(),
+				yAmountMin.toPlanckString(),
+				null,
+				null
+			);
+		},
+		[trnApi]
+	);
+
+	const createRemoveLiquidityTx = useCallback(
+		(
+			xToken: TrnToken,
+			yToken: TrnToken,
+			lpToRemove: Balance<TrnToken>,
+			xBalance: Balance<TrnToken>,
+			yBalance: Balance<TrnToken>,
+			slippage: string
+		) => {
+			const xAmountMin = getMinAmount(xBalance, slippage);
+			const yAmountMin = getMinAmount(yBalance, slippage);
+
+			return trnApi!.tx.dex.removeLiquidity(
+				xToken.assetId,
+				yToken.assetId,
+				lpToRemove.toPlanckString(),
+				xAmountMin.toPlanckString(),
+				yAmountMin.toPlanckString(),
+				null,
+				null
+			);
+		},
+		[trnApi]
+	);
+
+	const handleGasCalculation = useCallback(
+		async (
+			builder: CustomExtrinsicBuilder,
+			xBalance: Balance<TrnToken>,
+			yBalance: Balance<TrnToken>,
+			gasToken: TrnToken,
+			xToken: TrnToken,
+			yToken: TrnToken,
+			action: string,
+			slippage: string
+		) => {
+			const { gasString } = await builder.getGasFees();
+			const [gas] = gasString.split(" ");
+			setEstimatedFee(gas);
+
+			const gasTokenBalance = await builder.checkBalance({
+				walletAddress: userSession!.futurepass,
+				assetId: gasToken.assetId,
+			});
+			const gasBalance = new Balance(+gasTokenBalance.balance, gasTokenBalance).toUnit();
+
+			let canPay: boolean | undefined;
+			let needsRebuild = false;
+			let adjustedXAmount = xBalance;
+			let adjustedYAmount = yBalance;
+			const gasCost = new Balance(gas, gasToken).multipliedBy(1.5); // Safety margin
+
+			if (action === "add") {
+				if (xToken.assetId === gasToken.assetId) {
+					adjustedXAmount = new Balance(xBalance.minus(gasCost), xToken, false);
+					canPay = gasBalance.gte(xBalance);
+					needsRebuild = adjustedXAmount.gt(0);
+				} else if (yToken.assetId === gasToken.assetId) {
+					adjustedYAmount = new Balance(yBalance.minus(gasCost), yToken, false);
+					canPay = gasBalance.gte(yBalance);
+					needsRebuild = adjustedYAmount.gt(0);
+				} else {
+					canPay = gasBalance.gte(gasCost);
+				}
+			} else {
+				canPay = gasBalance.gte(gasCost);
+			}
+
+			return {
+				canPay,
+				needsRebuild,
+				adjustedXAmount,
+				adjustedYAmount,
+				gas,
+			};
+		},
+		[userSession]
+	);
+
 	// Build the transaction based on current inputs
 	// -------------------------------------------
 	// Core function that prepares the transaction for signing
@@ -366,147 +413,100 @@ function useManagePoolState() {
 			slippage?: string;
 			lpToRemove?: Balance<TrnToken>;
 		} = {}) => {
-			if (
-				!trnApi ||
-				!state.xToken ||
-				!state.yToken ||
-				!xAmount ||
-				!yAmount ||
-				!signer ||
-				!userSession ||
-				!customEx ||
-				// Check lpToRemove only for remove action
-				(state.action === "remove" && (!state.position || !lpToRemove))
-			) {
+			// Reset states at the beginning
+			const resetStates = () => {
 				setBuilder(undefined);
 				setEstimatedFee(undefined);
 				setCanPayForGas(undefined);
 				updateState({ ratio: undefined, error: "" });
+			};
+
+			// Validate inputs
+			const validationResult = validateBuildInputs(
+				xAmount,
+				yAmount,
+				state.xToken,
+				state.yToken,
+				state.action,
+				state.position,
+				lpToRemove
+			);
+
+			if (!validationResult) {
+				resetStates();
 				return;
 			}
 
-			const xBalance = new Balance(xAmount, state.xToken, false);
-			const yBalance = new Balance(yAmount, state.yToken, false);
-
-			if (xBalance.eq(0) || yBalance.eq(0)) {
-				setBuilder(undefined);
-				setEstimatedFee(undefined);
-				setCanPayForGas(undefined);
-				updateState({ ratio: undefined, error: "" });
-				return;
-			}
-
-			const xAmountMin = getMinAmount(xBalance, slippage);
-			const yAmountMin = getMinAmount(yBalance, slippage);
-
-			const xAmountMinBalance = new Balance(xAmountMin, state.xToken, false);
-			const yAmountMinBalance = new Balance(yAmountMin, state.yToken, false);
-
-			let tx: SubmittableExtrinsic<"promise", ISubmittableResult>;
-			if (state.action === "add") {
-				tx = trnApi.tx.dex.addLiquidity(
-					state.xToken.assetId,
-					state.yToken.assetId,
-					xBalance.toPlanckString(),
-					yBalance.toPlanckString(),
-					xAmountMinBalance.toPlanckString(),
-					yAmountMinBalance.toPlanckString(),
-					null,
-					null
-				);
-			} else {
-				// Ensure position and lpToRemove are defined for remove action (checked earlier)
-				tx = trnApi.tx.dex.removeLiquidity(
-					state.xToken.assetId,
-					state.yToken.assetId,
-					lpToRemove!.toPlanckString(), // Use the precise lpToRemove value from state
-					xAmountMinBalance.toPlanckString(),
-					yAmountMinBalance.toPlanckString(),
-					null,
-					null
-				);
-			}
+			const { xBalance, yBalance } = validationResult;
 
 			try {
+				// Create initial transaction
+				const tx =
+					state.action === "add"
+						? createAddLiquidityTx(state.xToken!, state.yToken!, xBalance, yBalance, slippage)
+						: createRemoveLiquidityTx(
+								state.xToken!,
+								state.yToken!,
+								lpToRemove!,
+								xBalance,
+								yBalance,
+								slippage
+							);
+
+				// Build initial transaction
 				let builder = await createBuilder(
-					userSession,
+					userSession!,
 					state.gasToken.assetId,
-					state.slippage,
-					customEx,
+					slippage,
+					customEx!,
 					tx
 				);
 
-				const { gasString } = await builder.getGasFees();
-				const [gas] = gasString.split(" ");
-				setEstimatedFee(gas);
+				// Handle gas calculation and potential rebuilding
+				const { canPay, needsRebuild, adjustedXAmount, adjustedYAmount, gas } =
+					await handleGasCalculation(
+						builder,
+						xBalance,
+						yBalance,
+						state.gasToken,
+						state.xToken!,
+						state.yToken!,
+						state.action,
+						slippage
+					);
 
-				const gasTokenBalance = await builder.checkBalance({
-					walletAddress: userSession.futurepass,
-					assetId: state.gasToken.assetId,
-				});
-				const gasBalance = new Balance(+gasTokenBalance.balance, gasTokenBalance).toUnit();
+				// Rebuild transaction if needed
+				if (needsRebuild && canPay) {
+					const newTx = createAddLiquidityTx(
+						state.xToken!,
+						state.yToken!,
+						adjustedXAmount,
+						adjustedYAmount,
+						slippage
+					);
 
-				let canPay: boolean | undefined;
-				let needsRebuild = false;
-				let finalTx = tx; // Use a separate variable for potentially rebuilt tx
-
-				if (state.action === "add") {
-					let xAmountWithoutGas = xBalance;
-					let yAmountWithoutGas = yBalance;
-					const gasCost = new Balance(gas, state.gasToken).multipliedBy(1.5); // Safety margin
-
-					if (state.xToken.assetId === state.gasToken.assetId) {
-						xAmountWithoutGas = new Balance(xBalance.minus(gasCost), state.xToken, false);
-						canPay = gasBalance.gte(xBalance); // Check if total balance covers original amount + gas
-						needsRebuild = xAmountWithoutGas.gt(0); // Only rebuild if remaining amount is positive
-					} else if (state.yToken.assetId === state.gasToken.assetId) {
-						yAmountWithoutGas = new Balance(yBalance.minus(gasCost), state.yToken, false);
-						canPay = gasBalance.gte(yBalance);
-						needsRebuild = yAmountWithoutGas.gt(0);
-					} else {
-						canPay = gasBalance.gte(gasCost);
-					}
-
-					if (needsRebuild && canPay) {
-						finalTx = trnApi.tx.dex.addLiquidity(
-							state.xToken.assetId,
-							state.yToken.assetId,
-							xAmountWithoutGas.toPlanckString(),
-							yAmountWithoutGas.toPlanckString(),
-							getMinAmount(xAmountWithoutGas, slippage).toPlanckString(),
-							getMinAmount(yAmountWithoutGas, slippage).toPlanckString(),
-							null,
-							null
-						);
-						// Rebuild the transaction with adjusted amounts
-						builder = await createBuilder(
-							userSession,
-							state.gasToken.assetId,
-							state.slippage,
-							customEx,
-							finalTx
-						);
-					}
-				} else {
-					// For remove liquidity, just check if gas balance covers the fee
-					const gasCost = new Balance(gas, state.gasToken);
-					canPay = gasBalance.gte(gasCost);
+					builder = await createBuilder(
+						userSession!,
+						state.gasToken.assetId,
+						slippage,
+						customEx!,
+						newTx
+					);
 				}
 
+				// Update state based on gas calculation
 				setCanPayForGas(canPay);
 				if (canPay === false) {
 					updateState({ error: `Insufficient ${state.gasToken.symbol} balance for gas fee` });
 					setBuilder(undefined);
 				} else {
 					updateState({ error: "" });
-					setBuilder(builder); // Set the final builder
+					setBuilder(builder);
 				}
 			} catch (error: any) {
 				console.error("Error building transaction:", error);
 				updateState({ error: "Failed to build transaction. Please try again." });
-				setBuilder(undefined);
-				setEstimatedFee(undefined);
-				setCanPayForGas(undefined);
+				resetStates();
 			}
 		},
 		[
@@ -519,8 +519,10 @@ function useManagePoolState() {
 			state.position,
 			state.action,
 			state.gasToken,
-			trnApi,
-			signer,
+			validateBuildInputs,
+			createAddLiquidityTx,
+			createRemoveLiquidityTx,
+			handleGasCalculation,
 			userSession,
 			customEx,
 			setBuilder,
