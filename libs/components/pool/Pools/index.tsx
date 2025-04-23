@@ -40,7 +40,13 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 	} = useXrplCurrencies();
 	const { onPoolClick, network } = props;
 
-	const pools = network === "ROOT" ? trnPools : xrplPools;
+	const pools =
+		network === "ROOT"
+			? [...trnPools].sort((a, b) => {
+					if (!a.liquidityInUSD || !b.liquidityInUSD) return 0;
+					return Number(b.liquidityInUSD?.minus(a.liquidityInUSD));
+				})
+			: xrplPools;
 
 	const validPools = useMemo(() => {
 		return pools.filter((pool) => {

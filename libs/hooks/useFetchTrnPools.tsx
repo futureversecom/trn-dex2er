@@ -28,6 +28,10 @@ export function useFetchTrnPools(tokens?: TrnTokens | undefined) {
 						assetIds.map(humanToNumber)
 					)) as Option<u32>;
 
+					const lpTokenSupply = lpToken.isSome
+						? (await trnApi.query.assets.asset(lpToken.unwrap())).unwrapOr(null)
+						: null;
+
 					const token1 = tokens[humanToNumber(assetIds[0])];
 					const token2 = tokens[humanToNumber(assetIds[1])];
 
@@ -51,6 +55,7 @@ export function useFetchTrnPools(tokens?: TrnTokens | undefined) {
 						assetId: humanToNumber(lpToken.unwrap().toHuman() as string),
 						liquidity: [token1Liquidity, token2Liquidity] as [number, number],
 						liquidityInUSD: liquidityInUSD?.gt(0) ? liquidityInUSD : undefined,
+						lpTokenSupply: lpTokenSupply ? lpTokenSupply.supply.toString() : undefined,
 					};
 				})
 			);

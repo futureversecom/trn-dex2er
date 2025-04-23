@@ -4,7 +4,6 @@ import { Box, LPTokens, Pagination, TableRow, Text } from "@/libs/components/sha
 import { useManagePool, useWallets } from "@/libs/context";
 import { toFixed } from "@/libs/utils";
 
-// Create a skeleton component if you don't have one already
 const Skeleton = ({ className = "" }) => (
 	<div className={`animate-pulse rounded bg-neutral-700/50 ${className}`} />
 );
@@ -12,14 +11,12 @@ const Skeleton = ({ className = "" }) => (
 export function Positions() {
 	const { isConnected } = useWallets();
 	const { onPoolClick, positions, isFetchingPools } = useManagePool();
-	// const debouncedIsFetching = useDebouncedValue(isFetchingPools, 200);
 
 	const { startIndex, endIndex, ...paginationProps } = usePagination({
 		totalItems: positions?.length ?? 0,
 		initialPageSize: 10,
 	});
 
-	// Helper function to render skeleton rows
 	const renderSkeletons = () => {
 		return Array.from({ length: 3 }).map((_, index) => (
 			<TableRow
@@ -43,17 +40,11 @@ export function Positions() {
 	};
 
 	return (
-		<Box
-			heading="manage positions"
-			className="relative flex min-h-[350px] flex-col"
-			// Remove isLoading prop to handle loading state manually
-		>
+		<Box heading="manage positions" className="relative flex min-h-[350px] flex-col">
 			<div className="flex-grow">
 				{isFetchingPools && (!positions || positions.length === 0) ? (
-					// Show skeletons during initial load
 					renderSkeletons()
 				) : positions && positions.length > 0 ? (
-					// Show actual positions when available
 					<>
 						{positions.slice(startIndex, endIndex + 1).map((pool) => (
 							<TableRow
@@ -75,7 +66,6 @@ export function Positions() {
 						))}
 					</>
 				) : (
-					// Empty state
 					<div className="flex h-[200px] items-center justify-center">
 						<Text className="text-center">
 							{!isConnected ? "Connect wallet to continue" : "No positions found"}
@@ -84,7 +74,6 @@ export function Positions() {
 				)}
 			</div>
 
-			{/* Only show pagination when we have positions */}
 			{positions && positions.length > 0 && (
 				<div className="mt-auto pt-4">
 					<Pagination {...paginationProps} />

@@ -31,3 +31,4 @@ export * from "./YourPosition";
 export * from "./ImportToken";
 export * from "./CopyButton";
 export * from "./SearchBar";
+export * from "./ErrorMessage";

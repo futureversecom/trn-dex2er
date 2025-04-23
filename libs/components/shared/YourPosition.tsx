@@ -5,7 +5,6 @@ import { toFixed } from "@/libs/utils";
 import { Text } from "./Text";
 import { Tokens } from "./Tokens";
 
-// Skeleton component for loading states
 const Skeleton = ({ className = "" }) => (
 	<div className={`animate-pulse rounded bg-neutral-700/50 ${className}`} />
 );
@@ -14,21 +13,12 @@ export function YourPosition() {
 	const poolManagementData = useManagePool();
 	const [xSymbol, ySymbol] = useTokenSymbols(poolManagementData.xToken, poolManagementData.yToken);
 
-	// Track loading state
-	const isLoading = poolManagementData.isFetchingPools || !poolManagementData.poolBalances;
-
-	// Empty div if no position and not loading
-	if (!poolManagementData.position && !isLoading) {
-		return null;
-	}
-
 	return (
 		<div className="h-[16em] w-full max-w-[30em] rounded-2xl bg-neutral-200 p-8">
 			<div className="grid grid-cols-2 gap-4">
 				<p className="font-mikrobe col-span-2 text-center text-neutral-700">Your Position</p>
 
-				{isLoading ? (
-					// Skeleton loading state
+				{poolManagementData.isLoadingPools ? (
 					<>
 						<div className="flex items-center gap-2">
 							<Skeleton className="h-8 w-16 rounded-full" />
@@ -45,7 +35,6 @@ export function YourPosition() {
 						<Skeleton className="ml-auto h-6 w-20" />
 					</>
 				) : (
-					// Actual data
 					<>
 						<div className="flex items-center gap-2">
 							<Tokens

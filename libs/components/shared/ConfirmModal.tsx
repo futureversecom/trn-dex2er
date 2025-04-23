@@ -4,6 +4,7 @@ import type { PropsWithChildren } from "react";
 import type { ContextTag } from "@/libs/types";
 
 import { Button, Hyperlink, Loader, Modal, Text } from "./";
+import type { ErrorSeverity } from "./";
 
 interface ConfirmModalProps extends PropsWithChildren {
 	tag?: ContextTag;
@@ -12,6 +13,7 @@ interface ConfirmModalProps extends PropsWithChildren {
 	description: string;
 	explorerUrl?: string;
 	error?: string;
+	errorSeverity?: ErrorSeverity;
 	title: string;
 }
 

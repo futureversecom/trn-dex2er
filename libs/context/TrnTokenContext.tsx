@@ -32,7 +32,7 @@ export type TrnTokenContextType = {
 	filter: string;
 
 	// State flags
-	isFetching: boolean;
+	isFetchingPools: boolean;
 	isLoadingPools: boolean;
 
 	// Data access methods
@@ -118,6 +118,8 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 			if (yToken?.symbol.toLowerCase().includes(filter.toLowerCase())) {
 				return true;
 			}
+
+			return false;
 		});
 	}, [filter, pools, tokens]);
 
@@ -129,7 +131,7 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 				refetchTokenBalances,
 				pools: filteredPools ?? [],
 				tokens: tokensWithPrices ?? tokens ?? {},
-				isFetching: isFetchingPools,
+				isFetchingPools: isFetchingPools,
 				isLoadingPools: isLoadingPools,
 				setFilter: filterPool,
 				filter,

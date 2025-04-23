@@ -10,6 +10,7 @@ import {
 	Box,
 	Button,
 	ConfirmModal,
+	ErrorMessage,
 	InfoItem,
 	Ratio,
 	SettingsButton,
@@ -22,6 +23,9 @@ import { PercentButtons } from "./PercentButtons";
 
 export function Manage() {
 	const poolManagementData = useManagePool();
+
+	const { error, errorObj } = poolManagementData;
+	const errorSeverity = errorObj?.severity || "error";
 
 	const heading = useMemo(
 		() => `${upperFirst(poolManagementData.action)} liquidity`,
@@ -52,7 +56,8 @@ export function Manage() {
 					title={`Confirm ${poolManagementData.action === "add" ? "added" : "removed"} liquidity`}
 					description=""
 					explorerUrl={poolManagementData.explorerUrl}
-					error={poolManagementData.error}
+					error={error}
+					errorSeverity={errorSeverity}
 				>
 					<InfoItem
 						heading={
@@ -150,11 +155,7 @@ export function Manage() {
 						}}
 					/>
 
-					{poolManagementData.error && (
-						<Text className="text-red-300" size="md">
-							{poolManagementData.error}
-						</Text>
-					)}
+					{error && <ErrorMessage message={error} severity={errorSeverity} />}
 
 					{poolManagementData.xToken && poolManagementData.yToken && poolManagementData.ratio && (
 						<>
@@ -177,7 +178,8 @@ export function Manage() {
 						disabled={
 							poolManagementData.isDisabled ||
 							poolManagementData.xAmount === "" ||
-							poolManagementData.yAmount === ""
+							poolManagementData.yAmount === "" ||
+							(Boolean(error) && errorSeverity === "error")
 						}
 						onClick={() => poolManagementData.setTag("review")}
 						text={heading}
@@ -192,7 +194,14 @@ export function Manage() {
 	);
 }
 
-const getInfoItems = ({ estPoolShare, estimatedFee, gasToken }: ManagePoolContextType) => {
+const getInfoItems = ({
+	estPoolShare,
+	estimatedFee,
+	gasToken,
+	errorObj,
+	action,
+	slippage,
+}: ManagePoolContextType) => {
 	return (
 		<>
 			{estPoolShare && (
@@ -203,6 +212,20 @@ const getInfoItems = ({ estPoolShare, estimatedFee, gasToken }: ManagePoolContex
 					heading="Gas Fee"
 					value={`~${estimatedFee} ${gasToken.symbol}`}
 					tip="Is the fee paid to the miners who process your transaction."
+				/>
+			)}
+			{slippage && (
+				<InfoItem
+					heading="Slippage Tolerance"
+					value={`${slippage}%`}
+					tip="Your transaction will revert if the price changes unfavorably by more than this percentage."
+				/>
+			)}
+			{action === "remove" && errorObj?.type === "SLIPPAGE" && (
+				<InfoItem
+					heading="Slippage Warning"
+					value="Consider increasing slippage tolerance in settings"
+					className="text-yellow-300"
 				/>
 			)}
 		</>

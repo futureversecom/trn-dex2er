@@ -1,6 +1,8 @@
 import { useFutureverseSigner } from "@futureverse/auth-react";
 import { CustomExtrinsicBuilder } from "@futureverse/transact";
 import { useTrnApi } from "@futureverse/transact-react";
+import { SubmittableExtrinsic } from "@polkadot/api/types";
+import { ISubmittableResult } from "@polkadot/types/types";
 import { useQueryClient } from "@tanstack/react-query";
 import BigNumber from "bignumber.js";
 import {
@@ -13,21 +15,30 @@ import {
 	useState,
 } from "react";
 
-import type { ContextTag, TokenSource, TrnToken, XamanData } from "@/libs/types";
+import type { ContextTag, TokenSource, TrnToken } from "@/libs/types";
 
 import { useTrnTokens, useWallets } from ".";
-import { ROOT_NETWORK } from "../constants";
-import { DEFAULT_GAS_TOKEN } from "../constants";
+import { DEFAULT_GAS_TOKEN, ROOT_NETWORK } from "../constants";
+import { createPoolError, errorToString, getWithdrawalError } from "../errors";
+import type { PoolError } from "../errors";
 import {
 	type TrnTokenInputs,
 	type TrnTokenInputState,
+	useCheckTrnWithdrawalAmounts,
 	useCheckValidPool,
+	useCustomExtrinsicBuilder,
 	useTrnPoolFinder,
+	useTrnPoolPositions,
 	useTrnTokenInputs,
 } from "../hooks";
-import { useCustomExtrinsicBuilder, useTrnPoolPositions } from "../hooks";
-import { calculateTrnPoolBalances, formatRootscanId } from "../utils";
-import { Balance, getMinAmount, parseSlippage, toFixed } from "../utils";
+import {
+	Balance,
+	calculateTrnPoolBalances,
+	formatRootscanId,
+	getMinAmount,
+	parseSlippage,
+	toFixed,
+} from "../utils";
 import { createBuilder } from "../utils/createBuilder";
 import { Position } from "./TrnTokenContext";
 
@@ -42,39 +53,48 @@ interface PoolBalances {
 }
 
 export type ManagePoolContextType = {
+	positions: Array<Position>;
+	currentPosition?: Position;
+	error: string;
+
+	isLoadingPositions: boolean;
+	isFetchingPools: boolean;
+	isLoadingPools: boolean;
+
+	estimatedFee?: string;
+
 	resetState: () => void;
 	onPoolClick: (xToken: TrnToken, yToken: TrnToken) => void;
 	onSwitchClick: () => void;
-	setPercentage: (percentage: number) => void;
-	estimatedFee?: string;
-	setGasToken: (token: TrnToken) => void;
-	setSlippage: (slippage: string) => void;
-	setAmount: (args: { src: TokenSource; amount: string }) => void;
 	signTransaction: () => Promise<void>;
-	setTag: (tag?: ContextTag) => void;
 	unSetTokens: () => void;
-	positions: Array<Position>;
-	currentPosition?: Position;
-	isLoadingPositions: boolean;
-	xamanData?: XamanData;
-	isFetchingPools: boolean;
+
+	setAmount: (args: { src: TokenSource; amount: string }) => void;
+	setPercentage: (percentage: number) => void;
+	setSlippage: (slippage: string) => void;
+	setGasToken: (token: TrnToken) => void;
+	setTag: (tag?: ContextTag) => void;
 } & ManagePoolState &
 	Omit<TrnTokenInputs, "setXAmount" | "setYAmount" | "refetchTokenBalances">;
 
 interface ManagePoolState extends TrnTokenInputState {
-	builder?: CustomExtrinsicBuilder;
+	position?: Position;
+	poolBalances?: PoolBalances;
+
 	action: "add" | "remove";
-	gasToken: TrnToken;
 	percentage?: number;
 	slippage: string;
+	gasToken: TrnToken;
+
 	tag?: ContextTag;
-	error?: string;
+	errorObj?: PoolError;
+
+	builder?: CustomExtrinsicBuilder;
 	explorerUrl?: string;
+
 	ratio?: string;
-	position?: Position;
 	estPoolShare?: number;
 	lpToRemove?: Balance<TrnToken>;
-	poolBalances?: PoolBalances;
 }
 
 const ManagePoolContext = createContext<ManagePoolContextType>({} as ManagePoolContextType);
@@ -91,17 +111,13 @@ function useManagePoolState() {
 	const [state, setState] = useState<ManagePoolState>(initialState);
 	const [estimatedFee, setEstimatedFee] = useState<string>();
 	const [canPayForGas, setCanPayForGas] = useState<boolean>();
-	// const [positions, setPositions] = useState<Position[]>([]);
-	// const [isLoadingPositions, setIsLoadingPositions] = useState(false);
+
 	const updateState = useCallback((update: Partial<ManagePoolState>) => {
 		setState((prev) => ({ ...prev, ...update }));
 	}, []);
 
 	const setTag = useCallback((tag?: ContextTag) => updateState({ tag }), [updateState]);
-	const setGasToken = useCallback(
-		(gasToken: TrnToken) => updateState({ gasToken, error: "" }),
-		[updateState]
-	);
+	const setGasToken = useCallback((gasToken: TrnToken) => updateState({ gasToken }), [updateState]);
 	const setToken = useCallback(
 		({ src, token }: { src: TokenSource; token: TrnToken }) => {
 			if (src === "x") return updateState({ xToken: token });
@@ -124,26 +140,30 @@ function useManagePoolState() {
 
 	const queryClient = useQueryClient();
 	const { trnApi } = useTrnApi();
+	const signer = useFutureverseSigner();
 	const { userSession } = useWallets();
+
 	const {
 		getTokenBalance,
 		pools,
 		tokens,
-		isFetching,
+		isFetchingPools,
+		isLoadingPools,
 		refetchTokenBalances: refetchTrnTokenBalances,
 	} = useTrnTokens();
-	const signer = useFutureverseSigner();
+
 	const customEx = useCustomExtrinsicBuilder({
 		trnApi,
 		walletAddress: userSession?.eoa ?? "",
 		signer,
 	});
+
 	const { positions, isLoadingPositions } = useTrnPoolPositions(
 		pools,
 		tokens,
 		getTokenBalance,
 		trnApi,
-		isFetching
+		isFetchingPools
 	);
 
 	const { liquidityPool, currentPosition } = useTrnPoolFinder(
@@ -153,11 +173,13 @@ function useManagePoolState() {
 		state.yToken
 	);
 
+	const checkWithdrawal = useCheckTrnWithdrawalAmounts();
+
 	// Effect to calculate pool balances when relevant state changes
 	// ------------------------------------------------------------
 	// Updates user's balances and pool share when tokens or positions change
 	useEffect(() => {
-		if (!state.xToken || !state.yToken || !liquidityPool || isFetching) {
+		if (!state.xToken || !state.yToken || !liquidityPool || isLoadingPools) {
 			setPoolBalances(undefined);
 			return;
 		}
@@ -197,7 +219,8 @@ function useManagePoolState() {
 						? "Could not retrieve pool data. Please check your connection."
 						: "Error calculating pool balances. Please try again.";
 
-					updateState({ error: errorMessage });
+					const errorObj = createPoolError(errorMessage, "NETWORK", "error");
+					updateState({ errorObj });
 				}
 			}
 		};
@@ -212,7 +235,7 @@ function useManagePoolState() {
 		state.xToken,
 		state.yToken,
 		liquidityPool,
-		isFetching,
+		isLoadingPools,
 		positions,
 		trnApi,
 		updateState,
@@ -242,8 +265,8 @@ function useManagePoolState() {
 	const isDisabled = useMemo(() => {
 		if (state.tag === "sign") return true;
 
-		return isTokenDisabled || !!state.error || canPayForGas === false;
-	}, [state.tag, state.error, isTokenDisabled, canPayForGas]);
+		return isTokenDisabled || !!state.errorObj || canPayForGas === false;
+	}, [state.tag, state.errorObj, isTokenDisabled, canPayForGas]);
 
 	const onPoolClick = useCallback(
 		(xToken: TrnToken, yToken: TrnToken) => {
@@ -253,7 +276,7 @@ function useManagePoolState() {
 	);
 
 	const onSwitchClick = useCallback(() => {
-		updateState({ action: state.action === "add" ? "remove" : "add" });
+		updateState({ action: state.action === "add" ? "remove" : "add", errorObj: undefined });
 	}, [state.action, updateState]);
 
 	// Helper functions for transaction building
@@ -310,8 +333,8 @@ function useManagePoolState() {
 				yToken.assetId,
 				xBalance.toPlanckString(),
 				yBalance.toPlanckString(),
-				xAmountMin.toPlanckString(),
-				yAmountMin.toPlanckString(),
+				xAmountMin.toString(),
+				yAmountMin.toString(),
 				null,
 				null
 			);
@@ -335,8 +358,8 @@ function useManagePoolState() {
 				xToken.assetId,
 				yToken.assetId,
 				lpToRemove.toPlanckString(),
-				xAmountMin.toPlanckString(),
-				yAmountMin.toPlanckString(),
+				xAmountMin.toString(),
+				yAmountMin.toString(),
 				null,
 				null
 			);
@@ -398,6 +421,85 @@ function useManagePoolState() {
 		[userSession]
 	);
 
+	const handleCheck = useCallback(
+		(
+			lpToRemove: Balance<TrnToken>,
+			amountXReserve: Balance<TrnToken>,
+			amountYReserve: Balance<TrnToken>,
+			totalSupply: string,
+			amountXMin: Balance<TrnToken>,
+			amountYMin: Balance<TrnToken>
+		) => {
+			const liquidityBigInt = BigInt(lpToRemove.toPlanckString());
+			const reserveABigInt = BigInt(amountXReserve.toPlanckString());
+			const reserveBBigInt = BigInt(amountYReserve.toPlanckString());
+			const totalSupplyBigInt = BigInt(totalSupply ?? "0");
+			const amountAMinBigInt = BigInt(amountXMin.toPlanckString());
+			const amountBMinBigInt = BigInt(amountYMin.toPlanckString());
+
+			return checkWithdrawal(
+				liquidityBigInt,
+				reserveABigInt,
+				reserveBBigInt,
+				totalSupplyBigInt,
+				amountAMinBigInt,
+				amountBMinBigInt
+			);
+		},
+		[checkWithdrawal]
+	);
+
+	const validateWithdrawal = useCallback(
+		(
+			lpToRemove: Balance<TrnToken>,
+			poolBalances: PoolBalances,
+			liquidityPool: any,
+			xBalance: Balance<TrnToken>,
+			yBalance: Balance<TrnToken>,
+			slippage: string,
+			xToken: TrnToken,
+			yToken: TrnToken
+		): { success: boolean; error?: PoolError } => {
+			try {
+				const xAmountMin = getMinAmount(xBalance, slippage);
+				const yAmountMin = getMinAmount(yBalance, slippage);
+
+				const withdrawalResult = handleCheck(
+					lpToRemove,
+					poolBalances.x.liquidity,
+					poolBalances.y.liquidity,
+					liquidityPool.lpTokenSupply ?? "0",
+					xAmountMin,
+					yAmountMin
+				);
+
+				if (!withdrawalResult.success && withdrawalResult.error && withdrawalResult.errorType) {
+					const errorObj = getWithdrawalError(
+						withdrawalResult.error,
+						xToken.symbol,
+						yToken.symbol,
+						withdrawalResult.errorType
+					);
+					return { success: withdrawalResult.success, error: errorObj };
+				}
+
+				return { success: true };
+			} catch (error) {
+				console.error("Error in withdrawal validation:", error);
+				return {
+					success: false,
+					error: createPoolError(
+						"Failed to validate withdrawal",
+						"UNKNOWN",
+						"error",
+						"Please try again."
+					),
+				};
+			}
+		},
+		[handleCheck]
+	);
+
 	// Build the transaction based on current inputs
 	// -------------------------------------------
 	// Core function that prepares the transaction for signing
@@ -413,15 +515,13 @@ function useManagePoolState() {
 			slippage?: string;
 			lpToRemove?: Balance<TrnToken>;
 		} = {}) => {
-			// Reset states at the beginning
 			const resetStates = () => {
 				setBuilder(undefined);
 				setEstimatedFee(undefined);
 				setCanPayForGas(undefined);
-				updateState({ ratio: undefined, error: "" });
+				updateState({ errorObj: undefined });
 			};
 
-			// Validate inputs
 			const validationResult = validateBuildInputs(
 				xAmount,
 				yAmount,
@@ -438,22 +538,55 @@ function useManagePoolState() {
 			}
 
 			const { xBalance, yBalance } = validationResult;
+			const xBalancePlanck = xBalance.toPlanck();
+			const yBalancePlanck = yBalance.toPlanck();
 
 			try {
-				// Create initial transaction
-				const tx =
-					state.action === "add"
-						? createAddLiquidityTx(state.xToken!, state.yToken!, xBalance, yBalance, slippage)
-						: createRemoveLiquidityTx(
-								state.xToken!,
-								state.yToken!,
-								lpToRemove!,
-								xBalance,
-								yBalance,
-								slippage
-							);
+				let tx: SubmittableExtrinsic<"promise", ISubmittableResult>;
+				if (
+					state.action === "remove" &&
+					state.position &&
+					state.poolBalances &&
+					liquidityPool &&
+					lpToRemove
+				) {
+					const validationResult = validateWithdrawal(
+						lpToRemove,
+						state.poolBalances,
+						liquidityPool,
+						xBalancePlanck,
+						yBalancePlanck,
+						slippage,
+						state.xToken!,
+						state.yToken!
+					);
 
-				// Build initial transaction
+					if (!validationResult.success && validationResult.error) {
+						resetStates();
+						updateState({
+							errorObj: validationResult.error,
+						});
+						return;
+					}
+
+					tx = createRemoveLiquidityTx(
+						state.xToken!,
+						state.yToken!,
+						lpToRemove,
+						xBalancePlanck,
+						yBalancePlanck,
+						slippage
+					);
+				} else {
+					tx = createAddLiquidityTx(
+						state.xToken!,
+						state.yToken!,
+						xBalancePlanck,
+						yBalancePlanck,
+						slippage
+					);
+				}
+
 				let builder = await createBuilder(
 					userSession!,
 					state.gasToken.assetId,
@@ -497,16 +630,29 @@ function useManagePoolState() {
 				// Update state based on gas calculation
 				setCanPayForGas(canPay);
 				if (canPay === false) {
-					updateState({ error: `Insufficient ${state.gasToken.symbol} balance for gas fee` });
+					const errorObj = createPoolError(
+						`Insufficient ${state.gasToken.symbol} balance for gas fee`,
+						"BALANCE",
+						"error"
+					);
+					updateState({ errorObj });
 					setBuilder(undefined);
 				} else {
-					updateState({ error: "" });
+					updateState({ errorObj: undefined });
 					setBuilder(builder);
 				}
 			} catch (error: any) {
 				console.error("Error building transaction:", error);
-				updateState({ error: "Failed to build transaction. Please try again." });
+				const errorObj = createPoolError(
+					"Failed to build transaction",
+					"TRANSACTION",
+					"error",
+					"Please try again."
+				);
 				resetStates();
+				updateState({
+					errorObj,
+				});
 			}
 		},
 		[
@@ -519,12 +665,15 @@ function useManagePoolState() {
 			state.position,
 			state.action,
 			state.gasToken,
+			state.poolBalances,
+			liquidityPool,
+			userSession,
+			customEx,
 			validateBuildInputs,
+			validateWithdrawal,
 			createAddLiquidityTx,
 			createRemoveLiquidityTx,
 			handleGasCalculation,
-			userSession,
-			customEx,
 			setBuilder,
 			updateState,
 		]
@@ -564,7 +713,7 @@ function useManagePoolState() {
 				const maxBalance = state.poolBalances[src].balance.toUnit();
 				if (currentAmount.gt(maxBalance)) {
 					currentAmount = maxBalance; // Cap at max available balance
-					amount = currentAmount.toString(); // Update amount string
+					amount = currentAmount.toString();
 				}
 
 				percentage = maxBalance.eq(0)
@@ -612,7 +761,7 @@ function useManagePoolState() {
 			updateState({
 				ratio,
 				estPoolShare: state.action === "add" ? displayPercentage : undefined,
-				percentage: displayPercentage, // Store display percentage
+				percentage: displayPercentage,
 				lpToRemove, // Store precise LP amount to remove (or undefined for add)
 			});
 
@@ -719,8 +868,14 @@ function useManagePoolState() {
 		} catch (err: any) {
 			console.error("Transaction failed:", err);
 			setTag("failed");
+			const errorObj = createPoolError(
+				"Transaction failed",
+				"TRANSACTION",
+				"error",
+				"Please try again."
+			);
 			updateState({
-				error: "Transaction failed. Please try again.",
+				errorObj,
 			});
 		}
 	}, [
@@ -741,24 +896,27 @@ function useManagePoolState() {
 	// --------------------------------------------------------------
 	useEffect(() => {
 		if (!state.xToken || !state.yToken) {
-			updateState({ error: "" });
+			updateState({ errorObj: undefined });
 			return;
 		}
 
 		let isMounted = true;
-		let validationError = "";
 
 		const validate = async () => {
 			const isValid = await checkValidPool([state.xToken!.assetId, state.yToken!.assetId]);
 			if (!isMounted) return;
 
 			if (!isValid) {
-				validationError = "This pair is not valid yet. Choose another token to deposit";
+				const errorObj = createPoolError(
+					"This pair is not valid yet",
+					"VALIDATION",
+					"error",
+					"Choose another token to deposit"
+				);
+				updateState({ errorObj });
+			} else {
+				updateState({ errorObj: undefined });
 			}
-
-			// Update error state based *only* on validation for now
-			// Gas check error is handled within buildTransaction
-			updateState({ error: validationError });
 		};
 
 		validate();
@@ -789,7 +947,12 @@ function useManagePoolState() {
 		} catch (error) {
 			console.error("Error in transaction rebuild effect:", error);
 			updateState({
-				error: "Failed to prepare transaction. Please try again.",
+				errorObj: createPoolError(
+					"Failed to prepare transaction",
+					"TRANSACTION",
+					"error",
+					"Please try again."
+				),
 			});
 		}
 	}, [
@@ -805,6 +968,9 @@ function useManagePoolState() {
 	return {
 		...state,
 		...tokenInputs,
+		get error() {
+			return state.errorObj ? errorToString(state.errorObj) : "";
+		},
 		resetState,
 		onPoolClick,
 		onSwitchClick,
@@ -820,7 +986,8 @@ function useManagePoolState() {
 		positions,
 		currentPosition,
 		isLoadingPositions,
-		isFetchingPools: isFetching,
+		isFetchingPools,
+		isLoadingPools,
 	};
 }
 
