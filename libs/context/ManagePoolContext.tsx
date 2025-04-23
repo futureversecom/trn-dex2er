@@ -701,11 +701,12 @@ function useManagePoolState() {
 			const token = src === "x" ? state.xToken! : state.yToken!;
 			const otherToken = src === "x" ? state.yToken! : state.xToken!;
 
-			if (!state.poolBalances) return; // Should ideally not happen if tokens are set
+			if (!state.poolBalances || !liquidityPool) return; // Exit if no pool balances or liquidity pool data
 
 			let xAmountStr: string;
 			let yAmountStr: string;
 			let percentage: number;
+			let estPoolShare: number | undefined;
 			let currentAmount = new Balance(amount, token, false);
 			let lpToRemove: Balance<TrnToken> | undefined = undefined;
 
@@ -719,22 +720,60 @@ function useManagePoolState() {
 				percentage = maxBalance.eq(0)
 					? 0
 					: currentAmount.div(maxBalance).multipliedBy(100).toNumber();
+
 				// Calculate precise LP tokens to remove based on the proportion of the user's total LP balance
 				const proportion = maxBalance.eq(0) ? new BigNumber(0) : currentAmount.div(maxBalance);
 				lpToRemove = state.position.lpBalance.multipliedBy(proportion).integerValue();
+
+				// For removal, estPoolShare is undefined as it's not applicable
+				estPoolShare = undefined;
 			} else {
-				const tokenLiquidity = state.poolBalances[src].liquidity.toUnit();
-				percentage = tokenLiquidity.plus(currentAmount).eq(0)
+				const totalLpSupply = new BigNumber(liquidityPool.lpTokenSupply || "0");
+
+				// Get current reserves from the pool
+				const xReserve = state.poolBalances.x.liquidity.toUnit();
+				const yReserve = state.poolBalances.y.liquidity.toUnit();
+
+				// Calculate proportional LP tokens based on the smaller ratio, as done
+				// in Dex pallet
+				const xRatio =
+					src === "x"
+						? currentAmount.div(xReserve)
+						: new Balance(amount, otherToken, false).div(xReserve);
+
+				const yRatio =
+					src === "y"
+						? currentAmount.div(yReserve)
+						: new Balance(amount, otherToken, false).div(yReserve);
+
+				// LP tokens to be minted = totalSupply * min(xRatio, yRatio)
+				const minRatio = BigNumber.min(xRatio, yRatio);
+				const estimatedLpTokens = totalLpSupply.multipliedBy(minRatio);
+
+				// Get user's existing LP token balance
+				const existingLpBalance = state.position?.lpBalance;
+
+				// Calculate user's total LP tokens after adding liquidity
+				const totalUserLpTokens = existingLpBalance.plus(estimatedLpTokens);
+
+				// Calculate estimated pool share percentage
+				const newTotalSupply = totalLpSupply.plus(estimatedLpTokens);
+				estPoolShare = newTotalSupply.eq(0)
 					? 0
-					: currentAmount
-							.div(tokenLiquidity.plus(currentAmount)) // Estimate based on new total liquidity
-							.multipliedBy(100)
-							.toNumber();
+					: totalUserLpTokens.div(newTotalSupply).multipliedBy(100).toNumber();
+
+				// Calculate percentage based on user's current + new LP tokens
+				percentage = existingLpBalance.plus(estimatedLpTokens).eq(0)
+					? 0
+					: estimatedLpTokens.div(totalUserLpTokens).multipliedBy(100).toNumber();
+
 				lpToRemove = undefined; // Not applicable for 'add'
 			}
 
+			// Calculate other token amount based on pool ratio
 			const tokenLiquidity = state.poolBalances[src].liquidity.toUnit();
 			const otherLiquidity = state.poolBalances[otherSrc].liquidity.toUnit();
+
 			// Avoid division by zero if tokenLiquidity is 0
 			const otherAmount = tokenLiquidity.eq(0)
 				? new Balance(0, otherToken, false)
@@ -755,14 +794,14 @@ function useManagePoolState() {
 			const yBalance = new Balance(yAmountStr, state.yToken, false);
 			const ratio = xBalance.gt(0) ? toFixed(yBalance.dividedBy(xBalance).toNumber(), 6) : "0";
 
-			// Use the calculated percentage directly for display
 			const displayPercentage = +toFixed(percentage, 1);
+			const displayPoolShare = estPoolShare !== undefined ? +toFixed(estPoolShare, 6) : undefined;
 
 			updateState({
 				ratio,
-				estPoolShare: state.action === "add" ? displayPercentage : undefined,
+				estPoolShare: displayPoolShare,
 				percentage: displayPercentage,
-				lpToRemove, // Store precise LP amount to remove (or undefined for add)
+				lpToRemove,
 			});
 
 			buildTransaction({
@@ -777,6 +816,7 @@ function useManagePoolState() {
 			state.action,
 			state.position,
 			state.poolBalances,
+			liquidityPool, // Add this dependency
 			setXAmount,
 			setYAmount,
 			updateState,
