@@ -59,7 +59,7 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 					token1 &&
 					token2 &&
 					new Balance(pool.liquidity[0], token1 as TrnToken).gt(0) &&
-					new Balance(pool.liquidity[1], token1 as TrnToken).gt(0)
+					new Balance(pool.liquidity[1], token2 as TrnToken).gt(0)
 				);
 			} else {
 				const currency1 = findToken(asset1);
