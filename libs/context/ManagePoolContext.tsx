@@ -629,7 +629,7 @@ function useManagePoolState() {
 
 				// Update state based on gas calculation
 				setCanPayForGas(canPay);
-				if (canPay === false) {
+				if (canPay === false && gas) {
 					const errorObj = createPoolError(
 						`Insufficient ${state.gasToken.symbol} balance for gas fee`,
 						"BALANCE",
@@ -801,12 +801,6 @@ function useManagePoolState() {
 				ratio,
 				estPoolShare: displayPoolShare,
 				percentage: displayPercentage,
-				lpToRemove,
-			});
-
-			buildTransaction({
-				xAmount: xAmountStr,
-				yAmount: yAmountStr,
 				lpToRemove,
 			});
 		},

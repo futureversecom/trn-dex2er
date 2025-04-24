@@ -194,6 +194,15 @@ export function Manage() {
 	);
 }
 
+const SkeletonInfoItem = ({ heading }: { heading: string }) => (
+	<div className="flex items-center justify-between py-1">
+		<Text size="md" className="text-neutral-600">
+			{heading}
+		</Text>
+		<div className="h-5 w-20 animate-pulse rounded bg-neutral-500"></div>
+	</div>
+);
+
 const getInfoItems = ({
 	estPoolShare,
 	estimatedFee,
@@ -204,23 +213,32 @@ const getInfoItems = ({
 }: ManagePoolContextType) => {
 	return (
 		<>
-			{estPoolShare && (
+			{estPoolShare !== undefined ? (
 				<InfoItem heading="Estimated share of pool" value={`${toFixed(estPoolShare, 6)}%`} />
-			)}
-			{estimatedFee && (
+			) : action === "add" ? (
+				<SkeletonInfoItem heading="Estimated share of pool" />
+			) : null}
+
+			{estimatedFee && gasToken ? (
 				<InfoItem
 					heading="Gas Fee"
 					value={`~${estimatedFee} ${gasToken.symbol}`}
 					tip="Is the fee paid to the miners who process your transaction."
 				/>
+			) : (
+				<SkeletonInfoItem heading="Gas Fee" />
 			)}
-			{slippage && (
+
+			{slippage ? (
 				<InfoItem
 					heading="Slippage Tolerance"
 					value={`${slippage}%`}
 					tip="Your transaction will revert if the price changes unfavorably by more than this percentage."
 				/>
+			) : (
+				<SkeletonInfoItem heading="Slippage Tolerance" />
 			)}
+
 			{action === "remove" && errorObj?.type === "SLIPPAGE" && (
 				<InfoItem
 					heading="Slippage Warning"
