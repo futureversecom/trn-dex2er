@@ -19,6 +19,8 @@ const customThemeConfig: ThemeConfig = {
 	defaultAuthOption: "web3",
 	colors: {
 		...DefaultTheme.colors,
+		surface: "rgba(0, 0, 0, 0.5)",
+		page: "transparent",
 	},
 };
 
