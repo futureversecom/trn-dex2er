@@ -1,7 +1,13 @@
 import { MONGO_API_KEY, MONGO_API_URL, ROOT_NETWORK } from "@/libs/constants";
+import { futurepassAuth } from "@/libs/utils/futurepassAuth";
 
 export async function POST(req: Request) {
 	try {
+		const { isAuthenticated } = await futurepassAuth(req);
+		if (!isAuthenticated) {
+			return Response.json({ state: "error", error: "Authentication required" }, { status: 401 });
+		}
+
 		const { addresses, direction, status, ...options } = ((await req.json()) ?? {}) as {
 			direction: "deposit" | "withdrawal";
 			addresses: string[];
