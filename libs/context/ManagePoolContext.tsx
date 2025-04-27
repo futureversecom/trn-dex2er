@@ -810,7 +810,7 @@ function useManagePoolState() {
 			state.action,
 			state.position,
 			state.poolBalances,
-			liquidityPool, // Add this dependency
+			liquidityPool,
 			setXAmount,
 			setYAmount,
 			updateState,

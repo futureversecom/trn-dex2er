@@ -54,9 +54,6 @@ export const useCheckTrnWithdrawalAmounts = () => {
 			// Calculate amount1 = (liquidity * balance1) / totalSupply;
 			const calculatedAmountB = (liquidity * amountBReserve) / totalSupply;
 
-			console.log("calculatedAmountA", calculatedAmountA);
-			console.log("calculatedAmountB", calculatedAmountB);
-
 			if (calculatedAmountA <= 0n || calculatedAmountB <= 0n) {
 				return {
 					success: false,
