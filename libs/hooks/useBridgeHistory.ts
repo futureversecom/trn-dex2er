@@ -24,7 +24,7 @@ export function useBridgeHistory() {
 				}),
 				headers: {
 					"Content-Type": "application/json",
-					"authorization": `Bearer ${userSession?.user?.access_token}`,
+					"Authorization": `Bearer ${userSession?.user?.access_token}`,
 				},
 			});
 
