@@ -44,7 +44,19 @@ export async function calculateTrnPoolBalances({
 		const poolShare = currentPosition.poolShare.dividedBy(100);
 
 		// Determine which liquidity index corresponds to which token
-		const xLiquidityIndex = xAssetId === xToken.assetId ? 0 : 1;
+		let xLiquidityIndex: number;
+		if (xAssetId === xToken.assetId) {
+			xLiquidityIndex = 0; // First ID in poolKey matches xToken, so x is at index 0
+		} else if (xAssetId === yToken.assetId) {
+			// First ID in poolKey matches yToken, so y is at index 0, meaning x is at index 1
+			xLiquidityIndex = 1;
+		} else {
+			// Error: The asset ID derived from the poolKey doesn't match either provided token
+			throw new Error(
+				`Parsed asset ID ${xAssetId} from poolKey ${liquidityPool.poolKey} does not match xToken ${xToken.assetId} or yToken ${yToken.assetId}`
+			);
+		}
+
 		const yLiquidityIndex = 1 - xLiquidityIndex;
 
 		// Create balance objects for total liquidity
