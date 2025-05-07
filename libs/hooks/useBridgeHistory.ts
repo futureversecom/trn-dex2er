@@ -5,7 +5,7 @@ import { useWallets } from "../context";
 import { XrplBridgeTransaction } from "../types";
 
 export function useBridgeHistory() {
-	const { network, rAddress, futurepass } = useWallets();
+	const { network, rAddress, futurepass, userSession } = useWallets();
 
 	const address = useMemo(
 		() => (network === "root" ? futurepass : rAddress),
@@ -22,6 +22,10 @@ export function useBridgeHistory() {
 					direction: network === "root" ? "withdrawal" : "deposit",
 					addresses: [address, address?.toLowerCase()],
 				}),
+				headers: {
+					"Content-Type": "application/json",
+					"Authorization": `Bearer ${userSession?.user?.access_token}`,
+				},
 			});
 
 			const result = await res.json();

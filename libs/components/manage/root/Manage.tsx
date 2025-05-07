@@ -10,70 +10,86 @@ import {
 	Box,
 	Button,
 	ConfirmModal,
+	ErrorMessage,
 	InfoItem,
 	Ratio,
 	SettingsButton,
 	Text,
 	TokenImage,
 	TokenSelect,
+	YourPosition,
 } from "../../shared";
 import { PercentButtons } from "./PercentButtons";
 
 export function Manage() {
-	const props = useManagePool();
+	const poolManagementData = useManagePool();
 
-	const heading = useMemo(() => `${upperFirst(props.action)} liquidity`, [props.action]);
+	const { error, errorObj } = poolManagementData;
+	const errorSeverity = errorObj?.severity || "error";
 
-	const infoItems = getInfoItems(props);
+	const heading = useMemo(
+		() => `${upperFirst(poolManagementData.action)} liquidity`,
+		[poolManagementData.action]
+	);
+
+	const infoItems = getInfoItems(poolManagementData);
 
 	return (
 		<>
 			<TokenSelect
-				open={props.isOpen !== false}
-				onTokenClick={props.onTokenClick}
-				onClose={() => props.setIsOpen(false)}
-				tokens={Object.values(props.filteredTokens)}
+				open={poolManagementData.isOpen !== false}
+				onTokenClick={poolManagementData.onTokenClick}
+				onClose={() => poolManagementData.setIsOpen(false)}
+				tokens={Object.values(poolManagementData.filteredTokens)}
 			/>
 
-			{props.xToken && props.yToken && (
+			{poolManagementData.xToken && poolManagementData.yToken && (
 				<ConfirmModal
-					tag={props.tag}
-					onClose={() => props.setTag(undefined)}
-					onConfirm={props.signTransaction}
-					title={`Confirm ${props.action === "add" ? "added" : "removed"} liquidity`}
+					tag={poolManagementData.tag}
+					onClose={() => {
+						poolManagementData.setTag(undefined);
+						if (!poolManagementData.currentPosition) {
+							poolManagementData.unSetTokens();
+						}
+					}}
+					onConfirm={poolManagementData.signTransaction}
+					title={`Confirm ${poolManagementData.action === "add" ? "added" : "removed"} liquidity`}
 					description=""
-					explorerUrl={props.explorerUrl}
-					error={props.error}
+					explorerUrl={poolManagementData.explorerUrl}
+					error={error}
+					errorSeverity={errorSeverity}
 				>
 					<InfoItem
 						heading={
 							<span className="flex items-center gap-2">
-								<TokenImage symbol={props.xToken.symbol} />
+								<TokenImage symbol={poolManagementData.xToken.symbol} />
 								<Text size="md" className="!text-neutral-600">
-									{props.xToken.symbol} {props.action === "add" ? "deposit" : "withdrawal"}
+									{poolManagementData.xToken.symbol}{" "}
+									{poolManagementData.action === "add" ? "deposit" : "withdrawal"}
 								</Text>
 							</span>
 						}
 						value={
-							props.xTokenUSD
-								? `${props.xAmount} ($${props.xTokenUSD.toLocaleString("en-US")})`
-								: props.xAmount
+							poolManagementData.xTokenUSD
+								? `${poolManagementData.xAmount} ($${poolManagementData.xTokenUSD.toLocaleString("en-US")})`
+								: poolManagementData.xAmount
 						}
 					/>
 
 					<InfoItem
 						heading={
 							<span className="flex items-center gap-2">
-								<TokenImage symbol={props.yToken.symbol} />
+								<TokenImage symbol={poolManagementData.yToken.symbol} />
 								<Text size="md" className="!text-neutral-600">
-									{props.yToken.symbol} {props.action === "add" ? "deposit" : "withdrawal"}
+									{poolManagementData.yToken.symbol}{" "}
+									{poolManagementData.action === "add" ? "deposit" : "withdrawal"}
 								</Text>
 							</span>
 						}
 						value={
-							props.yTokenUSD
-								? `${props.yAmount} ($${props.yTokenUSD.toLocaleString("en-US")})`
-								: props.yAmount
+							poolManagementData.yTokenUSD
+								? `${poolManagementData.yAmount} ($${poolManagementData.yTokenUSD.toLocaleString("en-US")})`
+								: poolManagementData.yAmount
 						}
 					/>
 
@@ -85,99 +101,149 @@ export function Manage() {
 				</ConfirmModal>
 			)}
 
-			<Box heading={"I WOULD LIKE TO"}>
-				<div className="flex space-x-4">
-					<Button
-						variant={props.action === "add" ? "primary" : "secondary"}
-						size="rounded"
-						onClick={props.onSwitchClick}
-					>
-						+ Add Liquidity
-					</Button>
-					<Button
-						variant={props.action === "add" ? "secondary" : "primary"}
-						size="rounded"
-						onClick={props.onSwitchClick}
-					>
-						- Remove Liquidity
-					</Button>
-				</div>
-				<div className="pb-8">
-					{props.action === "add" ? (
-						<Text>
-							By adding liquidity, you can earn 0.3% of all trades on this pair based on the amount
-							of liquidity you provided. Fees are automatically added to the pool in real-time and
-							can be claimed when you withdraw your liquidity.
-						</Text>
-					) : (
-						<Text>
-							When you remove liquidity, your position will be converted back into underlying tokens
-							at the current rate, proportional to your share of the pool. Any fees that have
-							accrued will be included in the amounts you receive.
-						</Text>
+			<div className="flex flex-col gap-4 md:flex-row">
+				<Box heading={"I WOULD LIKE TO"}>
+					<div className="flex space-x-4">
+						<Button
+							variant={poolManagementData.action === "add" ? "primary" : "secondary"}
+							size="rounded"
+							onClick={poolManagementData.onSwitchClick}
+						>
+							+ Add Liquidity
+						</Button>
+						<Button
+							variant={poolManagementData.action === "add" ? "secondary" : "primary"}
+							size="rounded"
+							onClick={poolManagementData.onSwitchClick}
+						>
+							- Remove Liquidity
+						</Button>
+					</div>
+					<div className="pb-8">
+						{poolManagementData.action === "add" ? (
+							<Text>
+								By adding liquidity, you can earn 0.3% of all trades on this pair based on the
+								amount of liquidity you provided. Fees are automatically added to the pool in
+								real-time and can be claimed when you withdraw your liquidity.
+							</Text>
+						) : (
+							<Text>
+								When you remove liquidity, your position will be converted back into underlying
+								tokens at the current rate, proportional to your share of the pool. Any fees that
+								have accrued will be included in the amounts you receive.
+							</Text>
+						)}
+					</div>
+
+					<AmountInputs
+						{...{
+							xToken: poolManagementData.xToken,
+							yToken: poolManagementData.yToken,
+							labels: new Array(2).fill(
+								poolManagementData.action === "add" ? "Deposit" : "Withdraw"
+							) as [string, string],
+							...poolManagementData,
+							plusIcon: poolManagementData.action === "add",
+							...(poolManagementData.action === "remove" && {
+								between: <PercentButtons />,
+								xTokenBalance: poolManagementData.poolBalances?.x.balance.toUnit(),
+								yTokenBalance: poolManagementData.poolBalances?.y.balance.toUnit(),
+								// TODO: Check for error properly for 'remove' action
+								xTokenError: undefined,
+								yTokenError: undefined,
+							}),
+						}}
+					/>
+
+					{error && <ErrorMessage message={error} severity={errorSeverity} />}
+
+					{poolManagementData.xToken && poolManagementData.yToken && poolManagementData.ratio && (
+						<>
+							<div className="flex items-center justify-between px-2">
+								<Ratio
+									isSwitchable
+									ratio={poolManagementData.ratio}
+									xToken={poolManagementData.xToken}
+									yToken={poolManagementData.yToken}
+								/>
+
+								<SettingsButton {...poolManagementData} />
+							</div>
+
+							<div className="space-y-2 rounded-lg bg-neutral-400 p-6">{infoItems}</div>
+						</>
 					)}
+
+					<ActionButton
+						disabled={
+							poolManagementData.isDisabled ||
+							poolManagementData.xAmount === "" ||
+							poolManagementData.yAmount === "" ||
+							(Boolean(error) && errorSeverity === "error")
+						}
+						onClick={() => poolManagementData.setTag("review")}
+						text={heading}
+					/>
+				</Box>
+
+				<div className="md:self-start">
+					<YourPosition />
 				</div>
-
-				<AmountInputs
-					{...{
-						xToken: props.xToken,
-						yToken: props.yToken,
-						labels: new Array(2).fill(props.action === "add" ? "Deposit" : "Withdraw") as [
-							string,
-							string,
-						],
-						...props,
-						plusIcon: props.action === "add",
-						...(props.action === "remove" && {
-							between: <PercentButtons />,
-							xTokenBalance: props.poolBalances?.x.balance.toUnit(),
-							yTokenBalance: props.poolBalances?.y.balance.toUnit(),
-							// TODO: Check for error properly for 'remove' action
-							xTokenError: undefined,
-							yTokenError: undefined,
-						}),
-					}}
-				/>
-
-				{props.error && (
-					<Text className="text-red-300" size="md">
-						{props.error}
-					</Text>
-				)}
-
-				{props.xToken && props.yToken && props.ratio && (
-					<>
-						<div className="flex items-center justify-between px-2">
-							<Ratio isSwitchable ratio={props.ratio} xToken={props.xToken} yToken={props.yToken} />
-
-							<SettingsButton {...props} />
-						</div>
-
-						<div className="space-y-2 rounded-lg bg-neutral-400 p-6">{infoItems}</div>
-					</>
-				)}
-
-				<ActionButton
-					disabled={props.isDisabled || props.xAmount === "" || props.yAmount === ""}
-					onClick={() => props.setTag("review")}
-					text={heading}
-				/>
-			</Box>
+			</div>
 		</>
 	);
 }
 
-const getInfoItems = ({ estPoolShare, estimatedFee, gasToken }: ManagePoolContextType) => {
+const SkeletonInfoItem = ({ heading }: { heading: string }) => (
+	<div className="flex items-center justify-between py-1">
+		<Text size="md" className="text-neutral-600">
+			{heading}
+		</Text>
+		<div className="h-5 w-20 animate-pulse rounded bg-neutral-500"></div>
+	</div>
+);
+
+const getInfoItems = ({
+	estPoolShare,
+	estimatedFee,
+	gasToken,
+	errorObj,
+	action,
+	slippage,
+}: ManagePoolContextType) => {
 	return (
 		<>
-			{estPoolShare && (
+			{estPoolShare !== undefined ? (
 				<InfoItem heading="Estimated share of pool" value={`${toFixed(estPoolShare, 6)}%`} />
-			)}
-			{estimatedFee && (
+			) : action === "add" ? (
+				<SkeletonInfoItem heading="Estimated share of pool" />
+			) : null}
+
+			{estimatedFee && gasToken ? (
 				<InfoItem
 					heading="Gas Fee"
 					value={`~${estimatedFee} ${gasToken.symbol}`}
 					tip="Is the fee paid to the miners who process your transaction."
+				/>
+			) : (
+				<SkeletonInfoItem heading="Gas Fee" />
+			)}
+
+			{slippage ? (
+				<InfoItem
+					heading="Slippage Tolerance"
+					value={`${slippage}%`}
+					tip="Your transaction will revert if the price changes unfavorably by more than this percentage."
+				/>
+			) : (
+				<SkeletonInfoItem heading="Slippage Tolerance" />
+			)}
+
+			{action === "remove" && errorObj?.type === "SLIPPAGE" && (
+				<InfoItem
+					heading="Slippage Warning"
+					value="Consider increasing slippage tolerance in settings"
+					className="text-yellow-300"
 				/>
 			)}
 		</>
