@@ -5,6 +5,7 @@ import { useIsMobile } from "@/libs/hooks";
 import { Hyperlink } from "../Hyperlink";
 import { Text } from "../Text";
 
+// Version 1.2.4
 export function Footer() {
 	const isMobile = useIsMobile();
 
