@@ -57,25 +57,75 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 	const filterPool = useCallback((f: string) => setFilter(f), []);
 
 	const { prices } = useUsdPrices();
-	const { data: tokens } = useFetchTrnTokens(trnTokens);
+	const { data: tokensWithoutPrices } = useFetchTrnTokens(trnTokens);
+
+	const [tokenBalances, refetchTokenBalances] = useTrnBalanceSubscription(tokensWithoutPrices);
 
 	const tokensWithPrices = useMemo(() => {
-		if (!tokens) return undefined;
-		if (!prices) return tokens;
+		if (!tokensWithoutPrices) return undefined;
+		if (!prices) return undefined;
 
-		return Object.entries(tokens).reduce<TrnTokens>(
-			(acc, [assetId, token]) => ({
-				...acc,
-				[assetId]: {
-					...token,
-					priceInUSD: prices[token.symbol],
-				},
-			}),
-			{}
+		const { tokensWithPricesArray, tokensWithoutPricesArray } = Array.from(
+			tokensWithoutPrices.entries()
+		).reduce(
+			(acc, [assetId, token]) => {
+				const tokenBalance = tokenBalances?.[+assetId];
+				const hasPositiveBalance = tokenBalance && tokenBalance.toNumber() > 0;
+				const priceInUSD = prices[token.symbol];
+				const hasValidPrice = priceInUSD !== undefined && !isNaN(priceInUSD);
+
+				const tokenWithPrice = {
+					assetId: assetId.toString(),
+					token: { ...token, priceInUSD },
+				};
+
+				if (hasValidPrice && hasPositiveBalance) {
+					acc.tokensWithPricesArray.push(tokenWithPrice);
+				} else {
+					acc.tokensWithoutPricesArray.push(tokenWithPrice);
+				}
+
+				return acc;
+			},
+			{
+				tokensWithPricesArray: [] as Array<{
+					assetId: string;
+					token: TrnToken & { priceInUSD: number };
+				}>,
+				tokensWithoutPricesArray: [] as Array<{
+					assetId: string;
+					token: TrnToken & { priceInUSD: number };
+				}>,
+			}
 		);
-	}, [tokens, prices]);
 
-	const [tokenBalances, refetchTokenBalances] = useTrnBalanceSubscription(tokens);
+		tokensWithoutPricesArray.sort((a, b) => {
+			const balanceA = tokenBalances?.[+a.assetId] || new Balance(0, a.token);
+			const balanceB = tokenBalances?.[+b.assetId] || new Balance(0, b.token);
+			return balanceB.toNumber() - balanceA.toNumber();
+		});
+
+		// Sort by total value (balance * price) from highest to lowest
+		tokensWithPricesArray.sort((a, b) => {
+			const balanceA = tokenBalances?.[+a.assetId] || new Balance(0, a.token);
+			const balanceB = tokenBalances?.[+b.assetId] || new Balance(0, b.token);
+
+			const valueA = balanceA.toNumber() * (a.token.priceInUSD || 0);
+			const valueB = balanceB.toNumber() * (b.token.priceInUSD || 0);
+
+			return valueB - valueA;
+		});
+
+		const tokensArray = tokensWithPricesArray.concat(tokensWithoutPricesArray);
+
+		const tokensMap: TrnTokens = new Map();
+
+		tokensArray.forEach(({ assetId, token }) => {
+			tokensMap.set(+assetId, token);
+		});
+
+		return tokensMap;
+	}, [tokensWithoutPrices, prices, tokenBalances]);
 
 	const getTokenBalance = useCallback(
 		(token?: TrnToken) => {
@@ -97,18 +147,18 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 	} = useFetchTrnPools(tokensWithPrices);
 
 	const filteredPools = useMemo(() => {
-		if (!pools || !tokens) return;
+		if (!pools || !tokensWithoutPrices) return;
 		if (!filter) return pools;
 
 		const findToken = (assetId: number, tokens: TrnTokens): TrnToken | undefined => {
-			return Object.values(tokens).find((token) => token.assetId === assetId);
+			return tokens.get(assetId);
 		};
 
 		return pools.filter((pool) => {
 			const poolKey = pool.poolKey.split("-");
 
-			const xToken = findToken(+poolKey[0], tokens);
-			const yToken = findToken(+poolKey[1], tokens);
+			const xToken = findToken(+poolKey[0], tokensWithoutPrices);
+			const yToken = findToken(+poolKey[1], tokensWithoutPrices);
 
 			if (!xToken || !yToken) return false;
 
@@ -121,7 +171,7 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 
 			return false;
 		});
-	}, [filter, pools, tokens]);
+	}, [filter, pools, tokensWithoutPrices]);
 
 	return (
 		<TrnTokenContext.Provider
@@ -130,7 +180,7 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 				getTokenBalance,
 				refetchTokenBalances,
 				pools: filteredPools ?? [],
-				tokens: tokensWithPrices ?? tokens ?? {},
+				tokens: tokensWithPrices ?? tokensWithoutPrices ?? new Map(),
 				isFetchingPools: isFetchingPools,
 				isLoadingPools: isLoadingPools,
 				setFilter: filterPool,
