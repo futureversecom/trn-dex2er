@@ -35,7 +35,7 @@ export function XrplSwap() {
 			/>
 
 			<TokenSelect
-				tokens={Object.values(props.filteredTokens)}
+				tokens={props.filteredTokens}
 				open={props.isOpen !== false}
 				onTokenClick={props.onTokenClick}
 				onClose={() => props.setIsOpen(false)}

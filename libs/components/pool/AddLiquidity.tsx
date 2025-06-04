@@ -27,7 +27,7 @@ export function AddLiquidity({ children }: PropsWithChildren) {
 				open={props.isOpen !== false}
 				onTokenClick={props.onTokenClick}
 				onClose={() => props.setIsOpen(false)}
-				tokens={Object.values(props.filteredTokens)}
+				tokens={Array.from(props.filteredTokens.values())}
 			/>
 
 			{props.xToken && props.yToken && (

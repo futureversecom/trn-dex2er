@@ -137,7 +137,6 @@ export function TokenSelect<T extends Token>({
 								tokenBalance: getTokenBalance(token) ?? 0,
 							};
 						})
-						.sort((a, b) => +b.tokenBalance - +a.tokenBalance)
 						.map((token) => {
 							let tokenBalance =
 								typeof token.tokenBalance === "number"

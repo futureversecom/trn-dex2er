@@ -3,7 +3,7 @@ import type { Option, u32 } from "@polkadot/types";
 import { useQuery } from "@tanstack/react-query";
 import BigNumber from "bignumber.js";
 
-import type { LiquidityPoolKey, LiquidityPoolsRoot, TrnTokens } from "../types";
+import type { LiquidityPoolKey, LiquidityPoolRoot, LiquidityPoolsRoot, TrnTokens } from "../types";
 import { Balance, humanToNumber } from "../utils";
 
 export function useFetchTrnPools(tokens?: TrnTokens | undefined) {
@@ -16,7 +16,7 @@ export function useFetchTrnPools(tokens?: TrnTokens | undefined) {
 
 			const entries = await trnApi.query.dex.liquidityPool.entries();
 
-			return await Promise.all(
+			const pools = await Promise.all(
 				entries.map(async ([key, value]) => {
 					const [assetIds] = key.toHuman() as [[string, string]];
 					const poolKey = assetIds.map(humanToNumber).join("-");
@@ -32,8 +32,10 @@ export function useFetchTrnPools(tokens?: TrnTokens | undefined) {
 						? (await trnApi.query.assets.asset(lpToken.unwrap())).unwrapOr(null)
 						: null;
 
-					const token1 = tokens[humanToNumber(assetIds[0])];
-					const token2 = tokens[humanToNumber(assetIds[1])];
+					const token1 = tokens.get(humanToNumber(assetIds[0]));
+					const token2 = tokens.get(humanToNumber(assetIds[1]));
+
+					if (!token1 || !token2) return null;
 
 					let liquidityInUSD: BigNumber | undefined;
 					if (token1.priceInUSD || token2.priceInUSD) {
@@ -59,6 +61,8 @@ export function useFetchTrnPools(tokens?: TrnTokens | undefined) {
 					};
 				})
 			);
+
+			return pools.filter((pool) => pool !== null) as LiquidityPoolRoot[];
 		},
 		enabled: !!trnApi?.isReady && !!tokens,
 		refetchInterval: 60000,
