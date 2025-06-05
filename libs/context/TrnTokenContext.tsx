@@ -102,7 +102,7 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 		tokensWithoutPricesArray.sort((a, b) => {
 			const balanceA = tokenBalances?.[+a.assetId] || new Balance(0, a.token);
 			const balanceB = tokenBalances?.[+b.assetId] || new Balance(0, b.token);
-			return balanceB.toNumber() - balanceA.toNumber();
+			return balanceB.comparedTo(balanceA);
 		});
 
 		// Sort by total value (balance * price) from highest to lowest
@@ -110,10 +110,10 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 			const balanceA = tokenBalances?.[+a.assetId] || new Balance(0, a.token);
 			const balanceB = tokenBalances?.[+b.assetId] || new Balance(0, b.token);
 
-			const valueA = balanceA.toNumber() * (a.token.priceInUSD || 0);
-			const valueB = balanceB.toNumber() * (b.token.priceInUSD || 0);
+			const valueA = balanceA.multipliedBy(a.token.priceInUSD || 0);
+			const valueB = balanceB.multipliedBy(b.token.priceInUSD || 0);
 
-			return valueB - valueA;
+			return valueB.comparedTo(valueA);
 		});
 
 		const tokensArray = tokensWithPricesArray.concat(tokensWithoutPricesArray);
