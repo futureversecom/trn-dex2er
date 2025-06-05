@@ -100,23 +100,15 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 		);
 
 		tokensWithoutPricesArray.sort((a, b) => {
-			const balanceA = tokenBalances[+a.assetId]
-				? tokenBalances[+a.assetId].toUnit()
-				: new Balance(0, a.token);
-			const balanceB = tokenBalances[+b.assetId]
-				? tokenBalances[+b.assetId].toUnit()
-				: new Balance(0, b.token);
+			const balanceA = tokenBalances[+a.assetId]?.toUnit() ?? new Balance(0, a.token);
+			const balanceB = tokenBalances[+b.assetId]?.toUnit() ?? new Balance(0, b.token);
 			return balanceB.comparedTo(balanceA);
 		});
 
 		// Sort by total value (balance * price) from highest to lowest
 		tokensWithPricesArray.sort((a, b) => {
-			const balanceA = tokenBalances[+a.assetId]
-				? tokenBalances[+a.assetId].toUnit()
-				: new Balance(0, a.token);
-			const balanceB = tokenBalances[+b.assetId]
-				? tokenBalances[+b.assetId].toUnit()
-				: new Balance(0, b.token);
+			const balanceA = tokenBalances[+a.assetId]?.toUnit() ?? new Balance(0, a.token);
+			const balanceB = tokenBalances[+b.assetId]?.toUnit() ?? new Balance(0, b.token);
 
 			const valueA = balanceA.multipliedBy(a.token.priceInUSD || 0);
 			const valueB = balanceB.multipliedBy(b.token.priceInUSD || 0);
