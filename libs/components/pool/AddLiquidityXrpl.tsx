@@ -36,7 +36,7 @@ export function AddLiquidityXrpl({ children }: PropsWithChildren) {
 				open={props.isOpen !== false && importModalOpen === false}
 				onTokenClick={props.onTokenClick}
 				onClose={() => props.setIsOpen(false)}
-				tokens={Object.values(props.filteredTokens)}
+				tokens={props.filteredTokens}
 				onImportTokenClick={() => {
 					props.setIsOpen(false);
 					openImportModal(true);

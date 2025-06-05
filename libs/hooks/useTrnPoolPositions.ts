@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import type { LiquidityPoolsRoot, TrnToken } from "@/libs/types";
+import type { LiquidityPoolsRoot, TrnToken, TrnTokens } from "@/libs/types";
 
 import type { Position } from "../context/TrnTokenContext";
 import { fetchSingleTrnToken } from "../utils";
@@ -8,7 +8,7 @@ import { Balance } from "../utils";
 
 export function useTrnPoolPositions(
 	pools: LiquidityPoolsRoot,
-	tokens: Record<number, TrnToken>,
+	tokens: TrnTokens,
 	getTokenBalance: (token: TrnToken) => Balance<TrnToken> | undefined,
 	trnApi: any,
 	isFetching: boolean
@@ -29,10 +29,11 @@ export function useTrnPoolPositions(
 				const sortedPools = [...pools].sort((a, b) => (a.assetId > b.assetId ? 1 : -1));
 
 				const positionsPromises = sortedPools.map(async (pool) => {
-					const lpToken = tokens[pool.assetId as number];
-					const lpBalance = getTokenBalance(lpToken);
+					const lpToken = tokens.get(pool.assetId as number);
+					if (!lpToken) return null;
 
-					if (!lpToken || !lpBalance || lpBalance.eq(0)) return null;
+					const lpBalance = getTokenBalance(lpToken);
+					if (!lpBalance || lpBalance.eq(0)) return null;
 
 					let updatedSupply = lpToken.supply;
 					try {
@@ -49,8 +50,8 @@ export function useTrnPoolPositions(
 
 					return {
 						assetId: pool.assetId,
-						xToken: tokens[xAssetId],
-						yToken: tokens[yAssetId],
+						xToken: tokens.get(xAssetId),
+						yToken: tokens.get(yAssetId),
 						lpBalance,
 						poolShare,
 					};

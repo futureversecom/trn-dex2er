@@ -61,7 +61,7 @@ export function Bridge() {
 				tokens={
 					Array.isArray(props.filteredTokens)
 						? (props.filteredTokens as XrplCurrency[])
-						: (Object.values(props.filteredTokens) as Array<TrnToken>)
+						: (Array.from(props.filteredTokens.values()) as Array<TrnToken>)
 				}
 			/>
 

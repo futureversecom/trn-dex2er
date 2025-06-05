@@ -13,7 +13,7 @@ export interface TrnToken {
 	supply: number;
 }
 
-export type TrnTokens = Record<number, TrnToken>;
+export type TrnTokens = Map<number, TrnToken>;
 
 export interface TrnNetworkDetails {
 	NetworkName: NetworkName;

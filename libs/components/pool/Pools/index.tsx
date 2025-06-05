@@ -53,8 +53,8 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 			const [asset1, asset2] = pool.poolKey.split("-");
 
 			if (network === "ROOT") {
-				const token1 = trnTokens[+asset1];
-				const token2 = trnTokens[+asset2];
+				const token1 = trnTokens.get(+asset1);
+				const token2 = trnTokens.get(+asset2);
 				return (
 					token1 &&
 					token2 &&
@@ -105,8 +105,8 @@ export function Pools<T extends "XRP" | "ROOT">(props: PoolProps<T>) {
 						const [asset1, asset2] = pool.poolKey.split("-");
 
 						if (network === "ROOT") {
-							const token1 = trnTokens[+asset1];
-							const token2 = trnTokens[+asset2];
+							const token1 = trnTokens.get(+asset1);
+							const token2 = trnTokens.get(+asset2);
 
 							const balance1 = new Balance(pool.liquidity[0], token1 as TrnToken)
 								.toUnit()

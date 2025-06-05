@@ -29,7 +29,7 @@ export function XrplManage() {
 				open={props.isOpen !== false}
 				onTokenClick={props.onTokenClick}
 				onClose={() => props.setIsOpen(false)}
-				tokens={Object.values(props.filteredTokens)}
+				tokens={props.filteredTokens}
 				onImportTokenClick={() => {
 					props.setIsOpen(false);
 					openImportModal(true);

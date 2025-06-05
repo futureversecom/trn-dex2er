@@ -40,7 +40,7 @@ export function Manage() {
 				open={poolManagementData.isOpen !== false}
 				onTokenClick={poolManagementData.onTokenClick}
 				onClose={() => poolManagementData.setIsOpen(false)}
-				tokens={Object.values(poolManagementData.filteredTokens)}
+				tokens={Array.from(poolManagementData.filteredTokens.values())}
 			/>
 
 			{poolManagementData.xToken && poolManagementData.yToken && (

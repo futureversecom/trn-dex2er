@@ -25,11 +25,11 @@ export function useTrnBalanceSubscription(
 
 		const specVersion = trnApi.runtimeVersion.specVersion.toNumber();
 
-		const nonRootTokens = Object.entries(tokens).filter(([tokenId]) => +tokenId !== 1);
+		const nonRootTokens = Array.from(tokens.entries()).filter(([tokenId]) => tokenId !== 1);
 
 		const nonRootTokenQueries = nonRootTokens.map(([tokenId]) => [
 			trnApi.query.assets.account,
-			[+tokenId, futurepass],
+			[tokenId, futurepass],
 		]) as Array<QueryableStorageMultiArg<"promise">>;
 
 		return await trnApi.queryMulti(
@@ -37,7 +37,8 @@ export function useTrnBalanceSubscription(
 			(res: [FrameSystemAccountInfo, ...Array<Option<PalletAssetsAssetAccount>>]) => {
 				const [rootRes, ...rest] = res;
 
-				const rootToken = tokens[1];
+				const rootToken = tokens.get(1);
+				if (!rootToken) return;
 
 				const free = new Balance(rootRes.data.free.toString(), rootToken);
 				const frozen = new Balance(

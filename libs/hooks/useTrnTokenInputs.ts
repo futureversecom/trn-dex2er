@@ -2,7 +2,7 @@ import { usePathname } from "next/navigation";
 import { type Dispatch, type SetStateAction, useCallback, useMemo, useState } from "react";
 
 import { useTrnTokens } from "../context";
-import type { IsTokenOpen, TokenSource, TrnToken } from "../types";
+import type { IsTokenOpen, TokenSource, TrnToken, TrnTokens } from "../types";
 import { type Balance } from "../utils";
 import { useAmountInput } from "./useAmountInput";
 
@@ -25,7 +25,7 @@ export interface TrnTokenInputs {
 
 	isOpen: IsTokenOpen;
 	onTokenClick: (token: TrnToken) => void;
-	filteredTokens: Record<string, TrnToken>;
+	filteredTokens: TrnTokens;
 	setIsOpen: Dispatch<SetStateAction<IsTokenOpen>>;
 
 	isDisabled: boolean;
@@ -93,7 +93,7 @@ export function useTrnTokenInputs<T extends TrnTokenInputState>(
 			yToken?: TrnToken;
 			isOpen: "xToken" | "yToken" | false;
 		}) => {
-			return Object.entries(tokens ?? {}).filter(
+			return Array.from(tokens?.entries() ?? []).filter(
 				([_, token]) =>
 					!token.symbol.startsWith("LP") &&
 					token.symbol !== (isOpen === "xToken" ? xToken?.symbol : yToken?.symbol) &&
@@ -105,7 +105,7 @@ export function useTrnTokenInputs<T extends TrnTokenInputState>(
 	);
 
 	const filteredTokens = useMemo(() => {
-		return Object.fromEntries(filterTokens({ ...state, isOpen }));
+		return new Map(filterTokens({ ...state, isOpen }));
 	}, [state, isOpen, filterTokens]);
 
 	const onTokenClick = useCallback(

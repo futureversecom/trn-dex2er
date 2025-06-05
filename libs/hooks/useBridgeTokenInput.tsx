@@ -43,15 +43,15 @@ export function useBridgeTokenInput(): BridgeTokenInput {
 					c.currency !== (token as XrplCurrency)?.currency
 			);
 
-		return Object.values(tokens).reduce<TrnTokens>((acc, t: TrnToken) => {
+		return Array.from(tokens.values()).reduce<TrnTokens>((acc, t: TrnToken) => {
 			if (ROOT_NETWORK.NetworkName !== "root" && t.assetId === 203876) return acc; // Duplicate ZRP token
 
 			if (XRPL_BRIDGE_TOKENS.includes(t.symbol) && t.symbol !== (token as TrnToken)?.symbol) {
-				acc[t.assetId] = t;
+				acc.set(t.assetId, t);
 			}
 
 			return acc;
-		}, {});
+		}, new Map());
 	}, [token, tokens, currencies, network]);
 
 	const isDisabled = useMemo(() => {
