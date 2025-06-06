@@ -11,6 +11,7 @@ import {
 
 import { Balance } from "@/libs/utils";
 
+import { ROOT_ASSET_ID, XRP_ASSET_ID } from "../constants";
 import { useFetchTrnPools, useTrnBalanceSubscription } from "../hooks";
 import { useFetchTrnTokens } from "../hooks/useFetchTokens";
 import type { LiquidityPoolsRoot, TrnToken, TrnTokens } from "../types";
@@ -63,19 +64,31 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 
 	const tokensWithPrices = useMemo(() => {
 		if (!tokensWithoutPrices) return undefined;
-		if (!prices) return undefined;
+		if (!prices) {
+			// Pin ROOT and XRP tokens to the top
+			const sortedTokensWithoutPrices = new Map(
+				[...tokensWithoutPrices.entries()].sort(([a], [b]) => {
+					if (a === ROOT_ASSET_ID) return -1;
+					if (b === ROOT_ASSET_ID) return 1;
+					if (a === XRP_ASSET_ID) return -1;
+					if (b === XRP_ASSET_ID) return 1;
+					return 0;
+				})
+			);
+			return sortedTokensWithoutPrices;
+		}
 
 		const { tokensWithPricesArray, tokensWithoutPricesArray } = Array.from(
 			tokensWithoutPrices.entries()
 		).reduce(
 			(acc, [assetId, token]) => {
-				const tokenBalance = tokenBalances?.[+assetId];
+				const tokenBalance = tokenBalances?.[assetId];
 				const hasPositiveBalance = tokenBalance && tokenBalance.toNumber() > 0;
 				const priceInUSD = prices[token.symbol];
 				const hasValidPrice = priceInUSD !== undefined && !isNaN(priceInUSD);
 
 				const tokenWithPrice = {
-					assetId: assetId.toString(),
+					assetId: assetId,
 					token: { ...token, priceInUSD },
 				};
 
@@ -89,11 +102,11 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 			},
 			{
 				tokensWithPricesArray: [] as Array<{
-					assetId: string;
+					assetId: number;
 					token: TrnToken & { priceInUSD: number };
 				}>,
 				tokensWithoutPricesArray: [] as Array<{
-					assetId: string;
+					assetId: number;
 					token: TrnToken & { priceInUSD: number };
 				}>,
 			}
@@ -116,7 +129,14 @@ export function TrnTokenProvider({ children, trnTokens }: TrnTokenProviderProps)
 			return valueB.comparedTo(valueA);
 		});
 
-		const tokensArray = tokensWithPricesArray.concat(tokensWithoutPricesArray);
+		// Pin ROOT and XRP tokens to the top
+		const tokensArray = tokensWithPricesArray.concat(tokensWithoutPricesArray).sort((a, b) => {
+			if (a.assetId === ROOT_ASSET_ID) return -1;
+			if (b.assetId === ROOT_ASSET_ID) return 1;
+			if (a.assetId === XRP_ASSET_ID) return -1;
+			if (b.assetId === XRP_ASSET_ID) return 1;
+			return 0;
+		});
 
 		const tokensMap: TrnTokens = new Map();
 
