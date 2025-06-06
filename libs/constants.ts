@@ -114,6 +114,10 @@ export const DEFAULT_GAS_TOKEN = {
 	symbol: "XRP",
 } as TrnToken;
 
+export const ROOT_ASSET_ID = 1;
+
+export const XRP_ASSET_ID = 2;
+
 export const NETWORK_FEE_RATE = parseFloat(process.env.NEXT_PUBLIC_NETWORK_FEE_RATE ?? "0.05");
 
 export const EXCHANGE_RATE = parseFloat(process.env.NEXT_PUBLIC_EXCHANGE_RATE ?? "0.3");
