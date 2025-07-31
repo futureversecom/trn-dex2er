@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { XRP_MIN_THRESHOLD } from "@/libs/constants";
+
 import { useTrnTokens, useWallets, useXrplCurrencies } from "../context";
 import type { Token, TrnToken, XrplBalance } from "../types";
 import { Balance, isXrplCurrency } from "../utils";
@@ -37,17 +39,22 @@ export function useAmountInput(
 
 		let maybeError: string | undefined;
 		let isInsufficientBalance = false;
+		let minThresholdNotMet = false;
 
 		if (isXrplCurrency(token)) {
 			const xrplPoolBalance = poolBalance as XrplBalance;
 			const balance = xrplPoolBalance ? +xrplPoolBalance.value : +(getBalance(token)?.value ?? 0);
 			isInsufficientBalance = balance < +amount;
+			if (token?.currency === "XRP" && parseFloat(XRP_MIN_THRESHOLD) > parseFloat(amount)) {
+				minThresholdNotMet = true;
+			}
 		} else {
 			const tokenPoolBalance = poolBalance as Balance<TrnToken>;
 			const balance = tokenPoolBalance ? tokenPoolBalance : getTokenBalance(token)?.toUnit();
 			isInsufficientBalance = balance?.lt(amount) ?? true;
 		}
 
+		if (minThresholdNotMet) maybeError = `Need atleast ${XRP_MIN_THRESHOLD} XRP for bridging`;
 		if (isInsufficientBalance) maybeError = "Insufficient balance";
 
 		setError(maybeError);
