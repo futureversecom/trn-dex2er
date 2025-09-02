@@ -20,7 +20,10 @@ type TxStatus = keyof typeof statusMap;
 
 export function TxHistory() {
 	const { network } = useWallets();
-	const history = useBridgeHistory();
+	const { data: history, isError, isLoading, isFetching } = useBridgeHistory();
+
+	// Only show loading on initial load, not on background refetches
+	const isInitialLoading = isLoading && !history;
 
 	const bridgeCurrencies = getXrplCurrencies("bridge");
 
@@ -72,10 +75,27 @@ export function TxHistory() {
 
 	return (
 		<div className="pt-6">
-			<Text variant="heading" className="flex justify-center" size="xl">
+			<Text variant="heading" className="relative flex justify-center" size="xl">
 				Transaction History
+				{isFetching && history && (
+					<span className="absolute -right-1 -top-1 h-2 w-2 animate-pulse rounded-full !text-primary-700" />
+				)}
 			</Text>
-			{!transactions ? (
+			{isInitialLoading ? (
+				<div className="flex flex-col items-center space-y-3 pt-8">
+					<Text>Loading transaction history...</Text>
+					<div className="flex items-center space-x-2">
+						<div className="h-2 w-2 animate-pulse rounded-full bg-primary-700"></div>
+						<div className="h-2 w-2 animate-pulse rounded-full bg-primary-700 [animation-delay:0.2s]"></div>
+						<div className="h-2 w-2 animate-pulse rounded-full bg-primary-700 [animation-delay:0.4s]"></div>
+					</div>
+				</div>
+			) : isError ? (
+				<Text className="flex justify-center">
+					Error loading bridge history. Make sure your{" "}
+					{network === "root" ? "Futurepass" : "XRPL wallet"} is connected.
+				</Text>
+			) : !transactions ? (
 				<Text className="flex justify-center">
 					This is where your transaction history will appear.
 				</Text>

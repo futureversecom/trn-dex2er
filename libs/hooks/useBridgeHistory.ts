@@ -7,20 +7,23 @@ import { XrplBridgeTransaction } from "../types";
 export function useBridgeHistory() {
 	const { network, rAddress, futurepass, userSession } = useWallets();
 
-	const address = useMemo(
-		() => (network === "root" ? futurepass : rAddress),
-		[network, futurepass, rAddress]
+	const addresses = useMemo(
+		() =>
+			network === "root"
+				? [futurepass, futurepass?.toLowerCase(), userSession?.eoa, userSession?.eoa.toLowerCase()]
+				: [rAddress, rAddress?.toLowerCase()],
+		[network, futurepass, rAddress, userSession]
 	);
 
-	const { data: documents } = useQuery({
-		queryKey: [`bridge-history-${network}`, address],
-		queryFn: async (): Promise<XrplBridgeTransaction[]> => {
+	const queryResult = useQuery({
+		queryKey: [`bridge-history-${network}`, addresses],
+		queryFn: async (): Promise<XrplBridgeTransaction> => {
 			const res = await fetch("/api/fetchBridgeHistory", {
 				method: "POST",
 				body: JSON.stringify({
 					limit: 5,
 					direction: network === "root" ? "withdrawal" : "deposit",
-					addresses: [address, address?.toLowerCase()],
+					addresses,
 				}),
 				headers: {
 					"Content-Type": "application/json",
@@ -31,10 +34,10 @@ export function useBridgeHistory() {
 			const result = await res.json();
 			if (result.state === "error") throw new Error(result.error);
 
-			return result.documents;
+			return result.history;
 		},
-		...{ enabled: !!address, refetchInterval: 5000 },
+		...{ enabled: !!addresses.length, refetchInterval: 5000 },
 	});
 
-	return documents;
+	return queryResult;
 }

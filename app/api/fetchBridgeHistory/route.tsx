@@ -1,4 +1,8 @@
-import { MONGO_API_KEY, MONGO_API_URL, ROOT_NETWORK } from "@/libs/constants";
+import * as Either from "fp-ts/Either";
+import { PathReporter } from "io-ts/PathReporter";
+
+import { MONGO_API_URL } from "@/libs/constants";
+import { XrplBridgeTransactionC } from "@/libs/types";
 import { futurepassAuth } from "@/libs/utils/futurepassAuth";
 
 export async function POST(req: Request) {
@@ -16,37 +20,35 @@ export async function POST(req: Request) {
 			limit?: number;
 		};
 
-		const collection = direction === "deposit" ? "TxDeposits" : "TxWithdrawals";
-		const database = `${ROOT_NETWORK.NetworkName === "root" ? "mainnet" : "porcini"}-xbd`;
+		const collection = direction === "withdrawal" ? "txWithdrawal" : "txDeposit";
 
-		const $match = {
-			$match: {
-				$or: [
-					...addresses.map((address) => ({
-						to: address,
-						...(status != null && { status }),
-					})),
-					...addresses.map((address) => ({
-						to: address.toLowerCase(),
-						...(status != null && { status }),
-					})),
-					...addresses.map((address) => ({
-						from: address,
-						...(status != null && { status }),
-					})),
-					...addresses.map((address) => ({
-						from: address.toLowerCase(),
-						...(status != null && { status }),
-					})),
-					...addresses.map((address) => ({
-						sender: address,
-					})),
-					...addresses.map((address) => ({
-						sender: address.toLowerCase(),
-					})),
-				],
-			},
-		};
+		let $match: any;
+		if (direction === "withdrawal") {
+			$match = {
+				$match: {
+					$or: [
+						...addresses.map((address) => ({
+							from: address,
+							...(status != null && { status }),
+						})),
+						...addresses.map((address) => ({
+							sender: address,
+						})),
+					],
+				},
+			};
+		} else {
+			$match = {
+				$match: {
+					$or: [
+						...addresses.map((address) => ({
+							from: address,
+							...(status != null && { status }),
+						})),
+					],
+				},
+			};
+		}
 
 		const $options = [
 			{
@@ -60,27 +62,34 @@ export async function POST(req: Request) {
 			},
 		].filter((option) => Object.keys(option).length > 0);
 
-		const resp = await fetch(`${MONGO_API_URL}/action/aggregate`, {
+		const mongoApiUrl = new URL(
+			`xrp/${encodeURIComponent(collection)}/action/aggregate`,
+			MONGO_API_URL
+		);
+
+		const resp = await fetch(mongoApiUrl, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				"api-key": MONGO_API_KEY,
 			},
 			body: JSON.stringify({
-				database,
-				collection,
-				dataSource: database,
 				pipeline: [$match, ...$options],
 			}),
 		});
 
 		if (resp.status !== 200) {
-			throw new Error(await resp.text());
+			const errorText = await resp.text();
+			throw new Error(errorText);
 		}
 
-		const { documents } = await resp.json();
+		const documents = XrplBridgeTransactionC.decode(await resp.json());
+		if (Either.isLeft(documents)) {
+			const errors = PathReporter.report(documents);
+			console.error("Validation errors:", errors);
+			throw new Error(`Invalid bridge history format: ${errors.join(", ")}`);
+		}
 
-		return Response.json({ state: "success", documents });
+		return Response.json({ state: "success", history: documents.right });
 	} catch (err: any) {
 		console.log("err", err);
 		return Response.json({ state: "error", error: err?.message ?? err });
