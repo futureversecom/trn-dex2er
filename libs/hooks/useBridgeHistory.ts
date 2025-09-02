@@ -21,7 +21,7 @@ export function useBridgeHistory() {
 			const res = await fetch("/api/fetchBridgeHistory", {
 				method: "POST",
 				body: JSON.stringify({
-					limit: 5,
+					limit: 25,
 					direction: network === "root" ? "withdrawal" : "deposit",
 					addresses,
 				}),

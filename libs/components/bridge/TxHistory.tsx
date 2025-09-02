@@ -1,9 +1,10 @@
 import classNames from "@sindresorhus/class-names";
 import { utils as ethers } from "ethers";
 import { useMemo } from "react";
+import { usePagination } from "react-use-pagination";
 import { dropsToXrp } from "xrpl";
 
-import { Hyperlink, TableRow, Text, TokenImage } from "@/libs/components/shared";
+import { Hyperlink, Pagination, TableRow, Text, TokenImage } from "@/libs/components/shared";
 import { ROOT_NETWORK } from "@/libs/constants";
 import { useWallets } from "@/libs/context";
 import { useBridgeHistory } from "@/libs/hooks";
@@ -67,11 +68,17 @@ export function TxHistory() {
 				status: statusMap[tx.status as TxStatus] ?? "Processing",
 				amount,
 				explorerLink,
+				extrinsicId: tx.extrinsicId,
 				date: formatTime(tx.createdAt),
 				token: typeof amount === "string" ? "XRP" : amount.currency,
 			};
 		});
 	}, [history, network, bridgeCurrencies]);
+
+	const { startIndex, endIndex, ...paginationProps } = usePagination({
+		totalItems: transactions?.length ?? 0,
+		initialPageSize: 5,
+	});
 
 	return (
 		<div className="pt-6">
@@ -101,7 +108,7 @@ export function TxHistory() {
 				</Text>
 			) : (
 				<div className="flex flex-col space-y-2 pt-4">
-					{transactions.map((tx, i) => (
+					{transactions.slice(startIndex, endIndex + 1).map((tx, i) => (
 						<Hyperlink
 							href={tx.explorerLink}
 							key={i}
@@ -141,10 +148,20 @@ export function TxHistory() {
 										</Text>
 										<Text className="!text-neutral-500">Status</Text>
 									</div>,
+									<div key="blockNumber" className="space-y-2">
+										<Text>{tx.extrinsicId.split("-")[0].replace(/^0+/, "") || "?"}</Text>
+										<Text className="!text-neutral-500">Block Number</Text>
+									</div>,
 								]}
 							/>
 						</Hyperlink>
 					))}
+
+					{transactions.length > 5 && (
+						<div className="pt-4">
+							<Pagination {...paginationProps} />
+						</div>
+					)}
 				</div>
 			)}
 		</div>

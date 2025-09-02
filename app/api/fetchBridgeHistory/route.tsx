@@ -1,4 +1,7 @@
 import * as Either from "fp-ts/Either";
+import { fold } from "fp-ts/Either";
+import { pipe } from "fp-ts/lib/function";
+import type { Errors } from "io-ts";
 import { PathReporter } from "io-ts/PathReporter";
 
 import { MONGO_API_URL } from "@/libs/constants";
@@ -82,14 +85,21 @@ export async function POST(req: Request) {
 			throw new Error(errorText);
 		}
 
-		const documents = XrplBridgeTransactionC.decode(await resp.json());
-		if (Either.isLeft(documents)) {
-			const errors = PathReporter.report(documents);
-			console.error("Validation errors:", errors);
-			throw new Error(`Invalid bridge history format: ${errors.join(", ")}`);
-		}
+		const result = pipe(
+			XrplBridgeTransactionC.decode(await resp.json()),
+			fold(
+				(err: Errors) => {
+					const errors = PathReporter.report(Either.left(err));
+					console.error("Validation errors:", errors);
+					throw new Error(`Invalid bridge history format: ${errors.join(", ")}`);
+				},
+				(documents) => {
+					return Response.json({ state: "success", history: documents });
+				}
+			)
+		);
 
-		return Response.json({ state: "success", history: documents.right });
+		return result;
 	} catch (err: any) {
 		console.log("err", err);
 		return Response.json({ state: "error", error: err?.message ?? err });
