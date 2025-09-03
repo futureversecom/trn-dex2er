@@ -20,5 +20,6 @@ export * from "./formatRootscanId";
 export * from "./fetchTokenPrices";
 export * from "./XrplWalletProvider";
 export * from "./fetchTokenMetadata";
+export * from "./extractBlockNumber";
 export * from "./fetchSingleTrnToken";
 export * from "./calculateTrnPoolBalances";

@@ -10,7 +10,7 @@ export function useBridgeHistory() {
 	const addresses = useMemo(
 		() =>
 			network === "root"
-				? [futurepass, futurepass?.toLowerCase(), userSession?.eoa, userSession?.eoa.toLowerCase()]
+				? [futurepass, futurepass?.toLowerCase(), userSession?.eoa, userSession?.eoa?.toLowerCase()]
 				: [rAddress, rAddress?.toLowerCase()],
 		[network, futurepass, rAddress, userSession]
 	);

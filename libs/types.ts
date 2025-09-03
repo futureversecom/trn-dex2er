@@ -99,7 +99,7 @@ const extrinsicId = new t.Type<string, string, unknown>(
 	(u): u is string => typeof u === "string",
 	(input, context): Either.Either<t.Errors, string> => {
 		const extrinsicIdRegex = /^\d+-\d+-\w+$/;
-		if (typeof input != "string") {
+		if (typeof input !== "string") {
 			return t.failure(input, context, "ExtrinsicId must be a string");
 		}
 		if (!extrinsicIdRegex.test(input)) {
@@ -114,7 +114,7 @@ const evmAddress = new t.Type<string, string, unknown>(
 	"EvMAddress",
 	(u): u is string => typeof u === "string",
 	(input, context): Either.Either<t.Errors, string> => {
-		if (typeof input != "string") {
+		if (typeof input !== "string") {
 			return t.failure(input, context, "EvMAddress must be a string");
 		}
 		if (!isAddress(input)) {
@@ -129,7 +129,7 @@ const xrplAddress = new t.Type<string, string, unknown>(
 	"XrplAddress",
 	(u): u is string => typeof u === "string",
 	(input, context): Either.Either<t.Errors, string> => {
-		if (typeof input != "string") {
+		if (typeof input !== "string") {
 			return t.failure(input, context, "XrplAddress must be a string");
 		}
 		if (!isValidAddress(input)) {
@@ -144,7 +144,7 @@ const isoDate = new t.Type<string, string, unknown>(
 	"ISODate",
 	(u): u is string => typeof u === "string",
 	(input, context): Either.Either<t.Errors, string> => {
-		if (typeof input != "string") {
+		if (typeof input !== "string") {
 			return t.failure(input, context, "ISODate must be a string");
 		}
 		const date = new Date(input);

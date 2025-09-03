@@ -9,7 +9,13 @@ import { ROOT_NETWORK } from "@/libs/constants";
 import { useWallets } from "@/libs/context";
 import { useBridgeHistory } from "@/libs/hooks";
 import { getXrplCurrencies } from "@/libs/utils";
-import { formatRootscanId, formatTime, getXrplExplorerUrl, shortenAddress } from "@/libs/utils";
+import {
+	extractBlockNumber,
+	formatRootscanId,
+	formatTime,
+	getXrplExplorerUrl,
+	shortenAddress,
+} from "@/libs/utils";
 
 const statusMap = {
 	Processing: "Processing",
@@ -149,7 +155,7 @@ export function TxHistory() {
 										<Text className="!text-neutral-500">Status</Text>
 									</div>,
 									<div key="blockNumber" className="space-y-2">
-										<Text>{tx.extrinsicId.split("-")[0].replace(/^0+/, "") || "?"}</Text>
+										<Text>{extractBlockNumber(tx.extrinsicId)}</Text>
 										<Text className="!text-neutral-500">Block Number</Text>
 									</div>,
 								]}
