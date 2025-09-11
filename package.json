@@ -16,6 +16,7 @@
   "dependencies": {
     "@crossmarkio/sdk": "^0.4.0",
     "@download/blockies": "^1.0.3",
+    "@futureverse/asset-register-react": "^2.70.2",
     "@futureverse/auth": "^4.0.0",
     "@futureverse/auth-react": "^4.0.1",
     "@futureverse/auth-ui": "^0.6.3",

@@ -1,4 +1,5 @@
 export * from "./xrpl";
+export * from "./hush";
 export * from "./Balance";
 export * from "./toFixed";
 export * from "./toHuman";
@@ -11,9 +12,9 @@ export * from "./humanToNumber";
 export * from "./toDollarValue";
 export * from "./futurepassAuth";
 export * from "./fetchTrnTokens";
-export * from "./shortenAddress";
 export * from "./isXrplCurrency";
 export * from "./xrplCurrencies";
+export * from "./truncateAddress";
 export * from "./setStateWithRef";
 export * from "./fetchPairStatus";
 export * from "./formatRootscanId";

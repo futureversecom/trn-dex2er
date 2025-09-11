@@ -1,12 +1,15 @@
 import * as sdk from "@futureverse/auth";
 import { Static, Type } from "@sinclair/typebox";
 import type { NetworkName } from "@therootnetwork/api";
+import { deriveAddressPair } from "@therootnetwork/extrinsic";
 import type BigNumber from "bignumber.js";
-import { isAddress } from "ethers/lib/utils";
 import * as Either from "fp-ts/Either";
 import * as t from "io-ts";
+import { getAddress, isAddress } from "viem";
 import { isValidAddress } from "xrpl";
 import type { AccountLinesTrustline, Balance } from "xrpl";
+
+import { hush } from "@/libs/utils";
 
 export interface TrnToken {
 	assetId: number;
@@ -176,3 +179,126 @@ export const XrplBridgeTransactionC = t.array(
 );
 
 export type XrplBridgeTransaction = t.TypeOf<typeof XrplBridgeTransactionC>;
+
+/*
+ * The codecs below have been copied from the
+ * futureverse identity monorepo
+ * https://github.com/futureversecom/fv-identity-monorepo/. blob/main/apps/futureverse-identity-dashboard/common/**types/authMethod.ts
+ */
+const Address = new t.Type<`0x${string}`, `0x${string}`, unknown>(
+	"Address",
+	(s: unknown): s is `0x${string}` => typeof s === "string" && isAddress(s),
+	(i, c) => {
+		if (typeof i === "string" && isAddress(i)) {
+			try {
+				const ethereumAddress: string = getAddress(i);
+				return t.success(ethereumAddress as `0x${string}`);
+			} catch {
+				return t.failure(i, c, "Expected a valid Ethereum-style address");
+			}
+		}
+		return t.failure(i, c, "Expected a valid Ethereum-style address");
+	},
+	(x) => x
+);
+type Address = t.TypeOf<typeof Address>;
+
+export type UserAuthenticationMethod =
+	| {
+			method: "fv:email";
+			email: string;
+	  }
+	| {
+			method: `fv:dynamic-custodial-idp`;
+			idp: string;
+			sub: string;
+			name: string | undefined;
+			email: string | undefined;
+			darkIcon: string | undefined;
+			lightIcon: string | undefined;
+	  }
+	| {
+			method: "wagmi";
+			eoa: `0x${string}`;
+	  }
+	| {
+			method: "xaman";
+			rAddress: string;
+	  };
+
+export const AuthMethodImpl = t.union([
+	t.type({
+		method: t.literal("fv:email"),
+		email: t.string,
+	}),
+	t.type({
+		method: t.literal("fv:dynamic-custodial-idp"),
+		idp: t.string,
+		sub: t.string,
+		name: t.union([t.string, t.undefined]),
+		email: t.union([t.string, t.undefined]),
+		darkIcon: t.union([t.string, t.undefined]),
+		lightIcon: t.union([t.string, t.undefined]),
+	}),
+	t.type({
+		method: t.literal("wagmi"),
+		eoa: Address,
+	}),
+	t.type({
+		method: t.literal("xaman"),
+		rAddress: t.string,
+	}),
+]);
+export type AuthMethodImpl = t.TypeOf<typeof AuthMethodImpl>;
+
+export const AuthMethod = new t.Type<AuthMethodImpl, null, string>(
+	"Sub",
+	(u): u is AuthMethodImpl => AuthMethodImpl.is(u),
+	(u, c) => {
+		const [type, ...rest] = u.split(":");
+		switch (type) {
+			case "email": {
+				const email = rest.join(":");
+				if (!email) return t.failure(u, c, "email is missing");
+				return t.success({ method: `fv:email`, email });
+			}
+			case "idp": {
+				const [idp, sub] = rest;
+				if (!idp) return t.failure(u, c, "idp is missing");
+				if (!sub) return t.failure(u, c, "sub is missing");
+				return t.success({
+					method: `fv:dynamic-custodial-idp`,
+					idp: idp === "twitter" ? "X" : idp,
+					sub,
+					name: undefined, // will be populated later in useAuthenticationMethod
+					email: undefined,
+					darkIcon: undefined, // will be populated later in useAuthenticationMethod
+					lightIcon: undefined, // will be populated later in useAuthenticationMethod
+				});
+			}
+			case "eoa": {
+				const eoa = hush(Address.decode(rest[0]));
+				if (!eoa) return t.failure(u, c, "eoa is missing");
+				return t.success({ method: "wagmi", eoa });
+			}
+			case "xrpl": {
+				const [publicKey] = rest;
+				if (!publicKey) {
+					return t.failure(u, c, "publicKey is missing");
+				}
+
+				const [_, rAddress] = deriveAddressPair(publicKey);
+
+				if (!rAddress) {
+					return t.failure(u, c, "rAddress is not a valid");
+				}
+
+				return t.success({ method: "xaman", rAddress });
+			}
+			default:
+				return t.failure(u, c);
+		}
+	},
+	(_) => null
+);
+export type AuthMethod = t.TypeOf<typeof AuthMethod>;
