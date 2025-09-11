@@ -1,14 +1,21 @@
 import classNames from "@sindresorhus/class-names";
 import { utils as ethers } from "ethers";
 import { useMemo } from "react";
+import { usePagination } from "react-use-pagination";
 import { dropsToXrp } from "xrpl";
 
-import { Hyperlink, TableRow, Text, TokenImage } from "@/libs/components/shared";
+import { Hyperlink, Pagination, TableRow, Text, TokenImage } from "@/libs/components/shared";
 import { ROOT_NETWORK } from "@/libs/constants";
 import { useWallets } from "@/libs/context";
 import { useBridgeHistory } from "@/libs/hooks";
 import { getXrplCurrencies } from "@/libs/utils";
-import { formatRootscanId, formatTime, getXrplExplorerUrl, shortenAddress } from "@/libs/utils";
+import {
+	extractBlockNumber,
+	formatRootscanId,
+	formatTime,
+	getXrplExplorerUrl,
+	shortenAddress,
+} from "@/libs/utils";
 
 const statusMap = {
 	Processing: "Processing",
@@ -20,7 +27,10 @@ type TxStatus = keyof typeof statusMap;
 
 export function TxHistory() {
 	const { network } = useWallets();
-	const history = useBridgeHistory();
+	const { data: history, isError, isLoading, isFetching } = useBridgeHistory();
+
+	// Only show loading on initial load, not on background refetches
+	const isInitialLoading = isLoading && !history;
 
 	const bridgeCurrencies = getXrplCurrencies("bridge");
 
@@ -64,24 +74,47 @@ export function TxHistory() {
 				status: statusMap[tx.status as TxStatus] ?? "Processing",
 				amount,
 				explorerLink,
+				extrinsicId: tx.extrinsicId,
 				date: formatTime(tx.createdAt),
 				token: typeof amount === "string" ? "XRP" : amount.currency,
 			};
 		});
 	}, [history, network, bridgeCurrencies]);
 
+	const { startIndex, endIndex, ...paginationProps } = usePagination({
+		totalItems: transactions?.length ?? 0,
+		initialPageSize: 5,
+	});
+
 	return (
 		<div className="pt-6">
-			<Text variant="heading" className="flex justify-center" size="xl">
+			<Text variant="heading" className="relative flex justify-center" size="xl">
 				Transaction History
+				{isFetching && history && (
+					<span className="absolute -right-1 -top-1 h-2 w-2 animate-pulse rounded-full !text-primary-700" />
+				)}
 			</Text>
-			{!transactions ? (
+			{isInitialLoading ? (
+				<div className="flex flex-col items-center space-y-3 pt-8">
+					<Text>Loading transaction history...</Text>
+					<div className="flex items-center space-x-2">
+						<div className="h-2 w-2 animate-pulse rounded-full bg-primary-700"></div>
+						<div className="h-2 w-2 animate-pulse rounded-full bg-primary-700 [animation-delay:0.2s]"></div>
+						<div className="h-2 w-2 animate-pulse rounded-full bg-primary-700 [animation-delay:0.4s]"></div>
+					</div>
+				</div>
+			) : isError ? (
+				<Text className="flex justify-center">
+					Error loading bridge history. Make sure your{" "}
+					{network === "root" ? "Futurepass" : "XRPL wallet"} is connected.
+				</Text>
+			) : !transactions ? (
 				<Text className="flex justify-center">
 					This is where your transaction history will appear.
 				</Text>
 			) : (
 				<div className="flex flex-col space-y-2 pt-4">
-					{transactions.map((tx, i) => (
+					{transactions.slice(startIndex, endIndex + 1).map((tx, i) => (
 						<Hyperlink
 							href={tx.explorerLink}
 							key={i}
@@ -121,10 +154,20 @@ export function TxHistory() {
 										</Text>
 										<Text className="!text-neutral-500">Status</Text>
 									</div>,
+									<div key="blockNumber" className="space-y-2">
+										<Text>{extractBlockNumber(tx.extrinsicId)}</Text>
+										<Text className="!text-neutral-500">Block Number</Text>
+									</div>,
 								]}
 							/>
 						</Hyperlink>
 					))}
+
+					{transactions.length > 5 && (
+						<div className="pt-4">
+							<Pagination {...paginationProps} />
+						</div>
+					)}
 				</div>
 			)}
 		</div>
