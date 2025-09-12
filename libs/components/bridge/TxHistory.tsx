@@ -14,7 +14,7 @@ import {
 	formatRootscanId,
 	formatTime,
 	getXrplExplorerUrl,
-	shortenAddress,
+	truncateAddress,
 } from "@/libs/utils";
 
 const statusMap = {
@@ -133,11 +133,11 @@ export function TxHistory() {
 										<Text className="!text-neutral-500">Amount</Text>
 									</div>,
 									<div key="from" className="space-y-2">
-										<Text>{shortenAddress(tx.from)}</Text>
+										<Text>{truncateAddress(tx.from)}</Text>
 										<Text className="!text-neutral-500">From</Text>
 									</div>,
 									<div key="to" className="space-y-2">
-										<Text>{shortenAddress(tx.to)}</Text>
+										<Text>{truncateAddress(tx.to)}</Text>
 										<Text className="!text-neutral-500">To</Text>
 									</div>,
 									<div key="status" className="space-y-2">
