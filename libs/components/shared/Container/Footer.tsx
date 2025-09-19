@@ -5,7 +5,7 @@ import { useIsMobile } from "@/libs/hooks";
 import { Hyperlink } from "../Hyperlink";
 import { Text } from "../Text";
 
-// Version 1.2.6
+// Version 1.2.7
 export function Footer() {
 	const isMobile = useIsMobile();
 
@@ -26,7 +26,7 @@ export function Footer() {
 				</Hyperlink>
 			</span>
 
-			<Text>Version 1.2.6</Text>
+			<Text>Version 1.2.7</Text>
 
 			<span>&copy; Dexter {new Date().getFullYear()}</span>
 		</footer>
