@@ -108,7 +108,7 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 		});
 	}, []);
 
-	const { network, xrplProvider, address } = useWallets();
+	const { network, xrplProvider, rAddress, futurepass, address, userSession } = useWallets();
 	const { checkTrustline, refetch: refetchXrplBalances, findToken } = useXrplCurrencies();
 
 	const {
@@ -119,7 +119,6 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 	const { error: destinationError, destination, setDestination } = useBridgeDestinationInput();
 
 	const { trnApi } = useTrnApi();
-	const { userSession } = useWallets();
 	const signer = useFutureverseSigner();
 	const customEx = useCustomExtrinsicBuilder({
 		trnApi,
@@ -463,6 +462,20 @@ export function BridgeProvider({ children }: PropsWithChildren) {
 			setDestinationTag,
 		]
 	);
+
+	useEffect(() => {
+		const toAddress = network === "root" ? rAddress : futurepass;
+
+		if (toAddress && bridgeTokenInput.amount && bridgeTokenInput.token) {
+			buildTransaction({
+				toAddress,
+				amount: bridgeTokenInput.amount,
+				token: bridgeTokenInput.token,
+				destinationTag: state.destinationTag,
+			});
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [rAddress, futurepass, network]);
 
 	// Adding useMemo to track network changes and reset token and amount when network changes
 	useMemo(() => {
