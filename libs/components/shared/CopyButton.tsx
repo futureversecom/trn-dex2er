@@ -1,31 +1,63 @@
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import { SxProps, Theme } from "@mui/material";
-import { FC, PropsWithChildren, useCallback, useState } from "react";
+import { CheckCircle, ContentCopy } from "@mui/icons-material";
+import { Box } from "@mui/material";
+import { FC, PropsWithChildren } from "react";
+import * as React from "react";
 
-import { Button } from "./Button";
-
-interface CopyButtonProps {
+export type CopyButtonProps = {
+	didCopy?: boolean;
 	value: string;
-	sx?: SxProps<Theme>;
-}
+	sx?: React.ComponentProps<typeof Box>["sx"];
+	onlyIconChange?: boolean;
+	showTooltip?: boolean;
+	onBypass?: () => void;
+	children: React.ReactNode;
+};
 
-export const CopyButton: FC<PropsWithChildren<CopyButtonProps>> = ({ children, value }) => {
-	const [copying, setCopying] = useState(false);
+export const CopyButton: FC<PropsWithChildren<CopyButtonProps>> = ({
+	value,
+	children,
+	onBypass,
+	sx,
+	...rest
+}) => {
+	const [copied, setCopied] = React.useState(() => {
+		return rest.didCopy ?? false;
+	});
 
-	const copyAddress = useCallback(() => {
-		void navigator.clipboard.writeText(value);
-		if (!copying) {
-			setCopying(true);
-			setTimeout(() => {
-				setCopying(false);
-			}, 3000);
+	const iconColor = React.useMemo(() => {
+		if (sx && typeof sx === "object" && "color" in sx) {
+			return sx.color as string;
 		}
-	}, [value, copying]);
+		return undefined;
+	}, [sx]);
+
+	const handleCopy = async () => {
+		try {
+			await navigator.clipboard.writeText(value);
+			setCopied(true);
+			setTimeout(() => setCopied(false), 2000);
+			onBypass?.();
+		} catch (err) {
+			console.error("Failed to copy:", err);
+		}
+	};
 
 	return (
-		<Button variant="ghost" size="sm" onClick={() => copyAddress()}>
-			<ContentCopyIcon color={copying ? "success" : "inherit"} />
+		<Box
+			onClick={handleCopy}
+			sx={{
+				cursor: "pointer",
+				display: "flex",
+				alignItems: "center",
+				...sx,
+			}}
+		>
 			{children}
-		</Button>
+			{copied ? (
+				<CheckCircle sx={{ ml: 0.5, fontSize: 16, color: iconColor || "success.main" }} />
+			) : (
+				<ContentCopy sx={{ ml: 0.5, fontSize: 16, color: iconColor || "text.secondary" }} />
+			)}
+		</Box>
 	);
 };

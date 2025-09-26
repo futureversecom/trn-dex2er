@@ -129,3 +129,5 @@ export const MONGO_API_URL = process.env.MONGO_API_URL ?? "";
 export const MONGO_API_KEY = process.env.MONGO_API_KEY ?? "";
 
 export const XAMAN_API_KEY = process.env.NEXT_PUBLIC_XAMAN_API_KEY ?? "";
+
+export const XRP_MIN_THRESHOLD = process.env.XRP_MIN_THRESHOLD ?? "0.1";

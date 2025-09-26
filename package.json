@@ -1,9 +1,9 @@
 {
   "name": "trn-dex2er",
-  "version": "1.2.5",
+  "version": "1.2.7",
   "private": true,
   "engines": {
-    "node": "18"
+    "node": "20.x"
   },
   "scripts": {
     "dev": "next dev",
@@ -16,6 +16,7 @@
   "dependencies": {
     "@crossmarkio/sdk": "^0.4.0",
     "@download/blockies": "^1.0.3",
+    "@futureverse/asset-register-react": "^2.70.2",
     "@futureverse/auth": "^4.0.0",
     "@futureverse/auth-react": "^4.0.1",
     "@futureverse/auth-ui": "^0.6.3",
@@ -31,9 +32,13 @@
     "@tanstack/react-query": "^5.51.21",
     "@therootnetwork/api": "^1.0.9",
     "@therootnetwork/extrinsic": "^1.0.11",
+    "@upstash/ratelimit": "^2.0.6",
+    "@vercel/kv": "^3.0.0",
     "bignumber.js": "^9.1.2",
     "dayjs": "^1.11.13",
     "ethers": "5.7.2",
+    "fp-ts": "^2.16.11",
+    "io-ts": "^2.2.22",
     "lottie-react": "^2.4.0",
     "next": "14.2.10",
     "rc-slider": "^11.1.5",

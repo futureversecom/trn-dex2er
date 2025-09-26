@@ -27,20 +27,20 @@ import {
 } from "../utils";
 
 export type WalletContextType = {
-	network: "root" | "xrpl";
-	setNetwork: Dispatch<SetStateAction<"root" | "xrpl">>;
 	address?: string;
-	isConnected: boolean;
-	connect: (xamanWallet?: ProviderName) => void;
-	xrplConnect: (xamanWallet: ProviderName) => Promise<void>;
-	trnLogin: () => void;
-	disconnect: () => Promise<void>;
-	userSession?: UserSession;
-	xrplProvider?: IXrplWalletProvider;
-	isXrplWalletSelectOpen: boolean;
-	setIsXrplWalletSelectOpen: Dispatch<SetStateAction<boolean>>;
 	rAddress?: string;
 	futurepass?: string;
+	isConnected: boolean;
+	trnLogin: () => void;
+	network: "root" | "xrpl";
+	userSession?: UserSession;
+	isXrplWalletSelectOpen: boolean;
+	disconnect: () => Promise<void>;
+	xrplProvider?: IXrplWalletProvider;
+	connect: (xamanWallet?: ProviderName) => void;
+	setNetwork: Dispatch<SetStateAction<"root" | "xrpl">>;
+	xrplConnect: (xamanWallet: ProviderName) => Promise<void>;
+	setIsXrplWalletSelectOpen: Dispatch<SetStateAction<boolean>>;
 };
 
 const WalletContext = createContext<WalletContextType>({} as WalletContextType);
